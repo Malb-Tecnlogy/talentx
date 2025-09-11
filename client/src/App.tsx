@@ -13,6 +13,7 @@ import Enterprise from "@/pages/enterprise";
 import CompanyDashboard from "@/pages/company-dashboard";
 import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,7 +34,7 @@ function Router() {
       <Route path="/find-work" component={FindWork} />
       <Route path="/about" component={About} />
       <Route path="/enterprise" component={Enterprise} />
-      
+
       {/* Authentication-based routes */}
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
@@ -45,6 +46,8 @@ function Router() {
           <Route path="/admin" component={AdminDashboard} />
         </>
       )}
+      {/* Temporary login route */}
+      <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );

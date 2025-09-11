@@ -225,6 +225,31 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     }
   }
 
+  // Check for session-based authentication (fallback for admin login)
+  if (req.session?.userId) {
+    console.log('[AUTH] Session-based auth: user', req.session.userId);
+    
+    try {
+      const dbUser = await storage.getUser(req.session.userId);
+      if (dbUser) {
+        // Set up mock user object for session auth
+        req.user = {
+          claims: {
+            sub: dbUser.id,
+            email: dbUser.email,
+            first_name: dbUser.firstName,
+            last_name: dbUser.lastName
+          },
+          expires_at: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+        };
+        
+        return next();
+      }
+    } catch (error) {
+      console.error('[AUTH] Session auth error:', error);
+    }
+  }
+
   // Standard Replit authentication
   if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });

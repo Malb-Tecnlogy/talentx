@@ -23,6 +23,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+
+  // Temporary login route for admin user
+  app.post('/api/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email
+      const user = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+      
+      if (user.length === 0) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const foundUser = user[0];
+      
+      // Check password
+      if (!foundUser.passwordHash) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const bcrypt = require('bcrypt');
+      const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Set session manually
+      req.session.userId = foundUser.id;
+      req.session.userEmail = foundUser.email;
+      req.session.userRole = foundUser.role;
+      
+      res.json({ 
+        message: "Login successful", 
+        user: {
+          id: foundUser.id,
+
+  // Logout route
+  app.post('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+
+          email: foundUser.email,
+          firstName: foundUser.firstName,
+          lastName: foundUser.lastName,
+          role: foundUser.role
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+
       }
 
       // Get role-specific data
