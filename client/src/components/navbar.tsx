@@ -8,16 +8,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity" data-testid="link-logo">
               <img 
                 src={logoImage} 
                 alt="TalentX Logo" 
                 className="h-8 w-auto"
                 data-testid="logo"
               />
-            </div>
+            </Link>
             <div className="hidden md:flex space-x-6">
-              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-home">Home</Link>
               <Link href="/find-talent" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</Link>
               <Link href="/find-work" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</Link>
               <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</Link>
