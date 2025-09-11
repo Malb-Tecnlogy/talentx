@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
+import FindTalent from "@/pages/find-talent";
+import FindWork from "@/pages/find-work";
+import About from "@/pages/about";
+import Enterprise from "@/pages/enterprise";
 import CompanyDashboard from "@/pages/company-dashboard";
 import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -24,6 +28,13 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes available to all users */}
+      <Route path="/find-talent" component={FindTalent} />
+      <Route path="/find-work" component={FindWork} />
+      <Route path="/about" component={About} />
+      <Route path="/enterprise" component={Enterprise} />
+      
+      {/* Authentication-based routes */}
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (

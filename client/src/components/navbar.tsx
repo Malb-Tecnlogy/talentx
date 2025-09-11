@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import logoImage from "@assets/logo-removebg-preview_1757611508140.png";
 
 export default function Navbar() {
@@ -16,11 +17,11 @@ export default function Navbar() {
               />
             </div>
             <div className="hidden md:flex space-x-6">
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-home">Home</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-enterprise">Enterprise</a>
+              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-home">Home</Link>
+              <Link href="/find-talent" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</Link>
+              <Link href="/find-work" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</Link>
+              <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</Link>
+              <Link href="/enterprise" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-enterprise">Enterprise</Link>
             </div>
           </div>
           <div className="flex items-center space-x-4">
