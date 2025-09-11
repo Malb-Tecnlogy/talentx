@@ -14,7 +14,7 @@ import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   const httpServer = createServer(app);
 
@@ -24,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Company routes
   app.post('/api/companies', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const companyData = insertCompanySchema.parse({ ...req.body, userId });
 
       const company = await storage.createCompany(companyData);
@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/companies/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const company = await storage.getCompanyByUserId(userId);
       if (!company) {
         return res.status(404).json({ message: "Company profile not found" });
@@ -148,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Professional routes
   app.post('/api/professionals', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professionalData = insertProfessionalSchema.parse({ ...req.body, userId });
 
       const professional = await storage.createProfessional(professionalData);
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/professionals/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professional = await storage.getProfessionalByUserId(userId);
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
@@ -182,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/professionals/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professional = await storage.getProfessionalByUserId(userId);
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Job routes
   app.post('/api/jobs', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'company') {
@@ -282,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/jobs/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const company = await storage.getCompanyByUserId(userId);
 
       if (!company) {
@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/jobs/pending', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'admin') {
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/jobs/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'admin') {
@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Application routes
   app.post('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'professional') {
@@ -444,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/applications/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professional = await storage.getProfessionalByUserId(userId);
 
       if (!professional) {
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/jobs/:jobId/applications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const { jobId } = req.params;
 
       // Verify user owns the job
@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/applications/:id/status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const { id } = req.params;
       const { status } = req.body;
 
@@ -525,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Recommendations
   app.get('/api/professionals/my/job-recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professional = await storage.getProfessionalByUserId(userId);
 
       if (!professional) {
@@ -553,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/professionals/my/analyze', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const professional = await storage.getProfessionalByUserId(userId);
 
       if (!professional) {
@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contract routes
   app.post('/api/contracts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'admin') {
@@ -616,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/contracts/my', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       let contracts: any[] = [];
 
@@ -642,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const notifications = await storage.getNotificationsByUser(userId);
       res.json(notifications);
     } catch (error) {
@@ -664,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/notifications/unread-count', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const count = await storage.getUnreadNotificationsCount(userId);
       res.json({ count });
     } catch (error) {
@@ -676,7 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin dashboard stats
   app.get('/api/admin/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
       if (user?.role !== 'admin') {
