@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import logoImage from "@assets/image_1757611056118.png";
+import logoImage from "@assets/logo-removebg-preview_1757611508140.png";
 
 export default function Navbar() {
   return (
