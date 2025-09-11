@@ -54,8 +54,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   // Case-insensitive unique email index
-  emailUniqueIndex: uniqueIndex("users_email_unique_idx").on(sql`lower(${table.email})`).
-    where(sql`${table.email} IS NOT NULL`),
+  emailUniqueIndex: uniqueIndex("users_email_unique_idx").on(sql`lower(${table.email})`).where(sql`${table.email} IS NOT NULL`),
 }));
 
 // OAuth accounts table for external authentication providers

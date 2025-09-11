@@ -41,9 +41,24 @@ app.use((req, res, next) => {
 (async () => {
   // Ensure authentication schema is set up before starting the server
   async function ensureAuthSchema() {
+    // Handle extension creation separately with error tolerance
+    try {
+      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+    } catch (error) {
+      log('⚠ pgcrypto extension note: ' + (error instanceof Error ? error.message : String(error)));
+    }
+
+    // Handle enum type creation with error tolerance
+    try {
+      await db.execute(sql`CREATE TYPE oauth_provider AS ENUM ('google', 'apple')`);
+    } catch (error) {
+      // Type might already exist, which is fine
+      if (!(error instanceof Error && error.message?.includes('already exists'))) {
+        log('⚠ oauth_provider type note: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    }
+
     const statements = [
-      sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`,
-      sql`CREATE TYPE IF NOT EXISTS oauth_provider AS ENUM ('google', 'apple')`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash varchar`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean DEFAULT false`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token varchar`,
@@ -73,13 +88,8 @@ app.use((req, res, next) => {
       try {
         await db.execute(statements[i]);
       } catch (error) {
-        // Log but continue for non-critical failures (like extension already exists)
-        if (i === 0) { // pgcrypto extension
-          log('⚠ pgcrypto extension note: ' + (error instanceof Error ? error.message : String(error)));
-        } else {
-          log('✗ Schema statement failed: ' + (error instanceof Error ? error.message : String(error)));
-          throw error;
-        }
+        log('✗ Schema statement failed: ' + (error instanceof Error ? error.message : String(error)));
+        throw error;
       }
     }
   }
