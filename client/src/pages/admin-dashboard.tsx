@@ -29,12 +29,12 @@ export default function AdminDashboard() {
   // Fetch admin data
   const { data: pendingJobs = [] } = useQuery({
     queryKey: ["/api/jobs/pending"],
-    enabled: !!user && user.role === 'admin',
+    enabled: !!user && (user as any).role === 'admin',
   });
 
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
-    enabled: !!user && user.role === 'admin',
+    enabled: !!user && (user as any).role === 'admin',
   });
 
   if (isLoading) {
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (user?.role !== 'admin') {
+  if ((user as any)?.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Connected Users</p>
                   <p className="text-2xl font-bold text-card-foreground" data-testid="text-connected-users">
-                    {stats?.connectedClients || 0}
+                    {(stats as any)?.connectedClients || 0}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Pending Jobs</p>
                   <p className="text-2xl font-bold text-card-foreground" data-testid="text-pending-jobs">
-                    {pendingJobs.length}
+                    {(pendingJobs as any[]).length}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
               <CardTitle>Pending Job Approvals</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pendingJobs.slice(0, 5).map((job) => (
+              {(pendingJobs as any[]).slice(0, 5).map((job: any) => (
                 <div key={job.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg" data-testid={`card-pending-job-${job.id}`}>
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {pendingJobs.length === 0 && (
+              {(pendingJobs as any[]).length === 0 && (
                 <div className="text-center py-8 text-muted-foreground" data-testid="text-no-pending-jobs">
                   No jobs pending approval.
                 </div>

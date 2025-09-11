@@ -29,7 +29,7 @@ export default function ProfessionalDashboard() {
   // Fetch professional data
   const { data: professional } = useQuery({
     queryKey: ["/api/professionals/my"],
-    enabled: !!user && user.role === 'professional',
+    enabled: !!user && (user as any).role === 'professional',
   });
 
   const { data: applications = [] } = useQuery({
@@ -55,7 +55,7 @@ export default function ProfessionalDashboard() {
     );
   }
 
-  if (user?.role !== 'professional') {
+  if ((user as any)?.role !== 'professional') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
@@ -74,12 +74,12 @@ export default function ProfessionalDashboard() {
   }
 
   const profileViews = 156; // Mock data - would come from analytics
-  const activeProjects = contracts.filter(c => c.status === 'active').length;
-  const successRate = applications.length > 0 ? 
-    Math.round((applications.filter(a => a.status === 'selected').length / applications.length) * 100) : 0;
-  const monthlyEarnings = contracts
-    .filter(c => c.status === 'active')
-    .reduce((sum, c) => sum + (parseFloat(c.rate) || 0), 0);
+  const activeProjects = (contracts as any[]).filter((c: any) => c.status === 'active').length;
+  const successRate = (applications as any[]).length > 0 ? 
+    Math.round(((applications as any[]).filter((a: any) => a.status === 'selected').length / (applications as any[]).length) * 100) : 0;
+  const monthlyEarnings = (contracts as any[])
+    .filter((c: any) => c.status === 'active')
+    .reduce((sum: number, c: any) => sum + (parseFloat(c.rate) || 0), 0);
 
   return (
     <div className="min-h-screen bg-background" data-testid="professional-dashboard">
@@ -89,14 +89,14 @@ export default function ProfessionalDashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <img 
-                src={user?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
+                src={(user as any)?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${(user as any)?.email}`}
                 alt="Profile"
                 className="w-10 h-10 rounded-full object-cover"
                 data-testid="img-profile"
               />
               <div>
                 <h3 className="font-semibold text-card-foreground" data-testid="text-professional-name">
-                  {user?.firstName} {user?.lastName}
+                  {(user as any)?.firstName} {(user as any)?.lastName}
                 </h3>
                 <p className="text-sm text-muted-foreground">{professional?.title || 'Professional'}</p>
               </div>
@@ -196,7 +196,7 @@ export default function ProfessionalDashboard() {
               <CardTitle>Recommended Projects</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recommendations.slice(0, 3).map((rec) => (
+              {(recommendations as any[]).slice(0, 3).map((rec: any) => (
                 <div key={rec.jobId} className="p-4 bg-muted/50 rounded-lg" data-testid={`card-recommendation-${rec.jobId}`}>
                   <div className="flex items-start justify-between mb-3">
                     <h5 className="font-medium text-card-foreground" data-testid={`text-job-title-${rec.jobId}`}>
@@ -214,7 +214,7 @@ export default function ProfessionalDashboard() {
                   </Button>
                 </div>
               ))}
-              {recommendations.length === 0 && (
+              {(recommendations as any[]).length === 0 && (
                 <div className="text-center py-8 text-muted-foreground" data-testid="text-no-recommendations">
                   No job recommendations available. Complete your profile to get matched with opportunities.
                 </div>
