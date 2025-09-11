@@ -15,6 +15,7 @@ import { z } from "zod";
 import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Professional } from "@shared/schema";
+import { SuggestionInput } from "@/components/ui/suggestion-input";
 
 // Professional profile form schema
 const professionalProfileSchema = z.object({
@@ -159,11 +160,12 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
                         <FormItem>
                           <FormLabel>Years of Experience</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="0" 
-                              {...field} 
-                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            <SuggestionInput
+                              value={field.value}
+                              onChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                              suggestions={["1", "2", "3", "5", "7", "10"]}
+                              placeholder="e.g., 5"
+                              type="number"
                               data-testid="input-professional-experience"
                             />
                           </FormControl>
@@ -179,11 +181,12 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
                         <FormItem>
                           <FormLabel>Hourly Rate (USD)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="50" 
-                              {...field} 
-                              onChange={(e) => field.onChange(e.target.value)}
+                            <SuggestionInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              suggestions={["25", "35", "50", "75", "100", "150"]}
+                              placeholder="e.g., 50"
+                              type="number"
                               data-testid="input-professional-rate"
                             />
                           </FormControl>
