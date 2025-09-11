@@ -221,7 +221,7 @@ export default function DashboardTabs() {
                       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg" data-testid="card-talent-2">
                         <div className="flex items-center space-x-3">
                           <img 
-                            src="https://images.unsplash.com/photo-1494790108755-2616b332e234?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" 
+                            src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" 
                             alt="Professional headshot" 
                             className="w-10 h-10 rounded-full object-cover" 
                           />
