@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -28,22 +29,57 @@ export const sessions = pgTable(
 
 // Enums
 export const userRoleEnum = pgEnum("user_role", ["company", "professional", "admin"]);
+export const oauthProviderEnum = pgEnum("oauth_provider", ["google", "apple"]);
 export const jobStatusEnum = pgEnum("job_status", ["draft", "pending_approval", "active", "closed", "paused"]);
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "reviewing", "interview", "selected", "rejected"]);
 export const contractStatusEnum = pgEnum("contract_status", ["draft", "active", "completed", "terminated"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["job_match", "application_update", "contract_update", "system"]);
 
-// Users table (required for Replit Auth)
+// Users table with enhanced authentication support
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: userRoleEnum("role").notNull().default("professional"),
+  passwordHash: varchar("password_hash"),
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: varchar("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  passwordResetToken: varchar("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // Case-insensitive unique email index
+  emailUniqueIndex: uniqueIndex("users_email_unique_idx").on(sql`lower(${table.email})`).
+    where(sql`${table.email} IS NOT NULL`),
+}));
+
+// OAuth accounts table for external authentication providers
+export const oauthAccounts = pgTable("oauth_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: oauthProviderEnum("provider").notNull(),
+  providerUserId: varchar("provider_user_id").notNull(),
+  email: varchar("email"),
+  // Note: Consider encrypting/hashing these tokens for security
+  refreshTokenHash: varchar("refresh_token_hash"), // Store hashed refresh token
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  // Prevent duplicate provider accounts
+  providerAccountUnique: uniqueIndex("oauth_provider_account_unique_idx")
+    .on(table.provider, table.providerUserId),
+  // Prevent multiple accounts from same provider for one user
+  userProviderUnique: uniqueIndex("oauth_user_provider_unique_idx")
+    .on(table.userId, table.provider),
+  // Performance index for user lookups
+  userIdIndex: index("oauth_user_id_idx").on(table.userId),
+}));
 
 // Company profiles
 export const companies = pgTable("companies", {
@@ -152,6 +188,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [professionals.userId],
   }),
   notifications: many(notifications),
+  oauthAccounts: many(oauthAccounts),
+}));
+
+export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
+  user: one(users, {
+    fields: [oauthAccounts.userId],
+    references: [users.id],
+  }),
 }));
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
@@ -270,6 +314,12 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+export const insertOAuthAccountSchema = createInsertSchema(oauthAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -285,3 +335,5 @@ export type InsertContract = z.infer<typeof insertContractSchema>;
 export type Contract = typeof contracts.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+export type InsertOAuthAccount = z.infer<typeof insertOAuthAccountSchema>;
+export type OAuthAccount = typeof oauthAccounts.$inferSelect;

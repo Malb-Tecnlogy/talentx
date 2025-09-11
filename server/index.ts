@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,59 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure authentication schema is set up before starting the server
+  async function ensureAuthSchema() {
+    const statements = [
+      sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`,
+      sql`CREATE TYPE IF NOT EXISTS oauth_provider AS ENUM ('google', 'apple')`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash varchar`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean DEFAULT false`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token varchar`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires timestamp`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token varchar`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires timestamp`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamp`,
+      sql`CREATE TABLE IF NOT EXISTS oauth_accounts (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider oauth_provider NOT NULL,
+        provider_user_id varchar NOT NULL,
+        email varchar,
+        refresh_token_hash varchar,
+        expires_at timestamp,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      )`,
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users (lower(email)) WHERE email IS NOT NULL`,
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS oauth_provider_account_unique_idx ON oauth_accounts (provider, provider_user_id)`,
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS oauth_user_provider_unique_idx ON oauth_accounts (user_id, provider)`,
+      sql`CREATE INDEX IF NOT EXISTS oauth_user_id_idx ON oauth_accounts (user_id)`,
+      sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_unique`
+    ];
+
+    for (let i = 0; i < statements.length; i++) {
+      try {
+        await db.execute(statements[i]);
+      } catch (error) {
+        // Log but continue for non-critical failures (like extension already exists)
+        if (i === 0) { // pgcrypto extension
+          log('⚠ pgcrypto extension note: ' + (error instanceof Error ? error.message : String(error)));
+        } else {
+          log('✗ Schema statement failed: ' + (error instanceof Error ? error.message : String(error)));
+          throw error;
+        }
+      }
+    }
+  }
+
+  try {
+    await ensureAuthSchema();
+    log('✓ Auth schema ensured successfully');
+  } catch (error) {
+    log('✗ Auth schema setup failed: ' + (error instanceof Error ? error.message : String(error)));
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
