@@ -1,15 +1,231 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Building, Users, Clock, DollarSign, Plus, Eye } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+
+// Company profile form schema
+const companyProfileSchema = z.object({
+  name: z.string().min(1, "Company name is required"),
+  description: z.string().optional(),
+  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  industry: z.string().optional(),
+  size: z.string().optional(),
+  location: z.string().optional(),
+});
+
+type CompanyProfileForm = z.infer<typeof companyProfileSchema>;
+
+// Company Profile Creation Form Component
+function CompanyProfileForm({ onSuccess }: { onSuccess: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const form = useForm<CompanyProfileForm>({
+    resolver: zodResolver(companyProfileSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      website: "",
+      industry: "",
+      size: "",
+      location: "",
+    },
+  });
+
+  const createCompanyMutation = useMutation({
+    mutationFn: (data: CompanyProfileForm) => apiRequest('/api/companies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Company profile created successfully!",
+      });
+      // Invalidate both company and user queries to update role
+      queryClient.invalidateQueries({ queryKey: ["/api/companies/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create company profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: CompanyProfileForm) => {
+    createCompanyMutation.mutate(data);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center" data-testid="company-profile-setup">
+      <Card className="w-full max-w-2xl mx-4">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl font-bold">Complete Your Company Profile</CardTitle>
+          <p className="text-center text-muted-foreground">
+            Tell us about your company to get started with TalentX
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your company name" {...field} data-testid="input-company-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Tell us about your company..." 
+                        rows={4} 
+                        {...field} 
+                        data-testid="input-company-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://yourcompany.com" {...field} data-testid="input-company-website" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City, Country" {...field} data-testid="input-company-location" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-company-industry">
+                            <SelectValue placeholder="Select your industry" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="technology">Technology</SelectItem>
+                          <SelectItem value="finance">Finance</SelectItem>
+                          <SelectItem value="healthcare">Healthcare</SelectItem>
+                          <SelectItem value="education">Education</SelectItem>
+                          <SelectItem value="retail">Retail</SelectItem>
+                          <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                          <SelectItem value="consulting">Consulting</SelectItem>
+                          <SelectItem value="startup">Startup</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="size"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Size</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-company-size">
+                            <SelectValue placeholder="Select company size" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1-10">1-10 employees</SelectItem>
+                          <SelectItem value="11-50">11-50 employees</SelectItem>
+                          <SelectItem value="51-200">51-200 employees</SelectItem>
+                          <SelectItem value="201-500">201-500 employees</SelectItem>
+                          <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                          <SelectItem value="1000+">1000+ employees</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={createCompanyMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-create-profile"
+                >
+                  {createCompanyMutation.isPending ? "Creating..." : "Create Company Profile"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function CompanyDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [profileCreated, setProfileCreated] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -27,9 +243,10 @@ export default function CompanyDashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch company data
-  const { data: company } = useQuery({
+  const { data: company, isLoading: companyLoading, error: companyError } = useQuery({
     queryKey: ["/api/companies/my"],
-    enabled: !!user && (user as any).role === 'company',
+    enabled: !!user, // Enable for any authenticated user
+    retry: false,
   });
 
   const { data: jobs = [] } = useQuery({
@@ -50,7 +267,8 @@ export default function CompanyDashboard() {
     );
   }
 
-  if (user?.role !== 'company') {
+  // If user already has a different role and it's not company-related, redirect
+  if ((user as any)?.role && (user as any)?.role !== 'company' && (user as any)?.role !== 'professional') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
@@ -68,7 +286,39 @@ export default function CompanyDashboard() {
     );
   }
 
-  const activeProjects = jobs.filter(job => job.status === 'active').length;
+  // Show profile creation form if no company profile exists (404 error)
+  if (!companyLoading && !company && !profileCreated) {
+    // Only show form for 404 errors (no profile) or users without company role
+    const is404 = companyError && (companyError as any).status === 404;
+    const needsProfile = is404 || !(user as any)?.role || (user as any)?.role === 'professional';
+    
+    if (needsProfile) {
+      return (
+        <CompanyProfileForm onSuccess={() => setProfileCreated(true)} />
+      );
+    }
+    
+    // Show error for other types of errors
+    if (companyError && !is404) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-foreground mb-4">Error Loading Profile</h1>
+                <p className="text-muted-foreground mb-4">Unable to load company information. Please try again.</p>
+                <Button onClick={() => window.location.reload()} data-testid="button-retry">
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+  }
+
+  const activeProjects = (jobs as any[]).filter((job: any) => job.status === 'active').length;
   const totalTeamMembers = contracts.filter(c => c.status === 'active').length;
   const pendingReviews = jobs.filter(job => job.status === 'pending_approval').length;
   const monthlySpend = contracts
