@@ -6,13 +6,17 @@ import { initializeWebSocket, getWebSocketService } from "./websocket";
 import { analyzeJobProfessionalMatch, generateJobRecommendations, analyzeProfessionalProfile } from "./openai";
 import { insertJobSchema, insertApplicationSchema, insertCompanySchema, insertProfessionalSchema, insertContractSchema } from "@shared/schema";
 import { z } from "zod";
+// Import necessary database functions and schemas
+import { db } from './db'; // Assuming db is exported from './db'
+import { users, eq } from './db/schema'; // Assuming users and eq are exported from './db/schema'
+import bcrypt from 'bcrypt'; // Assuming bcrypt is installed and available
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
   const httpServer = createServer(app);
-  
+
   // Initialize WebSocket
   initializeWebSocket(httpServer);
 
@@ -23,72 +27,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-
-  // Temporary login route for admin user
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
-      }
-      
-      // Find user by email
-      const user = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
-      
-      if (user.length === 0) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      const foundUser = user[0];
-      
-      // Check password
-      if (!foundUser.passwordHash) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      const bcrypt = require('bcrypt');
-      const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash);
-      
-      if (!isValidPassword) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      // Set session manually
-      req.session.userId = foundUser.id;
-      req.session.userEmail = foundUser.email;
-      req.session.userRole = foundUser.role;
-      
-      res.json({ 
-        message: "Login successful", 
-        user: {
-          id: foundUser.id,
-
-  // Logout route
-  app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Session destruction error:', err);
-        return res.status(500).json({ message: "Logout failed" });
-      }
-      res.json({ message: "Logout successful" });
-    });
-  });
-
-
-          email: foundUser.email,
-          firstName: foundUser.firstName,
-          lastName: foundUser.lastName,
-          role: foundUser.role
-        }
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-
       }
 
       // Get role-specific data
@@ -106,17 +44,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Login endpoint for email/password authentication
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user by email
+      const userResult = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+
+      if (userResult.length === 0) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const foundUser = userResult[0];
+
+      // Check password
+      if (!foundUser.passwordHash) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Update last login
+      await db.update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, foundUser.id));
+
+      // Create session
+      req.session.userId = foundUser.id;
+      req.session.user = {
+        id: foundUser.id,
+        email: foundUser.email,
+        firstName: foundUser.firstName,
+        lastName: foundUser.lastName,
+        role: foundUser.role
+      };
+
+      res.json({
+        message: "Login successful",
+        user: req.session.user
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Logout route
+  app.post('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logout successful" });
+    });
+  });
+
   // Company routes
   app.post('/api/companies', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const companyData = insertCompanySchema.parse({ ...req.body, userId });
-      
+
       const company = await storage.createCompany(companyData);
-      
+
       // Update user role to company
       await storage.upsertUser({ id: userId, role: 'company' });
-      
+
       res.status(201).json(company);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -146,12 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const professionalData = insertProfessionalSchema.parse({ ...req.body, userId });
-      
+
       const professional = await storage.createProfessional(professionalData);
-      
+
       // Update user role to professional
       await storage.upsertUser({ id: userId, role: 'professional' });
-      
+
       res.status(201).json(professional);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -183,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
-      
+
       const updatedProfessional = await storage.updateProfessional(professional.id, req.body);
       res.json(updatedProfessional);
     } catch (error) {
@@ -196,14 +199,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { skills, availability } = req.query;
       const searchQuery: { skills?: string[]; availability?: string } = {};
-      
+
       if (skills) {
         searchQuery.skills = Array.isArray(skills) ? skills as string[] : (skills as string).split(',');
       }
       if (availability) {
         searchQuery.availability = availability as string;
       }
-      
+
       const professionals = await storage.searchProfessionals(searchQuery);
       res.json(professionals);
     } catch (error) {
@@ -217,24 +220,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'company') {
         return res.status(403).json({ message: "Only companies can post jobs" });
       }
-      
+
       const company = await storage.getCompanyByUserId(userId);
       if (!company) {
         return res.status(404).json({ message: "Company profile not found" });
       }
-      
+
       const jobData = insertJobSchema.parse({
         ...req.body,
         companyId: company.id,
         status: 'pending_approval'
       });
-      
+
       const job = await storage.createJob(jobData);
-      
+
       // Notify admin about new job pending approval
       const wsService = getWebSocketService();
       wsService.sendToRole('admin', {
@@ -245,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           jobId: job.id
         }
       });
-      
+
       res.status(201).json(job);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -260,14 +263,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { skills, type, status = 'active' } = req.query;
       const searchQuery: { skills?: string[]; type?: string; status?: string } = { status: status as string };
-      
+
       if (skills) {
         searchQuery.skills = Array.isArray(skills) ? skills : (skills as string).split(',');
       }
       if (type) {
         searchQuery.type = type as string;
       }
-      
+
       const jobs = await storage.searchJobs(searchQuery);
       res.json(jobs);
     } catch (error) {
@@ -280,11 +283,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const company = await storage.getCompanyByUserId(userId);
-      
+
       if (!company) {
         return res.status(404).json({ message: "Company profile not found" });
       }
-      
+
       const jobs = await storage.getJobsByCompany(company.id);
       res.json(jobs);
     } catch (error) {
@@ -297,11 +300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      
+
       const pendingJobs = await storage.getPendingJobs();
       res.json(pendingJobs);
     } catch (error) {
@@ -314,22 +317,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      
+
       const { id } = req.params;
       const approvedJob = await storage.approveJob(id, userId);
-      
+
       // Find matching professionals and notify them
       const professionals = await storage.searchProfessionals({
         skills: approvedJob.skills as string[],
         availability: 'available'
       });
-      
+
       const wsService = getWebSocketService();
-      
+
       // Use AI to analyze matches and send notifications
       for (const professional of professionals.slice(0, 10)) { // Limit to top 10
         try {
@@ -341,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             professionalBio: professional.bio || '',
             professionalPortfolio: professional.portfolio as any
           });
-          
+
           if (matchAnalysis.matchScore >= 70) {
             wsService.notifyJobMatch(professional.userId, {
               ...approvedJob,
@@ -352,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("AI matching failed for professional:", professional.id, aiError);
         }
       }
-      
+
       res.json(approvedJob);
     } catch (error) {
       console.error("Error approving job:", error);
@@ -365,30 +368,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'professional') {
         return res.status(403).json({ message: "Only professionals can apply to jobs" });
       }
-      
+
       const professional = await storage.getProfessionalByUserId(userId);
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
-      
+
       const applicationData = insertApplicationSchema.parse({
         ...req.body,
         professionalId: professional.id
       });
-      
+
       // Get job details for AI analysis
       const job = await storage.getJob(applicationData.jobId);
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
-      
+
       let aiAnalysis = null;
       let matchScore = 0;
-      
+
       try {
         aiAnalysis = await analyzeJobProfessionalMatch({
           jobSkills: job.skills as string[],
@@ -402,10 +405,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (aiError) {
         console.error("AI analysis failed:", aiError);
       }
-      
+
       // Create application with AI analysis stored separately
       const application = await storage.createApplication(applicationData);
-      
+
       // Update with AI analysis if available
       if (matchScore > 0 || aiAnalysis) {
         await storage.updateApplication(application.id, {
@@ -413,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aiAnalysis: aiAnalysis as any
         });
       }
-      
+
       // Notify company about new application
       const company = await storage.getCompany(job.companyId);
       if (company) {
@@ -428,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
-      
+
       res.status(201).json(application);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -443,11 +446,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const professional = await storage.getProfessionalByUserId(userId);
-      
+
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
-      
+
       const applications = await storage.getApplicationsByProfessional(professional.id);
       res.json(applications);
     } catch (error) {
@@ -460,18 +463,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { jobId } = req.params;
-      
+
       // Verify user owns the job
       const job = await storage.getJob(jobId);
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
-      
+
       const company = await storage.getCompanyByUserId(userId);
       if (!company || company.id !== job.companyId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const applications = await storage.getApplicationsByJob(jobId);
       res.json(applications);
     } catch (error) {
@@ -485,22 +488,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { id } = req.params;
       const { status } = req.body;
-      
+
       const application = await storage.getApplication(id);
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
-      
+
       // Verify user owns the job
       const job = await storage.getJob(application.jobId);
       const company = await storage.getCompanyByUserId(userId);
-      
+
       if (!company || !job || company.id !== job.companyId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const updatedApplication = await storage.updateApplication(id, { status });
-      
+
       // Notify professional about status change
       const professional = await storage.getProfessional(application.professionalId);
       if (professional) {
@@ -511,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           jobTitle: job.title
         });
       }
-      
+
       res.json(updatedApplication);
     } catch (error) {
       console.error("Error updating application status:", error);
@@ -524,13 +527,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const professional = await storage.getProfessionalByUserId(userId);
-      
+
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
-      
+
       const availableJobs = await storage.searchJobs({ status: 'active' });
-      
+
       const recommendations = await generateJobRecommendations(
         professional.skills as string[] || [],
         availableJobs.map(job => ({
@@ -540,7 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: job.description
         }))
       );
-      
+
       res.json(recommendations);
     } catch (error) {
       console.error("Error generating job recommendations:", error);
@@ -552,18 +555,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const professional = await storage.getProfessionalByUserId(userId);
-      
+
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
-      
+
       const analysis = await analyzeProfessionalProfile(
         professional.skills as string[] || [],
         professional.bio || '',
         professional.experience || 0,
         professional.portfolio as any
       );
-      
+
       res.json(analysis);
     } catch (error) {
       console.error("Error analyzing professional profile:", error);
@@ -576,31 +579,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      
+
       const contractData = insertContractSchema.parse({
         ...req.body,
         managedBy: userId,
         status: 'draft'
       });
-      
+
       const contract = await storage.createContract(contractData);
-      
+
       // Notify both parties
       const professional = await storage.getProfessional(contract.professionalId);
       const company = await storage.getCompany(contract.companyId);
       const wsService = getWebSocketService();
-      
+
       if (professional) {
         wsService.notifyContractUpdate(professional.userId, contract);
       }
       if (company) {
         wsService.notifyContractUpdate(company.userId, contract);
       }
-      
+
       res.status(201).json(contract);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -616,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       let contracts: any[] = [];
-      
+
       if (user?.role === 'company') {
         const company = await storage.getCompanyByUserId(userId);
         if (company) {
@@ -628,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           contracts = await storage.getContractsByProfessional(professional.id);
         }
       }
-      
+
       res.json(contracts);
     } catch (error) {
       console.error("Error fetching contracts:", error);
@@ -675,14 +678,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      
+
       // Get WebSocket stats
       const wsService = getWebSocketService();
-      
+
       res.json({
         connectedClients: wsService.getConnectedClientsCount(),
         connectedCompanies: wsService.getClientsByRole('company'),

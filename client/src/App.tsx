@@ -35,6 +35,9 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/enterprise" component={Enterprise} />
 
+      {/* Login route - always accessible */}
+      <Route path="/login" component={Login} />
+      
       {/* Authentication-based routes */}
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
@@ -46,8 +49,6 @@ function Router() {
           <Route path="/admin" component={AdminDashboard} />
         </>
       )}
-      {/* Temporary login route */}
-      <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
