@@ -12,19 +12,16 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-4xl mx-auto space-y-8">
           <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight" data-testid="text-hero-title">
-            Conectando talentos <br />
-            às melhores <span className="text-blue-400">oportunidades</span>
+            Connect with Top-Tier <br />
+            <span className="text-blue-400">Latin American</span> Tech Talent
           </h1>
-          <p className="text-lg text-blue-300 font-medium" data-testid="text-hero-hashtag">
-            #0066CC
-          </p>
           <div className="pt-4">
             <Button 
               className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
               onClick={() => window.location.href = "/api/login"}
-              data-testid="button-comece-agora"
+              data-testid="button-get-started"
             >
-              Comece Agora
+              Get Started
             </Button>
           </div>
         </div>

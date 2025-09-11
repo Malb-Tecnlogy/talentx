@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import logoImage from "@assets/logo_1757610303323.png";
+import logoImage from "@assets/image_1757611056118.png";
 
 export default function Navbar() {
   return (
@@ -16,19 +16,28 @@ export default function Navbar() {
               />
             </div>
             <div className="hidden md:flex space-x-6">
-              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-home">Home</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-empresas">Empresas</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-candidatos">Candidatos</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-sobre">Sobre</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-home">Home</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-find-talent">Find Talent</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-find-work">Find Work</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-about">About</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-enterprise">Enterprise</a>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full"
+              variant="ghost"
+              className="text-white hover:text-white hover:bg-white/10 font-medium"
               onClick={() => window.location.href = "/api/login"}
-              data-testid="button-contato"
+              data-testid="button-login"
             >
-              Contato
+              Log In
+            </Button>
+            <Button 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-medium"
+              onClick={() => window.location.href = "/api/login"}
+              data-testid="button-signup"
+            >
+              Sign Up
             </Button>
           </div>
         </div>
