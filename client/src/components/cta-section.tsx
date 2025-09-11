@@ -8,7 +8,7 @@ export default function CtaSection() {
         <h2 className="text-4xl font-bold text-primary-foreground mb-6" data-testid="text-cta-title">
           Ready to Transform Your Team?
         </h2>
-        <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto" data-testid="text-cta-description">
+        <p className="text-xl text-primary-foreground mb-8 max-w-2xl mx-auto font-medium" data-testid="text-cta-description">
           Join thousands of companies already building exceptional products with Latin American talent through TalentX.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
