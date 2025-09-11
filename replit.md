@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Backend Architecture
 - **Framework**: Express.js with TypeScript for API endpoints and middleware
-- **Authentication**: Replit Auth integration with session-based authentication using Passport.js
+- **Authentication**: Conventional email/password authentication with session-based persistence
 - **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
 - **Real-time Communication**: WebSocket server for live notifications and updates
 - **API Design**: RESTful endpoints with standardized error handling and logging middleware
@@ -30,15 +30,15 @@ Preferred communication style: Simple, everyday language.
 - **Migrations**: Drizzle Kit for database schema management and migrations
 
 ## Authentication & Authorization
-- **Provider**: Replit OpenID Connect (OIDC) integration
+- **Provider**: Email/password authentication with bcrypt password hashing
 - **Session Management**: Express sessions with PostgreSQL storage
 - **Role-based Access**: Three user roles (company, professional, admin) with route-level protection
-- **Security**: CSRF protection, secure cookies, and session timeout handling
+- **Security**: Secure cookies, session timeout handling, and password hashing
 
 ## External Dependencies
 - **Database**: Neon PostgreSQL serverless database
 - **AI Services**: OpenAI GPT-5 API for job-professional matching and analysis
-- **Authentication**: Replit OIDC for user authentication
+- **Authentication**: Email/password authentication system
 - **Real-time**: Native WebSocket implementation for live updates
 - **UI Framework**: shadcn/ui component library built on Radix UI
 - **Email/Notifications**: WebSocket-based real-time notification system
