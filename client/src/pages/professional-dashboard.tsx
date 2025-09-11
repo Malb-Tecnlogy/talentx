@@ -1,15 +1,395 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { User, Eye, ListTodo, CheckCircle, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+
+// Professional profile form schema
+const professionalProfileSchema = z.object({
+  title: z.string().min(1, "Job title is required"),
+  bio: z.string().optional(),
+  skills: z.array(z.string()).min(1, "At least one skill is required"),
+  experience: z.number().min(0, "Experience must be 0 or more years").optional(),
+  hourlyRate: z.number().min(0, "Hourly rate must be positive").optional(),
+  availability: z.string().optional(),
+  location: z.string().optional(),
+  timezone: z.string().optional(),
+  portfolio: z.array(z.object({
+    title: z.string().min(1, "Project title is required"),
+    description: z.string().min(1, "Project description is required"),
+    url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+    tech: z.array(z.string()),
+  })).optional(),
+});
+
+type ProfessionalProfileForm = z.infer<typeof professionalProfileSchema>;
+
+// Professional Profile Creation Form Component
+function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const form = useForm<ProfessionalProfileForm>({
+    resolver: zodResolver(professionalProfileSchema),
+    defaultValues: {
+      title: "",
+      bio: "",
+      skills: [],
+      experience: 0,
+      hourlyRate: 0,
+      availability: "available",
+      location: "",
+      timezone: "",
+      portfolio: [],
+    },
+  });
+
+  const { fields: portfolioFields, append: appendPortfolio, remove: removePortfolio } = useFieldArray({
+    control: form.control,
+    name: "portfolio",
+  });
+
+  const createProfessionalMutation = useMutation({
+    mutationFn: (data: ProfessionalProfileForm) => apiRequest('POST', '/api/professionals', data),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Professional profile created successfully!",
+      });
+      // Invalidate both professional and user queries to update role
+      queryClient.invalidateQueries({ queryKey: ["/api/professionals/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create professional profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: ProfessionalProfileForm) => {
+    createProfessionalMutation.mutate(data);
+  };
+
+  // Skills management
+  const [skillInput, setSkillInput] = useState("");
+  const addSkill = () => {
+    if (skillInput.trim() && !form.getValues("skills").includes(skillInput.trim())) {
+      const currentSkills = form.getValues("skills");
+      form.setValue("skills", [...currentSkills, skillInput.trim()]);
+      setSkillInput("");
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    const currentSkills = form.getValues("skills");
+    form.setValue("skills", currentSkills.filter(skill => skill !== skillToRemove));
+  };
+
+  return (
+    <div className="min-h-screen bg-background py-8" data-testid="professional-profile-setup">
+      <div className="max-w-4xl mx-auto px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-bold">Complete Your Professional Profile</CardTitle>
+            <p className="text-center text-muted-foreground">
+              Showcase your skills and experience to connect with opportunities on TalentX
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Basic Information */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Job Title *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Senior Frontend Developer" {...field} data-testid="input-professional-title" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Tell us about yourself and your experience..." 
+                            rows={4} 
+                            {...field} 
+                            data-testid="input-professional-bio"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="experience"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Years of Experience</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              {...field} 
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              data-testid="input-professional-experience"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="hourlyRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hourly Rate (USD)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="50" 
+                              {...field} 
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              data-testid="input-professional-rate"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="availability"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Availability</FormLabel>
+                          <FormControl>
+                            <select 
+                              {...field} 
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              data-testid="select-professional-availability"
+                            >
+                              <option value="">Select availability</option>
+                              <option value="available">Available</option>
+                              <option value="busy">Busy</option>
+                              <option value="unavailable">Unavailable</option>
+                            </select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="City, Country" {...field} data-testid="input-professional-location" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="timezone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Timezone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., UTC-3" {...field} data-testid="input-professional-timezone" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Skills Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Skills *</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a skill..."
+                      value={skillInput}
+                      onChange={(e) => setSkillInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      data-testid="input-add-skill"
+                    />
+                    <Button type="button" onClick={addSkill} data-testid="button-add-skill">
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {form.watch("skills").map((skill, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-1" data-testid={`badge-skill-${index}`}>
+                        {skill}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => removeSkill(skill)}
+                          data-testid={`button-remove-skill-${index}`}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
+                  {form.formState.errors.skills && (
+                    <p className="text-sm text-destructive">{form.formState.errors.skills.message}</p>
+                  )}
+                </div>
+
+                {/* Portfolio Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Portfolio Projects</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => appendPortfolio({ title: "", description: "", url: "", tech: [] })}
+                      data-testid="button-add-portfolio"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Project
+                    </Button>
+                  </div>
+
+                  {portfolioFields.map((field, index) => (
+                    <Card key={field.id} className="p-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Project {index + 1}</h4>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removePortfolio(index)}
+                            data-testid={`button-remove-portfolio-${index}`}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`portfolio.${index}.title`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Project Title</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Project name" {...field} data-testid={`input-portfolio-title-${index}`} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`portfolio.${index}.url`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Project URL</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="https://..." {...field} data-testid={`input-portfolio-url-${index}`} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name={`portfolio.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Project Description</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe the project and your role..." 
+                                  rows={3} 
+                                  {...field} 
+                                  data-testid={`input-portfolio-description-${index}`}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <Button 
+                    type="submit" 
+                    disabled={createProfessionalMutation.isPending}
+                    className="flex-1"
+                    data-testid="button-create-profile"
+                  >
+                    {createProfessionalMutation.isPending ? "Creating..." : "Create Professional Profile"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfessionalDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [profileCreated, setProfileCreated] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -27,9 +407,10 @@ export default function ProfessionalDashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch professional data
-  const { data: professional } = useQuery({
+  const { data: professional, isLoading: professionalLoading, error: professionalError } = useQuery({
     queryKey: ["/api/professionals/my"],
-    enabled: !!user && (user as any).role === 'professional',
+    enabled: !!user, // Enable for any authenticated user
+    retry: false,
   });
 
   const { data: applications = [] } = useQuery({
@@ -55,7 +436,8 @@ export default function ProfessionalDashboard() {
     );
   }
 
-  if ((user as any)?.role !== 'professional') {
+  // If user already has a different role and it's not professional-related, redirect
+  if ((user as any)?.role && (user as any)?.role !== 'professional' && (user as any)?.role !== 'company') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
@@ -65,6 +447,43 @@ export default function ProfessionalDashboard() {
               <p className="text-muted-foreground mb-4">This dashboard is only accessible to professionals.</p>
               <Button onClick={() => window.location.href = "/"} data-testid="button-home">
                 Go Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show profile creation form if no professional profile exists
+  if (!professionalLoading && !professional && !profileCreated) {
+    // Check if this is a 404 or if user doesn't have professional role yet
+    const errorMessage = professionalError?.message || '';
+    const is404 = errorMessage.includes('404') || errorMessage.includes('not found') || 
+                  (professionalError as any)?.status === 404;
+    
+    // Show profile creation form for 404s, new users, or company users wanting to switch
+    const shouldShowProfileForm = is404 || 
+                                 !(user as any)?.role || 
+                                 (user as any)?.role === 'company' ||
+                                 !professionalError; // Default to showing form if no error
+    
+    if (shouldShowProfileForm) {
+      return (
+        <ProfessionalProfileForm onSuccess={() => setProfileCreated(true)} />
+      );
+    }
+    
+    // Only show error for genuine server errors (not 404s)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-foreground mb-4">Error Loading Profile</h1>
+              <p className="text-muted-foreground mb-4">Unable to load professional information. Please try again.</p>
+              <Button onClick={() => window.location.reload()} data-testid="button-retry">
+                Retry
               </Button>
             </div>
           </CardContent>
