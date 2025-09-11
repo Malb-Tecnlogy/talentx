@@ -3,7 +3,7 @@ import logoImage from "@assets/logo-removebg-preview_1757611508140.png";
 
 export default function Navbar() {
   return (
-    <nav className="bg-slate-800 sticky top-0 z-50" data-testid="navbar">
+    <nav className="bg-white sticky top-0 z-50 border-b border-gray-200" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
@@ -16,17 +16,17 @@ export default function Navbar() {
               />
             </div>
             <div className="hidden md:flex space-x-6">
-              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-home">Home</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-find-talent">Find Talent</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-find-work">Find Work</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-about">About</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors font-medium" data-testid="link-enterprise">Enterprise</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-home">Home</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-enterprise">Enterprise</a>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
               variant="ghost"
-              className="text-white hover:text-white hover:bg-white/10 font-medium"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium"
               onClick={() => window.location.href = "/api/login"}
               data-testid="button-login"
             >
