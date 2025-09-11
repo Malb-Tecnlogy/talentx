@@ -1,38 +1,34 @@
 import { Button } from "@/components/ui/button";
-import { Rocket } from "lucide-react";
+import logoImage from "@assets/logo_1757610303323.png";
 
 export default function Navbar() {
   return (
-    <nav className="bg-background border-b border-border sticky top-0 z-50" data-testid="navbar">
+    <nav className="bg-slate-800 sticky top-0 z-50" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Rocket className="text-primary-foreground" size={16} />
-              </div>
-              <span className="text-xl font-bold text-foreground" data-testid="text-brand">TalentX</span>
+              <img 
+                src={logoImage} 
+                alt="TalentX Logo" 
+                className="h-8 w-auto"
+                data-testid="logo"
+              />
             </div>
             <div className="hidden md:flex space-x-6">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-find-talent">Find Talent</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-find-work">Find Work</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-about">About</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-enterprise">Enterprise</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-home">Home</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-empresas">Empresas</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-candidatos">Candidatos</a>
+              <a href="#" className="text-white/80 hover:text-white transition-colors" data-testid="link-sobre">Sobre</a>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
-              variant="ghost" 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full"
               onClick={() => window.location.href = "/api/login"}
-              data-testid="button-login"
+              data-testid="button-contato"
             >
-              Log In
-            </Button>
-            <Button 
-              onClick={() => window.location.href = "/api/login"}
-              data-testid="button-signup"
-            >
-              Sign Up
+              Contato
             </Button>
           </div>
         </div>
