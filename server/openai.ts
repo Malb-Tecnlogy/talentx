@@ -70,7 +70,7 @@ Focus on technical skills alignment, experience relevance, and overall fit.
     };
   } catch (error) {
     console.error("OpenAI matching analysis failed:", error);
-    throw new Error("Failed to analyze job-professional match: " + error.message);
+    throw new Error("Failed to analyze job-professional match: " + (error as Error).message);
   }
 }
 
@@ -124,7 +124,7 @@ Only recommend jobs with match scores above 60. Limit to top 5 recommendations.
     return Array.isArray(result.recommendations) ? result.recommendations : [];
   } catch (error) {
     console.error("OpenAI job recommendations failed:", error);
-    throw new Error("Failed to generate job recommendations: " + error.message);
+    throw new Error("Failed to generate job recommendations: " + (error as Error).message);
   }
 }
 
@@ -182,6 +182,6 @@ Consider current tech trends, skill demand, and profile completeness.
     };
   } catch (error) {
     console.error("OpenAI profile analysis failed:", error);
-    throw new Error("Failed to analyze professional profile: " + error.message);
+    throw new Error("Failed to analyze professional profile: " + (error as Error).message);
   }
 }

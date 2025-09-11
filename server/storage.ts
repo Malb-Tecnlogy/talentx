@@ -121,7 +121,13 @@ export class DatabaseStorage implements IStorage {
 
   // Professional operations
   async createProfessional(professional: InsertProfessional): Promise<Professional> {
-    const [newProfessional] = await db.insert(professionals).values(professional).returning();
+    const [newProfessional] = await db.insert(professionals).values({
+      ...professional,
+      skills: professional.skills ? JSON.stringify(professional.skills) : null,
+      portfolio: professional.portfolio ? JSON.stringify(professional.portfolio) : null,
+      education: professional.education ? JSON.stringify(professional.education) : null,
+      certifications: professional.certifications ? JSON.stringify(professional.certifications) : null,
+    }).returning();
     return newProfessional;
   }
 
@@ -136,9 +142,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProfessional(id: string, professional: Partial<InsertProfessional>): Promise<Professional> {
+    const updateData: any = { ...professional, updatedAt: new Date() };
+    
+    // Handle JSON fields properly
+    if (professional.skills) {
+      updateData.skills = JSON.stringify(professional.skills);
+    }
+    if (professional.portfolio) {
+      updateData.portfolio = JSON.stringify(professional.portfolio);
+    }
+    if (professional.education) {
+      updateData.education = JSON.stringify(professional.education);
+    }
+    if (professional.certifications) {
+      updateData.certifications = JSON.stringify(professional.certifications);
+    }
+    
     const [updated] = await db
       .update(professionals)
-      .set({ ...professional, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(professionals.id, id))
       .returning();
     return updated;
@@ -167,7 +189,10 @@ export class DatabaseStorage implements IStorage {
 
   // Job operations
   async createJob(job: InsertJob): Promise<Job> {
-    const [newJob] = await db.insert(jobs).values(job).returning();
+    const [newJob] = await db.insert(jobs).values({
+      ...job,
+      skills: job.skills ? JSON.stringify(job.skills) : '[]'
+    }).returning();
     return newJob;
   }
 
@@ -207,9 +232,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateJob(id: string, job: Partial<InsertJob>): Promise<Job> {
+    const updateData: any = { ...job, updatedAt: new Date() };
+    
+    // Handle JSON fields properly
+    if (job.skills) {
+      updateData.skills = JSON.stringify(job.skills);
+    }
+    
     const [updated] = await db
       .update(jobs)
-      .set({ ...job, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(jobs.id, id))
       .returning();
     return updated;

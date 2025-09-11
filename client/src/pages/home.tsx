@@ -7,11 +7,11 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (user?.role === 'company') {
+    if ((user as any)?.role === 'company') {
       setLocation('/company');
-    } else if (user?.role === 'professional') {
+    } else if ((user as any)?.role === 'professional') {
       setLocation('/professional');
-    } else if (user?.role === 'admin') {
+    } else if ((user as any)?.role === 'admin') {
       setLocation('/admin');
     }
   }, [user, setLocation]);

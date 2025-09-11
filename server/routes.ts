@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchQuery: { skills?: string[]; availability?: string } = {};
       
       if (skills) {
-        searchQuery.skills = Array.isArray(skills) ? skills : skills.split(',');
+        searchQuery.skills = Array.isArray(skills) ? skills as string[] : (skills as string).split(',');
       }
       if (availability) {
         searchQuery.availability = availability as string;
@@ -337,11 +337,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("AI analysis failed:", aiError);
       }
       
-      const application = await storage.createApplication({
-        ...applicationData,
-        matchScore,
-        aiAnalysis
-      });
+      // Create application with AI analysis stored separately
+      const application = await storage.createApplication(applicationData);
+      
+      // Update with AI analysis if available
+      if (matchScore > 0 || aiAnalysis) {
+        await storage.updateApplication(application.id, {
+          matchScore: matchScore,
+          aiAnalysis: aiAnalysis as any
+        });
+      }
       
       // Notify company about new application
       const company = await storage.getCompany(job.companyId);
@@ -544,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      let contracts = [];
+      let contracts: any[] = [];
       
       if (user?.role === 'company') {
         const company = await storage.getCompanyByUserId(userId);

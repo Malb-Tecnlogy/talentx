@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 interface WebSocketMessage {
-  type: 'notification' | 'job_match' | 'application_update' | 'contract_update' | 'connection' | 'pong';
+  type: 'notification' | 'job_match' | 'application_update' | 'contract_update' | 'connection' | 'pong' | 'ping';
   data: any;
 }
 
@@ -39,7 +39,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws?userId=${user.id}&role=${user.role}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws?userId=${(user as any).id}&role=${(user as any).role}`;
       
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;

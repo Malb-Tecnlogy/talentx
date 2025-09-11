@@ -29,7 +29,7 @@ export default function CompanyDashboard() {
   // Fetch company data
   const { data: company } = useQuery({
     queryKey: ["/api/companies/my"],
-    enabled: !!user && user.role === 'company',
+    enabled: !!user && (user as any).role === 'company',
   });
 
   const { data: jobs = [] } = useQuery({
