@@ -7,9 +7,10 @@ import { analyzeJobProfessionalMatch, generateJobRecommendations, analyzeProfess
 import { insertJobSchema, insertApplicationSchema, insertCompanySchema, insertProfessionalSchema, insertContractSchema } from "@shared/schema";
 import { z } from "zod";
 // Import necessary database functions and schemas
-import { db } from './db'; // Assuming db is exported from './db'
-import { users, eq } from './db/schema'; // Assuming users and eq are exported from './db/schema'
-import bcrypt from 'bcrypt'; // Assuming bcrypt is installed and available
+import { db } from './db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
