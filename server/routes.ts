@@ -80,8 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.id, foundUser.id));
 
       // Create session
-      req.session.userId = foundUser.id;
-      req.session.user = {
+      (req.session as any).userId = foundUser.id;
+      (req.session as any).user = {
         id: foundUser.id,
         email: foundUser.email,
         firstName: foundUser.firstName,
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         message: "Login successful",
-        user: req.session.user
+        user: (req.session as any).user
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchQuery: { skills?: string[]; availability?: string } = {};
 
       if (skills) {
-        searchQuery.skills = Array.isArray(skills) ? skills as string[] : (skills as string).split(',');
+        searchQuery.skills = Array.isArray(skills) ? skills.map(s => String(s)) : (skills as string).split(',');
       }
       if (availability) {
         searchQuery.availability = availability as string;
@@ -413,7 +413,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update with AI analysis if available
       if (matchScore > 0 || aiAnalysis) {
         await storage.updateApplication(application.id, {
-          matchScore: matchScore,
           aiAnalysis: aiAnalysis as any
         });
       }
