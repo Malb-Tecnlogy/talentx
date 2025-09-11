@@ -14,14 +14,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { Professional } from "@shared/schema";
 
 // Professional profile form schema
 const professionalProfileSchema = z.object({
   title: z.string().min(1, "Job title is required"),
   bio: z.string().optional(),
   skills: z.array(z.string()).min(1, "At least one skill is required"),
-  experience: z.number().min(0, "Experience must be 0 or more years").optional(),
-  hourlyRate: z.number().min(0, "Hourly rate must be positive").optional(),
+  experience: z.coerce.number().min(0, "Experience must be 0 or more years").optional(),
+  hourlyRate: z.string().optional(),
   availability: z.string().optional(),
   location: z.string().optional(),
   timezone: z.string().optional(),
@@ -46,8 +47,8 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
       title: "",
       bio: "",
       skills: [],
-      experience: 0,
-      hourlyRate: 0,
+      experience: undefined,
+      hourlyRate: "",
       availability: "available",
       location: "",
       timezone: "",
@@ -182,7 +183,7 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
                               type="number" 
                               placeholder="50" 
                               {...field} 
-                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              onChange={(e) => field.onChange(e.target.value)}
                               data-testid="input-professional-rate"
                             />
                           </FormControl>
@@ -407,7 +408,7 @@ export default function ProfessionalDashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch professional data
-  const { data: professional, isLoading: professionalLoading, error: professionalError } = useQuery({
+  const { data: professional, isLoading: professionalLoading, error: professionalError } = useQuery<Professional>({
     queryKey: ["/api/professionals/my"],
     enabled: !!user, // Enable for any authenticated user
     retry: false,
@@ -517,14 +518,14 @@ export default function ProfessionalDashboard() {
                 <h3 className="font-semibold text-card-foreground" data-testid="text-professional-name">
                   {(user as any)?.firstName} {(user as any)?.lastName}
                 </h3>
-                <p className="text-sm text-muted-foreground">{professional?.title || 'Professional'}</p>
+                <p className="text-sm text-muted-foreground">{(professional as Professional)?.title || 'Professional'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-accent rounded-full"></div>
                 <span className="text-sm text-muted-foreground" data-testid="text-availability">
-                  {professional?.availability || 'Available'}
+                  {(professional as Professional)?.availability || 'Available'}
                 </span>
               </div>
               <Button 
@@ -655,12 +656,12 @@ export default function ProfessionalDashboard() {
               <div className="mb-6">
                 <h5 className="text-sm font-medium text-card-foreground mb-3">Technical Skills</h5>
                 <div className="flex flex-wrap gap-2">
-                  {(professional?.skills as string[] || []).map((skill, index) => (
+                  {((professional as Professional)?.skills || []).map((skill, index) => (
                     <Badge key={index} variant="outline" data-testid={`badge-skill-${index}`}>
                       {skill}
                     </Badge>
                   ))}
-                  {(!professional?.skills || professional.skills.length === 0) && (
+                  {(!(professional as Professional)?.skills || (professional as Professional)?.skills?.length === 0) && (
                     <p className="text-sm text-muted-foreground" data-testid="text-no-skills">
                       No skills added yet.
                     </p>
@@ -670,7 +671,7 @@ export default function ProfessionalDashboard() {
               <div>
                 <h5 className="text-sm font-medium text-card-foreground mb-3">Recent Work</h5>
                 <div className="space-y-3">
-                  {(professional?.portfolio as any[] || []).slice(0, 2).map((project, index) => (
+                  {((professional as Professional)?.portfolio || []).slice(0, 2).map((project, index) => (
                     <div key={index} className="flex items-center space-x-3" data-testid={`card-portfolio-${index}`}>
                       <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                         <ListTodo className="text-primary" size={16} />
@@ -685,7 +686,7 @@ export default function ProfessionalDashboard() {
                       </div>
                     </div>
                   ))}
-                  {(!professional?.portfolio || professional.portfolio.length === 0) && (
+                  {(!(professional as Professional)?.portfolio || (professional as Professional)?.portfolio?.length === 0) && (
                     <div className="text-center py-4 text-muted-foreground" data-testid="text-no-portfolio">
                       No portfolio items yet. <Button variant="link" className="p-0">Add your work</Button>
                     </div>
