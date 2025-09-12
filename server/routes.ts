@@ -47,42 +47,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Login endpoint for email/password authentication
   app.post("/api/login", async (req, res) => {
-    console.log(`[LOGIN] Login attempt for email: ${req.body?.email}`);
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        console.log(`[LOGIN] Missing credentials - email: ${!!email}, password: ${!!password}`);
         return res.status(400).json({ message: "Email and password are required" });
       }
 
       // Find user by email (case-insensitive)
-      console.log(`[LOGIN] Searching for user with email: ${email.toLowerCase()}`);
       const userResult = await db.select().from(users).where(sql`lower(${users.email}) = ${email.toLowerCase()}`).limit(1);
 
       if (userResult.length === 0) {
-        console.log(`[LOGIN] User not found for email: ${email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const foundUser = userResult[0];
-      console.log(`[LOGIN] User found: ${foundUser.email}, has password: ${!!foundUser.passwordHash}`);
 
       // Check password
       if (!foundUser.passwordHash) {
-        console.log(`[LOGIN] User has no password hash: ${foundUser.email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log(`[LOGIN] Comparing password for user: ${foundUser.email}`);
       const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash);
 
       if (!isValidPassword) {
-        console.log(`[LOGIN] Invalid password for user: ${foundUser.email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
-      console.log(`[LOGIN] Login successful for user: ${foundUser.email}`);
 
       // Update last login
       await db.update(users)
