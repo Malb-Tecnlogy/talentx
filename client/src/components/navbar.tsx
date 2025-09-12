@@ -17,7 +17,7 @@ export default function Navbar() {
               />
             </Link>
             <div className="hidden md:flex space-x-6">
-              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-home">Home</Link>
+              <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</Link>
               <Link href="/jobs" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-jobs">Jobs</Link>
               <Link href="/company" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</Link>
               <Link href="/professional" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</Link>
