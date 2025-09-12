@@ -4,6 +4,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import jwksClient from "jwks-client";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -46,8 +47,52 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
+// Regenerate session ID to prevent session fixation attacks
+export function regenerateSession(req: any): Promise<void> {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((err: any) => {
+      if (err) {
+        console.error('Session regeneration error:', err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Validate state parameter to prevent CSRF attacks
+export function validateState(req: any, providedState: string): boolean {
+  const sessionState = req.session?.oauthState;
+  if (!sessionState || sessionState !== providedState) {
+    console.warn('OAuth state validation failed:', { sessionState, providedState });
+    return false;
+  }
+  // Clear the state after validation
+  delete req.session.oauthState;
+  return true;
+}
+
+// Store OAuth state in session
+export function storeOAuthState(req: any, state: string, nonce?: string): void {
+  req.session.oauthState = state;
+  if (nonce) {
+    req.session.oauthNonce = nonce;
+  }
+}
+
+// CSRF Protection - Generate secure state parameter
+export function generateSecureState(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+// Generate secure nonce for Apple Sign In
+export function generateSecureNonce(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
 // Google OAuth Functions
-export async function getGoogleOAuthURL(state?: string): Promise<string> {
+export async function getGoogleOAuthURL(state: string): Promise<string> {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
@@ -55,7 +100,7 @@ export async function getGoogleOAuthURL(state?: string): Promise<string> {
     scope: 'openid email profile',
     access_type: 'offline',
     prompt: 'consent',
-    ...(state && { state })
+    state
   });
   
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -143,50 +188,91 @@ export async function createOrLinkOAuthUser(provider: 'google' | 'apple', userDa
 }
 
 // Apple Sign In Functions
-export async function getAppleOAuthURL(state?: string): Promise<string> {
+export async function getAppleOAuthURL(state: string, nonce: string): Promise<string> {
   const params = new URLSearchParams({
     client_id: process.env.APPLE_CLIENT_ID!,
     redirect_uri: process.env.APPLE_REDIRECT_URI!,
     response_type: 'code id_token',
     scope: 'name email',
     response_mode: 'form_post',
-    ...(state && { state })
+    state,
+    nonce
   });
   
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
 }
 
-// Validate Apple ID token (simplified - in production, verify with Apple's public keys)
-export async function validateAppleIdToken(idToken: string): Promise<any> {
+// Apple JWKS client for secure token verification
+const appleJwksClient = jwksClient({
+  jwksUri: 'https://appleid.apple.com/auth/keys',
+  cache: true,
+  cacheMaxAge: 24 * 60 * 60 * 1000, // 24 hours
+  rateLimit: true,
+  jwksRequestsPerMinute: 5
+});
+
+// Get Apple signing key
+function getAppleSigningKey(kid: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    appleJwksClient.getSigningKey(kid, (err, key) => {
+      if (err) {
+        reject(err);
+      } else {
+        const signingKey = key?.getPublicKey();
+        if (signingKey) {
+          resolve(signingKey);
+        } else {
+          reject(new Error('Unable to get signing key'));
+        }
+      }
+    });
+  });
+}
+
+// Validate Apple ID token with proper signature verification
+export async function validateAppleIdToken(idToken: string, expectedNonce?: string): Promise<any> {
   try {
-    // In production, you should fetch and verify against Apple's public keys
-    // For now, we'll decode without verification (NOT SECURE for production)
+    // Decode without verification to get header
     const decoded = jwt.decode(idToken, { complete: true });
     
     if (!decoded || typeof decoded === 'string') {
-      throw new Error('Invalid Apple ID token');
+      throw new Error('Invalid Apple ID token format');
     }
     
-    const payload = decoded.payload as any;
+    const { header } = decoded;
+    const { kid } = header;
     
-    // Basic validation
-    if (payload.iss !== 'https://appleid.apple.com') {
-      throw new Error('Invalid Apple ID token issuer');
+    if (!kid) {
+      throw new Error('Missing key ID in Apple ID token header');
     }
     
-    if (payload.aud !== process.env.APPLE_CLIENT_ID) {
-      throw new Error('Invalid Apple ID token audience');
+    // Get Apple's signing key
+    const signingKey = await getAppleSigningKey(kid);
+    
+    // Verify the token with Apple's public key
+    const verifiedPayload = jwt.verify(idToken, signingKey, {
+      algorithms: ['RS256'],
+      issuer: 'https://appleid.apple.com',
+      audience: process.env.APPLE_CLIENT_ID
+    }) as any;
+    
+    // Validate nonce if provided (SHA256 hash of original nonce)
+    if (expectedNonce) {
+      const expectedNonceHash = crypto.createHash('sha256').update(expectedNonce).digest('base64url');
+      if (verifiedPayload.nonce !== expectedNonceHash) {
+        throw new Error('Nonce validation failed');
+      }
     }
     
-    // Check expiration
-    if (Date.now() >= payload.exp * 1000) {
-      throw new Error('Apple ID token expired');
+    // Additional security checks
+    if (verifiedPayload.email && !verifiedPayload.email_verified) {
+      throw new Error('Apple email not verified');
     }
     
-    return payload;
+    return verifiedPayload;
   } catch (error) {
     console.error('Apple ID token validation error:', error);
-    throw new Error('Invalid Apple ID token');
+    throw new Error(`Invalid Apple ID token: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -203,4 +289,26 @@ export function extractAppleUserInfo(idTokenPayload: any, userInfo?: any): {
     firstName: userInfo?.name?.firstName,
     lastName: userInfo?.name?.lastName
   };
+}
+
+// Get appropriate dashboard redirect based on user role
+export function getDashboardRedirect(userRole: string, isNewUser: boolean = false): string {
+  let redirect = '/';
+  
+  switch (userRole) {
+    case 'admin':
+      redirect = '/admin-dashboard';
+      break;
+    case 'company':
+      redirect = '/company-dashboard';
+      break;
+    case 'professional':
+      redirect = '/professional-dashboard';
+      break;
+    default:
+      redirect = '/dashboard';
+      break;
+  }
+  
+  return isNewUser ? `${redirect}?welcome=true` : redirect;
 }

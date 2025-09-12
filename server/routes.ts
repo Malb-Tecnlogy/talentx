@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, getGoogleOAuthURL, exchangeGoogleCode, getGoogleUserInfo, createOrLinkOAuthUser, getAppleOAuthURL, validateAppleIdToken, extractAppleUserInfo } from "./replitAuth";
+import { setupAuth, isAuthenticated, getGoogleOAuthURL, exchangeGoogleCode, getGoogleUserInfo, createOrLinkOAuthUser, getAppleOAuthURL, validateAppleIdToken, extractAppleUserInfo, generateSecureState, generateSecureNonce, regenerateSession, validateState, storeOAuthState, getDashboardRedirect } from "./replitAuth";
 import { initializeWebSocket, getWebSocketService } from "./websocket";
 import { analyzeJobProfessionalMatch, generateJobRecommendations, analyzeProfessionalProfile } from "./openai";
 import { insertJobSchema, insertApplicationSchema, insertCompanySchema, insertProfessionalSchema, insertContractSchema } from "@shared/schema";
@@ -79,6 +79,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ lastLoginAt: new Date() })
         .where(eq(users.id, foundUser.id));
 
+      // Regenerate session to prevent session fixation
+      await regenerateSession(req);
+      
       // Create session
       (req.session as any).userId = foundUser.id;
       (req.session as any).user = {
