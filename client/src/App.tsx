@@ -1,54 +1,31 @@
+// App.tsx using blueprint:javascript_auth_all_persistance
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
-import Landing from "@/pages/landing";
-import Home from "@/pages/home";
-import FindTalent from "@/pages/find-talent";
-import FindWork from "@/pages/find-work";
-import About from "@/pages/about";
-import Enterprise from "@/pages/enterprise";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { queryClient } from "@/lib/queryClient";
+import HomePage from "@/pages/home-page";
+import AuthPage from "@/pages/auth-page";
 import CompanyDashboard from "@/pages/company-dashboard";
 import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
-import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="loading-spinner">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <Switch>
-      {/* Public routes available to all users */}
-      <Route path="/find-talent" component={FindTalent} />
-      <Route path="/find-work" component={FindWork} />
-      <Route path="/about" component={About} />
-      <Route path="/enterprise" component={Enterprise} />
-
-      {/* Login route - always accessible */}
-      <Route path="/login" component={Login} />
+      {/* Protected routes */}
+      <ProtectedRoute path="/" component={HomePage} />
+      <ProtectedRoute path="/company" component={CompanyDashboard} />
+      <ProtectedRoute path="/professional" component={ProfessionalDashboard} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
       
-      {/* Authentication-based routes */}
-      {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/company" component={CompanyDashboard} />
-          <Route path="/professional" component={ProfessionalDashboard} />
-          <Route path="/admin" component={AdminDashboard} />
-        </>
-      )}
+      {/* Public route */}
+      <Route path="/auth" component={AuthPage} />
+      
+      {/* Fallback */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -57,10 +34,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

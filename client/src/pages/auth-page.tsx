@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, UserPlus, LogIn, Briefcase, User, Shield } from "lucide-react";
+import { Eye, EyeOff, UserPlus, LogIn, Briefcase, User, Shield, Loader2 } from "lucide-react";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
