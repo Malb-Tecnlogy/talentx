@@ -20,27 +20,27 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-card-foreground mb-4">For Companies</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-find-talent">Find Talent</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-enterprise">Enterprise Solutions</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-success-stories">Success Stories</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-find-talent">Find Talent</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-enterprise">Enterprise Solutions</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-success-stories">Success Stories</a></p>
             </div>
           </div>
           
           <div>
             <h4 className="font-semibold text-card-foreground mb-4">For Professionals</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-find-work">Find Work</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-build-profile">Build Profile</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-resources">Resources</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-find-work">Find Work</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-build-profile">Build Profile</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-resources">Resources</a></p>
             </div>
           </div>
           
           <div>
             <h4 className="font-semibold text-card-foreground mb-4">Company</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-about">About</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-privacy">Privacy Policy</a></p>
-              <p><a href="#" className="hover:text-foreground transition-colors" data-testid="link-terms">Terms of Service</a></p>
+              <p><a href="/about" className="hover:text-foreground transition-colors" data-testid="link-about">About</a></p>
+              <p><a href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">Privacy Policy</a></p>
+              <p><a href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms">Terms of Service</a></p>
             </div>
           </div>
         </div>
