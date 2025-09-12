@@ -116,7 +116,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google OAuth routes
   app.get('/api/auth/google', async (req, res) => {
     try {
-      const state = req.query.state as string;
+      // Generate secure state for CSRF protection
+      const state = generateSecureState();
+      
+      // Store state in session for validation
+      storeOAuthState(req.session as any, state);
+      
       const authUrl = await getGoogleOAuthURL(state);
       res.redirect(authUrl);
     } catch (error) {
@@ -127,10 +132,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google/callback', async (req, res) => {
     try {
-      const { code, error: oauthError } = req.query;
+      const { code, state, error: oauthError } = req.query;
       
       if (oauthError || !code) {
         console.error('Google OAuth error:', oauthError);
+        return res.redirect('/login?error=oauth_failed');
+      }
+      
+      // Validate CSRF state
+      if (!state || !validateOAuthState(req.session as any, state as string)) {
+        console.error('OAuth state validation failed');
         return res.redirect('/login?error=oauth_failed');
       }
       
@@ -149,12 +160,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImageUrl: googleUser.picture
       });
       
+      // Regenerate session to prevent fixation attacks
+      await regenerateSession(req);
+      
       // Update last login
       await db.update(users)
-        .set({ lastLoginAt: new Date() })
+        .set({ lastLoginAt: new Date(), updatedAt: new Date() })
         .where(eq(users.id, user.id));
       
-      // Create session
+      // Create secure session
       (req.session as any).userId = user.id;
       (req.session as any).user = {
         id: user.id,
@@ -164,12 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: user.role
       };
       
-      // Redirect based on user status
-      if (isNewUser) {
-        res.redirect('/dashboard?welcome=true');
-      } else {
-        res.redirect('/dashboard');
-      }
+      // Redirect to correct dashboard based on role
+      const redirectUrl = getDashboardRedirect(user, isNewUser);
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
       res.redirect('/login?error=oauth_failed');
@@ -179,9 +190,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apple Sign In routes
   app.get('/api/auth/apple', async (req, res) => {
     try {
-      const state = req.query.state as string;
-      const nonce = crypto.randomBytes(16).toString('hex');
-      const authUrl = await getAppleOAuthURL(state || crypto.randomBytes(16).toString('hex'), nonce);
+      // Generate secure state and nonce for CSRF protection
+      const state = generateSecureState();
+      const nonce = generateSecureNonce();
+      
+      // Store state and nonce in session for validation
+      storeOAuthState(req.session as any, state, nonce);
+      
+      const authUrl = await getAppleOAuthURL(state, nonce);
       res.redirect(authUrl);
     } catch (error) {
       console.error('Apple OAuth initiation error:', error);
@@ -191,15 +207,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/apple/callback', async (req, res) => {
     try {
-      const { code, id_token, user: userString, error: oauthError } = req.body;
+      const { code, id_token, user: userString, state, error: oauthError } = req.body;
       
       if (oauthError || !id_token) {
         console.error('Apple OAuth error:', oauthError);
         return res.redirect('/login?error=oauth_failed');
       }
       
-      // Validate Apple ID token
-      const idTokenPayload = await validateAppleIdToken(id_token);
+      // Validate CSRF state
+      if (!state || !validateOAuthState(req.session as any, state)) {
+        console.error('Apple OAuth state validation failed');
+        return res.redirect('/login?error=oauth_failed');
+      }
+      
+      // Get stored nonce for validation
+      const storedNonce = (req.session as any).oauthNonce;
+      
+      // Validate Apple ID token with nonce
+      const idTokenPayload = await validateAppleIdToken(id_token, storedNonce);
+      
+      // Clear stored nonce after use
+      if ((req.session as any).oauthNonce) {
+        delete (req.session as any).oauthNonce;
+      }
       
       // Parse user info if provided (only on first sign in)
       let userInfo = null;
@@ -217,12 +247,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create or link OAuth user
       const { user, isNewUser } = await createOrLinkOAuthUser('apple', userData);
       
+      // Regenerate session to prevent fixation attacks
+      await regenerateSession(req);
+      
       // Update last login
       await db.update(users)
-        .set({ lastLoginAt: new Date() })
+        .set({ lastLoginAt: new Date(), updatedAt: new Date() })
         .where(eq(users.id, user.id));
       
-      // Create session
+      // Create secure session
       (req.session as any).userId = user.id;
       (req.session as any).user = {
         id: user.id,
@@ -232,12 +265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: user.role
       };
       
-      // Redirect based on user status
-      if (isNewUser) {
-        res.redirect('/dashboard?welcome=true');
-      } else {
-        res.redirect('/dashboard');
-      }
+      // Redirect to correct dashboard based on role
+      const redirectUrl = getDashboardRedirect(user, isNewUser);
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Apple OAuth callback error:', error);
       res.redirect('/login?error=oauth_failed');

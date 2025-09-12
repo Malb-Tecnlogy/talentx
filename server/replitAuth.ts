@@ -5,11 +5,7 @@ import { storage } from "./storage";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
-// Type declaration for jwks-client
-declare module 'jwks-client' {
-  export default function(options: any): any;
-}
-import jwksClient from "jwks-client";
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 // Extend session data interface
 declare module 'express-session' {
@@ -62,19 +58,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-// Regenerate session ID to prevent session fixation attacks
-export function regenerateSession(req: any): Promise<void> {
-  return new Promise((resolve, reject) => {
-    req.session.regenerate((err: any) => {
-      if (err) {
-        console.error('Session regeneration error:', err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
+// Note: regenerateSession function is defined at the end of the file
 
 // Validate state parameter to prevent CSRF attacks
 export function validateState(req: any, providedState: string): boolean {
@@ -88,23 +72,7 @@ export function validateState(req: any, providedState: string): boolean {
   return true;
 }
 
-// Store OAuth state in session
-export function storeOAuthState(req: any, state: string, nonce?: string): void {
-  req.session.oauthState = state;
-  if (nonce) {
-    req.session.oauthNonce = nonce;
-  }
-}
-
-// CSRF Protection - Generate secure state parameter
-export function generateSecureState(): string {
-  return crypto.randomBytes(32).toString('base64url');
-}
-
-// Generate secure nonce for Apple Sign In
-export function generateSecureNonce(): string {
-  return crypto.randomBytes(32).toString('base64url');
-}
+// Note: OAuth helper functions are defined at the end of the file
 
 // Google OAuth Functions
 export async function getGoogleOAuthURL(state: string): Promise<string> {
@@ -217,62 +185,32 @@ export async function getAppleOAuthURL(state: string, nonce: string): Promise<st
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
 }
 
-// Apple JWKS client for secure token verification (commented out for now)
-// const appleJwksClient = jwksClient({
-//   jwksUri: 'https://appleid.apple.com/auth/keys',
-//   cache: true,
-//   cacheMaxAge: 86400000, // 24 hours in ms
-//   rateLimit: true,
-//   jwksRequestsPerMinute: 5
-// });
-
-// Get Apple signing key (temporarily disabled)
-function getAppleSigningKey(kid: string): Promise<string> {
-  // Simplified for demo - in production, use proper JWKS verification
-  return Promise.resolve('demo-key');
-}
+// Apple JWKS URL for secure token verification
+const APPLE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
 // Validate Apple ID token with proper signature verification
 export async function validateAppleIdToken(idToken: string, expectedNonce?: string): Promise<any> {
   try {
-    // Decode without verification to get header
-    const decoded = jwt.decode(idToken, { complete: true });
-    
-    if (!decoded || typeof decoded === 'string') {
-      throw new Error('Invalid Apple ID token format');
-    }
-    
-    const { header } = decoded;
-    const { kid } = header;
-    
-    if (!kid) {
-      throw new Error('Missing key ID in Apple ID token header');
-    }
-    
-    // Get Apple's signing key
-    const signingKey = await getAppleSigningKey(kid);
-    
-    // Verify the token with Apple's public key
-    const verifiedPayload = jwt.verify(idToken, signingKey, {
-      algorithms: ['RS256'],
+    // Verify the token with Apple's public keys using jose library
+    const { payload } = await jwtVerify(idToken, APPLE_JWKS, {
       issuer: 'https://appleid.apple.com',
-      audience: process.env.APPLE_CLIENT_ID
-    }) as any;
+      audience: process.env.APPLE_CLIENT_ID,
+    });
     
     // Validate nonce if provided (SHA256 hash of original nonce)
-    if (expectedNonce) {
+    if (expectedNonce && payload.nonce) {
       const expectedNonceHash = crypto.createHash('sha256').update(expectedNonce).digest('base64url');
-      if (verifiedPayload.nonce !== expectedNonceHash) {
+      if (payload.nonce !== expectedNonceHash) {
         throw new Error('Nonce validation failed');
       }
     }
     
     // Additional security checks
-    if (verifiedPayload.email && !verifiedPayload.email_verified) {
+    if (payload.email && !payload.email_verified) {
       throw new Error('Apple email not verified');
     }
     
-    return verifiedPayload;
+    return payload;
   } catch (error) {
     console.error('Apple ID token validation error:', error);
     throw new Error(`Invalid Apple ID token: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -295,23 +233,66 @@ export function extractAppleUserInfo(idTokenPayload: any, userInfo?: any): {
 }
 
 // Get appropriate dashboard redirect based on user role
-export function getDashboardRedirect(userRole: string, isNewUser: boolean = false): string {
-  let redirect = '/';
+export function getDashboardRedirect(user: any, isNewUser: boolean = false): string {
+  const welcomeParam = isNewUser ? '?welcome=true' : '';
   
-  switch (userRole) {
+  switch (user.role) {
     case 'admin':
-      redirect = '/admin-dashboard';
-      break;
+      return `/admin${welcomeParam}`;
     case 'company':
-      redirect = '/company-dashboard';
-      break;
+      return `/company${welcomeParam}`;
     case 'professional':
-      redirect = '/professional-dashboard';
-      break;
+      return `/professional${welcomeParam}`;
     default:
-      redirect = '/dashboard';
-      break;
+      return `/${welcomeParam}`;
   }
-  
-  return isNewUser ? `${redirect}?welcome=true` : redirect;
+}
+
+// CSRF protection helpers
+export function generateSecureState(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+export function generateSecureNonce(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+export function storeOAuthState(session: any, state: string, nonce?: string) {
+  session.oauthState = state;
+  if (nonce) {
+    session.oauthNonce = nonce;
+  }
+}
+
+export function validateOAuthState(session: any, receivedState: string): boolean {
+  const storedState = session.oauthState;
+  if (!storedState || storedState !== receivedState) {
+    return false;
+  }
+  // Clear stored state after validation
+  delete session.oauthState;
+  return true;
+}
+
+export function validateOAuthNonce(session: any, expectedNonce: string): boolean {
+  const storedNonce = session.oauthNonce;
+  if (!storedNonce || storedNonce !== expectedNonce) {
+    return false;
+  }
+  // Clear stored nonce after validation
+  delete session.oauthNonce;
+  return true;
+}
+
+// Regenerate session to prevent fixation attacks
+export function regenerateSession(req: any): Promise<void> {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((err: any) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 }
