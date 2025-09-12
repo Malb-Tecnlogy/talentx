@@ -1,0 +1,69 @@
+package br.com.dasa.leia.production.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.Date;
+import java.util.List;
+
+@Repository
+public interface MonitoramentoTuboPerdidoRepository extends JpaRepository<LogOs, Integer> {
+
+    // 3.1 Consulta Principal
+    @Modifying
+    @Query(value = "CREATE TEMPORARY TABLE IF NOT EXISTS tmp.pend(" +
+            "idExameSolicitado integer not null primary key, " +
+            "idOs integer, idEntidade integer, nomeEntidade varchar(60), " +
+            "idPaciente integer, nomePaciente varchar(60), " +
+            "idExame varchar(10), situacao varchar(20))", nativeQuery = true)
+    void criarTabelaTemporaria();
+    
+    @Modifying
+    @Query(value = "TRUNCATE tmp.pend", nativeQuery = true)
+    void limparTabelaTemporaria();
+    
+    @Modifying
+    @Query(value = "INSERT INTO tmp.pend (idExameSolicitado, idOs, idEntidade, nomeEntidade, idPaciente, nomePaciente, idExame) " +
+            "SELECT solSid, solSidOrdem, solEntidade, entNome, pctSid, pctNome, solExame " +
+            "FROM log_os " +
+            "INNER JOIN exames_solicitados ON solSidOrdem = idOrdem " +
+            "INNER JOIN ordem_servico ON ordSid = solSidOrdem " +
+            "INNER JOIN entidades ON entSid = solEntidade " +
+            "INNER JOIN pacientes ON pctSid = ordPct " +
+            "WHERE ordArea < \"5\" " +
+            "AND solDtDigitacao is null " +
+            "AND operacao = \"Distribuicao\" " +
+            "AND data BETWEEN :dataInicio AND :dataFim " +
+            "GROUP BY solsid", nativeQuery = true)
+    void inserirDadosTemporaria(@Param("dataInicio") Date dataInicio, @Param("dataFim") Date dataFim);
+    
+    @Query(value = "SELECT count(*), if(idExameOs is null, \"n\",\"s\") " +
+            "FROM interface.exame " +
+            "LEFT JOIN interface.exameos ON exameos.idExame = exame.idExame " +
+            "AND idSample LIKE :idOs " +
+            "AND situacao = 0 " +
+            "WHERE codExameExterno = :exame", nativeQuery = true)
+    List<Object[]> verificarSituacaoExame(@Param("idOs") String idOs, @Param("exame") String exame);
+    
+    @Query(value = "SELECT * FROM tmp.pend ORDER BY nomeEntidade, idExame", nativeQuery = true)
+    List<Object[]> findTubosPerdidos();
+    
+    // 3.2 Consultas Auxiliares
+    @Query(value = "SELECT entSid, entNome FROM entidades WHERE entsid = :id", nativeQuery = true)
+    List<Object[]> findEntidadeById(@Param("id") Integer id);
+    
+    @Query(value = "SELECT entSid, entNome FROM entidades WHERE entNome LIKE :nome", nativeQuery = true)
+    List<Object[]> findEntidadeByNome(@Param("nome") String nome);
+    
+    @Query(value = "SELECT exaCodigo, exaNome FROM exames WHERE exaDtVigencia > now() AND exaCodigo = :codigo", nativeQuery = true)
+    List<Object[]> findExameByCodigo(@Param("codigo") String codigo);
+    
+    @Query(value = "SELECT exaCodigo, exaNome FROM exames WHERE exaNome LIKE :nome", nativeQuery = true)
+    List<Object[]> findExameByNome(@Param("nome") String nome);
+    
+    @Query(value = "SELECT setCodigo, setNome FROM setores WHERE setNome LIKE :nome", nativeQuery = true)
+    List<Object[]> findSetorByNome(@Param("nome") String nome);
+}
