@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, UserPlus, LogIn, Briefcase, User, Shield, Loader2 } from "lucide-react";
+import { Eye, EyeOff, UserPlus, LogIn, Loader2 } from "lucide-react";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -18,7 +17,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const registerSchema = insertUserSchema.extend({
+const registerSchema = insertUserSchema.omit({ role: true }).extend({
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -47,7 +46,6 @@ export default function AuthPage() {
     email: "",
     firstName: "",
     lastName: "",
-    role: "professional" as const,
   });
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
 
@@ -272,43 +270,6 @@ export default function AuthPage() {
                       )}
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="register-role">Role</Label>
-                      <Select
-                        value={registerData.role}
-                        onValueChange={(value) => setRegisterData({ ...registerData, role: value as any })}
-                        data-testid="select-register-role"
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="professional">
-                            <div className="flex items-center">
-                              <User className="w-4 h-4 mr-2" />
-                              Professional
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="company">
-                            <div className="flex items-center">
-                              <Briefcase className="w-4 h-4 mr-2" />
-                              Company
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="admin">
-                            <div className="flex items-center">
-                              <Shield className="w-4 h-4 mr-2" />
-                              Admin
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {registerErrors.role && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{registerErrors.role}</AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="register-password">Password</Label>
