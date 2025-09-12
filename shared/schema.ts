@@ -39,6 +39,8 @@ export const notificationTypeEnum = pgEnum("notification_type", ["job_match", "a
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email"),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -55,6 +57,8 @@ export const users = pgTable("users", {
 }, (table) => ({
   // Case-insensitive unique email index
   emailUniqueIndex: uniqueIndex("users_email_unique_idx").on(sql`lower(${table.email})`).where(sql`${table.email} IS NOT NULL`),
+  // Username unique index
+  usernameUniqueIndex: uniqueIndex("users_username_unique_idx").on(sql`lower(${table.username})`),
 }));
 
 // OAuth accounts table for external authentication providers
@@ -265,8 +269,10 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
-// Insert schemas
+// Insert schemas  
 export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
   email: true,
   firstName: true,
   lastName: true,
@@ -322,6 +328,7 @@ export const insertOAuthAccountSchema = createInsertSchema(oauthAccounts).omit({
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type Company = typeof companies.$inferSelect;
 export type InsertProfessional = z.infer<typeof insertProfessionalSchema>;

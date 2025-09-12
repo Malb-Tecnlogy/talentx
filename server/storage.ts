@@ -9,6 +9,7 @@ import {
   oauthAccounts,
   type User,
   type UpsertUser,
+  type InsertUser,
   type InsertCompany,
   type Company,
   type InsertProfessional,
@@ -26,11 +27,20 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
+  // Session store for authentication
+  sessionStore: session.SessionStore;
+  
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
   
   // Company operations
   createCompany(company: InsertCompany): Promise<Company>;
@@ -82,10 +92,30 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  public sessionStore: session.SessionStore;
+
+  constructor() {
+    // Initialize session store with PostgreSQL
+    this.sessionStore = new PostgresSessionStore({
+      pool: db as any,
+      createTableIfMissing: true,
+    });
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
