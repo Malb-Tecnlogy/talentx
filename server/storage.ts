@@ -8,6 +8,8 @@ import {
   notifications,
   oauthAccounts,
   type User,
+  type SafeUser,
+  safeUserSchema,
   type UpsertUser,
   type InsertUser,
   type InsertCompany,
@@ -40,9 +42,10 @@ export interface IStorage {
   
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getSafeUser(id: string): Promise<SafeUser | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser): Promise<SafeUser>;
   
   // Company operations
   createCompany(company: InsertCompany): Promise<Company>;
@@ -109,14 +112,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getSafeUser(id: string): Promise<SafeUser | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (!user) return undefined;
+    return safeUserSchema.parse(user);
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+  async createUser(user: InsertUser): Promise<SafeUser> {
     const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
+    return safeUserSchema.parse(newUser);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {

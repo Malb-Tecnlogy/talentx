@@ -13,7 +13,7 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Session storage table (required for Replit Auth)
@@ -325,9 +325,18 @@ export const insertOAuthAccountSchema = createInsertSchema(oauthAccounts).omit({
   updatedAt: true,
 });
 
+// Safe user schema (without sensitive fields)
+export const safeUserSchema = createSelectSchema(users).omit({
+  password: true,
+  passwordHash: true,
+  emailVerificationToken: true,
+  passwordResetToken: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type SafeUser = z.infer<typeof safeUserSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type Company = typeof companies.$inferSelect;

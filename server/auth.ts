@@ -6,7 +6,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, InsertUser } from "@shared/schema";
+import { User as SelectUser, SafeUser, InsertUser, insertUserSchema, safeUserSchema } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -42,6 +42,7 @@ export function setupAuth(app: Express) {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax', // CSRF protection
     },
   };
 
@@ -68,7 +69,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: string, done) => {
     try {
-      const user = await storage.getUser(id);
+      const user = await storage.getSafeUser(id);
       done(null, user);
     } catch (error) {
       done(error);
@@ -77,11 +78,16 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, email, firstName, lastName, role } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+      // Validate request body with Zod
+      const validation = insertUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: validation.error.format() 
+        });
       }
+
+      const { username, password, email, firstName, lastName, role } = validation.data;
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -89,7 +95,7 @@ export function setupAuth(app: Express) {
       }
 
       const hashedPassword = await hashPassword(password);
-      const user = await storage.createUser({
+      const safeUser = await storage.createUser({
         username,
         password: hashedPassword,
         email,
@@ -98,9 +104,9 @@ export function setupAuth(app: Express) {
         role: role || "professional",
       });
 
-      req.login(user, (err) => {
+      req.login(safeUser, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        res.status(201).json(safeUser);
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -120,7 +126,8 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-        return res.status(200).json(user);
+        const safeUser = safeUserSchema.parse(user);
+        return res.status(200).json(safeUser);
       });
     })(req, res, next);
   });
