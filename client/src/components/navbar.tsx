@@ -17,24 +17,24 @@ export default function Navbar() {
               />
             </Link>
             <div className="hidden md:flex space-x-6">
-              <Link href="/find-talent" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</Link>
-              <Link href="/find-work" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</Link>
-              <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">About</Link>
-              <Link href="/enterprise" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-enterprise">Enterprise</Link>
+              <Link href="/company" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-talent">Find Talent</Link>
+              <Link href="/professional" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-find-work">Find Work</Link>
+              <Link href="/admin" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-about">Admin</Link>
+              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors font-medium" data-testid="link-enterprise">Home</Link>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
               variant="ghost"
               className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium"
-              onClick={() => window.location.href = "/login"}
+              onClick={() => window.location.href = "/auth"}
               data-testid="button-login"
             >
               Log In
             </Button>
             <Button 
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-medium"
-              onClick={() => window.location.href = "/login"}
+              onClick={() => window.location.href = "/auth"}
               data-testid="button-signup"
             >
               Sign Up
