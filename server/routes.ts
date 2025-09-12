@@ -9,7 +9,7 @@ import { z } from "zod";
 // Import necessary database functions and schemas
 import { db } from './db';
 import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -54,8 +54,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      // Find user by email
-      const userResult = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+      // Find user by email (case-insensitive)
+      const userResult = await db.select().from(users).where(sql`lower(${users.email}) = ${email.toLowerCase()}`).limit(1);
 
       if (userResult.length === 0) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate CSRF state
-      if (!state || !validateOAuthState(req.session as any, state as string)) {
+      if (!state || !validateState(req.session as any, state as string)) {
         console.error('OAuth state validation failed');
         return res.redirect('/login?error=oauth_failed');
       }
@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate CSRF state
-      if (!state || !validateOAuthState(req.session as any, state)) {
+      if (!state || !validateState(req.session as any, state)) {
         console.error('Apple OAuth state validation failed');
         return res.redirect('/login?error=oauth_failed');
       }

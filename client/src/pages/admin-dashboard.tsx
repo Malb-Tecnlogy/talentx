@@ -85,7 +85,17 @@ export default function AdminDashboard() {
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/logout', { method: 'POST' });
+                    if (response.ok) {
+                      window.location.href = "/login";
+                    }
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                    window.location.href = "/login";
+                  }
+                }}
                 data-testid="button-logout"
               >
                 Logout

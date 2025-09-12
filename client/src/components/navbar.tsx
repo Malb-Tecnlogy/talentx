@@ -27,14 +27,14 @@ export default function Navbar() {
             <Button 
               variant="ghost"
               className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/login"}
               data-testid="button-login"
             >
               Log In
             </Button>
             <Button 
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-medium"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/login"}
               data-testid="button-signup"
             >
               Sign Up

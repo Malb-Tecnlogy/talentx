@@ -19,6 +19,16 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
+    // Client-side validation
+    if (!email || !password) {
+      toast({
+        title: "Validation error",
+        description: "Email and password are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -76,8 +86,8 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 placeholder="asouzamax@gmail.com"
+                data-testid="input-email"
               />
             </div>
             <div className="space-y-2">
@@ -87,8 +97,8 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Admin@2025"
+                placeholder="Enter your password"
+                data-testid="input-password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
