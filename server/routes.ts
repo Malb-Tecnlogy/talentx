@@ -43,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
   // Login endpoint for email/password authentication
   app.post("/api/login", async (req, res) => {
     try {
