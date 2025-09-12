@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { FcGoogle } from "react-icons/fc";
+import { SiApple } from "react-icons/si";
+import { Separator } from "@/components/ui/separator";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -62,7 +65,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md mx-4">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center">Login to TalentX</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,18 +91,44 @@ export default function Login() {
                 placeholder="Admin@2025"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
-            <Button 
-              variant="ghost" 
-              onClick={() => window.location.href = "/api/login"}
-            >
-              Or login with Replit
-            </Button>
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = "/api/auth/google"}
+                className="w-full"
+                data-testid="button-google-auth"
+              >
+                <FcGoogle className="mr-2 h-4 w-4" />
+                Google
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = "/api/auth/apple"}
+                className="w-full"
+                data-testid="button-apple-auth"
+              >
+                <SiApple className="mr-2 h-4 w-4" />
+                Apple
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

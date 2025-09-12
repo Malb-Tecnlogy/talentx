@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, getGoogleOAuthURL, exchangeGoogleCode, getGoogleUserInfo, createOrLinkOAuthUser, getAppleOAuthURL, validateAppleIdToken, extractAppleUserInfo } from "./replitAuth";
 import { initializeWebSocket, getWebSocketService } from "./websocket";
 import { analyzeJobProfessionalMatch, generateJobRecommendations, analyzeProfessionalProfile } from "./openai";
 import { insertJobSchema, insertApplicationSchema, insertCompanySchema, insertProfessionalSchema, insertContractSchema } from "@shared/schema";
@@ -108,6 +108,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logout successful" });
     });
+  });
+
+  // Google OAuth routes
+  app.get('/api/auth/google', async (req, res) => {
+    try {
+      const state = req.query.state as string;
+      const authUrl = await getGoogleOAuthURL(state);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Google OAuth initiation error:', error);
+      res.status(500).json({ message: 'Failed to initiate Google authentication' });
+    }
+  });
+
+  app.get('/api/auth/google/callback', async (req, res) => {
+    try {
+      const { code, error: oauthError } = req.query;
+      
+      if (oauthError || !code) {
+        console.error('Google OAuth error:', oauthError);
+        return res.redirect('/login?error=oauth_failed');
+      }
+      
+      // Exchange code for tokens
+      const tokens = await exchangeGoogleCode(code as string);
+      
+      // Get user info from Google
+      const googleUser = await getGoogleUserInfo(tokens.access_token);
+      
+      // Create or link OAuth user
+      const { user, isNewUser } = await createOrLinkOAuthUser('google', {
+        providerUserId: googleUser.id,
+        email: googleUser.email,
+        firstName: googleUser.given_name,
+        lastName: googleUser.family_name,
+        profileImageUrl: googleUser.picture
+      });
+      
+      // Update last login
+      await db.update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, user.id));
+      
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      };
+      
+      // Redirect based on user status
+      if (isNewUser) {
+        res.redirect('/dashboard?welcome=true');
+      } else {
+        res.redirect('/dashboard');
+      }
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/login?error=oauth_failed');
+    }
+  });
+
+  // Apple Sign In routes
+  app.get('/api/auth/apple', async (req, res) => {
+    try {
+      const state = req.query.state as string;
+      const authUrl = await getAppleOAuthURL(state);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Apple OAuth initiation error:', error);
+      res.status(500).json({ message: 'Failed to initiate Apple authentication' });
+    }
+  });
+
+  app.post('/api/auth/apple/callback', async (req, res) => {
+    try {
+      const { code, id_token, user: userString, error: oauthError } = req.body;
+      
+      if (oauthError || !id_token) {
+        console.error('Apple OAuth error:', oauthError);
+        return res.redirect('/login?error=oauth_failed');
+      }
+      
+      // Validate Apple ID token
+      const idTokenPayload = await validateAppleIdToken(id_token);
+      
+      // Parse user info if provided (only on first sign in)
+      let userInfo = null;
+      if (userString) {
+        try {
+          userInfo = JSON.parse(userString);
+        } catch (e) {
+          console.warn('Failed to parse Apple user info:', e);
+        }
+      }
+      
+      // Extract user data
+      const userData = extractAppleUserInfo(idTokenPayload, userInfo);
+      
+      // Create or link OAuth user
+      const { user, isNewUser } = await createOrLinkOAuthUser('apple', userData);
+      
+      // Update last login
+      await db.update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, user.id));
+      
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      };
+      
+      // Redirect based on user status
+      if (isNewUser) {
+        res.redirect('/dashboard?welcome=true');
+      } else {
+        res.redirect('/dashboard');
+      }
+    } catch (error) {
+      console.error('Apple OAuth callback error:', error);
+      res.redirect('/login?error=oauth_failed');
+    }
   });
 
   // Company routes

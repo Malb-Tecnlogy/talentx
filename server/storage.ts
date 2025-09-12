@@ -6,6 +6,7 @@ import {
   applications,
   contracts,
   notifications,
+  oauthAccounts,
   type User,
   type UpsertUser,
   type InsertCompany,
@@ -20,6 +21,8 @@ import {
   type Contract,
   type InsertNotification,
   type Notification,
+  type InsertOAuthAccount,
+  type OAuthAccount,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
@@ -70,6 +73,12 @@ export interface IStorage {
   getNotificationsByUser(userId: string): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<Notification>;
   getUnreadNotificationsCount(userId: string): Promise<number>;
+  
+  // OAuth operations
+  createOAuthAccount(account: InsertOAuthAccount): Promise<OAuthAccount>;
+  getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccount | undefined>;
+  getOAuthAccountsByUserId(userId: string): Promise<OAuthAccount[]>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -374,6 +383,43 @@ export class DatabaseStorage implements IStorage {
       .from(notifications)
       .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
     return result.count;
+  }
+
+  // OAuth operations
+  async createOAuthAccount(account: InsertOAuthAccount): Promise<OAuthAccount> {
+    const [newAccount] = await db
+      .insert(oauthAccounts)
+      .values(account)
+      .returning();
+    return newAccount;
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(oauthAccounts)
+      .where(and(
+        eq(oauthAccounts.provider, provider as any),
+        eq(oauthAccounts.providerUserId, providerUserId)
+      ));
+    return account;
+  }
+
+  async getOAuthAccountsByUserId(userId: string): Promise<OAuthAccount[]> {
+    return await db
+      .select()
+      .from(oauthAccounts)
+      .where(eq(oauthAccounts.userId, userId))
+      .orderBy(desc(oauthAccounts.createdAt));
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
+    return user;
   }
 }
 
