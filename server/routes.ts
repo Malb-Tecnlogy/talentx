@@ -16,10 +16,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   setupAuth(app);
 
-  const httpServer = createServer(app);
-
-  // Initialize WebSocket
-  initializeWebSocket(httpServer);
+  // We'll create httpServer at the end, after all routes are registered
+  let httpServer: Server;
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -861,6 +859,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch admin stats" });
     }
   });
+
+  // Handle API routes that don't exist with JSON 404 (before static catch-all)
+  app.all(['/api', '/api/*'], (_req, res) => {
+    res.status(404).json({ message: 'API endpoint not found' });
+  });
+
+  // Create HTTP server after all routes are registered
+  httpServer = createServer(app);
+  
+  // Initialize WebSocket
+  initializeWebSocket(httpServer);
 
   return httpServer;
 }
