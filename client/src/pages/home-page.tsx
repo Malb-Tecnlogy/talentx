@@ -3,10 +3,31 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, User, Briefcase, Shield } from "lucide-react";
+import Navbar from "@/components/navbar";
+import HeroSection from "@/components/hero-section";
+import FeaturesSection from "@/components/features-section";
+import DashboardTabs from "@/components/dashboard-tabs";
+import CtaSection from "@/components/cta-section";
+import Footer from "@/components/footer";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
 
+  // Show complete landing page for non-authenticated users with ALL original components
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background" data-testid="landing-page">
+        <Navbar />
+        <HeroSection />
+        <FeaturesSection />
+        <DashboardTabs />
+        <CtaSection />
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show dashboard for authenticated users
   const handleLogout = () => {
     logoutMutation.mutate();
   };
