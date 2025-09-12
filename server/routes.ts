@@ -43,9 +43,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Diagnostic endpoint (temporary - gated by secret)
+  app.get('/api/_diag', async (req, res) => {
+    if (req.headers['x-diag-token'] !== process.env.DIAG_TOKEN) {
+      return res.status(404).json({ message: "Not found" });
+    }
+    
+    try {
+      const codeMarker = '2025-09-12T20:15Z-1';
+      const dbUrl = process.env.DATABASE_URL || '';
+      const dbMatch = dbUrl.match(/\/\/.*?@([^\/]+)\/([^?]+)/);
+      const dbHost = dbMatch ? dbMatch[1] : 'unknown';
+      const dbName = dbMatch ? dbMatch[2] : 'unknown';
+      
+      // Check current database
+      const currentDb = await db.execute(sql`SELECT current_user, current_database()`);
+      
+      // Check admin user existence
+      const adminCheck = await db.select({
+        email: users.email,
+        role: users.role,
+        hasHash: sql<boolean>`(password_hash IS NOT NULL)`,
+        hashStart: sql<string>`LEFT(password_hash, 8)`,
+        updatedAt: users.updatedAt
+      }).from(users).where(sql`lower(${users.email}) = 'asouzamax@gmail.com'`).limit(1);
+      
+      res.json({
+        codeMarker,
+        dbHost,
+        dbName,
+        currentDatabase: currentDb[0] || null,
+        adminExists: adminCheck.length > 0,
+        adminData: adminCheck[0] || null
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Login endpoint for email/password authentication
   app.post("/api/login", async (req, res) => {
+    const codeMarker = '2025-09-12T20:15Z-1';
+    const dbUrl = process.env.DATABASE_URL || '';
+    const dbHost = dbUrl.match(/\/\/.*?@([^\/]+)\//)?.[1] || 'unknown';
+    
     try {
       const { email, password } = req.body;
 
@@ -57,6 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userResult = await db.select().from(users).where(sql`lower(${users.email}) = ${email.toLowerCase()}`).limit(1);
 
       if (userResult.length === 0) {
+        console.log(`[LOGIN DEBUG] User not found - marker:${codeMarker} db:${dbHost} email:${email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -64,12 +106,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check password
       if (!foundUser.passwordHash) {
+        console.log(`[LOGIN DEBUG] No password hash - marker:${codeMarker} db:${dbHost} email:${email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash);
 
       if (!isValidPassword) {
+        console.log(`[LOGIN DEBUG] Bcrypt mismatch - marker:${codeMarker} db:${dbHost} email:${email}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 

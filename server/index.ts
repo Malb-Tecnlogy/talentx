@@ -97,6 +97,13 @@ app.use((req, res, next) => {
   try {
     await ensureAuthSchema();
     log('✓ Auth schema ensured successfully');
+    
+    // Startup diagnostics
+    const codeMarker = '2025-09-12T20:15Z-1';
+    const dbUrl = process.env.DATABASE_URL || '';
+    const dbHost = dbUrl.match(/\/\/.*?@([^\/]+)\//)?.[1] || 'unknown';
+    const dbName = dbUrl.match(/\/\/.*?@[^\/]+\/([^?]+)/)?.[1] || 'unknown';
+    log(`[STARTUP] marker:${codeMarker} db:${dbHost}/${dbName}`);
   } catch (error) {
     log('✗ Auth schema setup failed: ' + (error instanceof Error ? error.message : String(error)));
     process.exit(1);
