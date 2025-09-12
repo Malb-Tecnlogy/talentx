@@ -2,8 +2,112 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, User, Briefcase, Shield, ArrowRight, Users, Globe, Zap } from "lucide-react";
+import { LogOut, User, Briefcase, Shield, ArrowRight, Users, Globe, Zap, MapPin, Clock, DollarSign } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { Job } from "@shared/schema";
+
+// Job listing component for public view
+function JobsList() {
+  const { data: jobs, isLoading } = useQuery<Job[]>({
+    queryKey: ["/api/jobs"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!jobs || jobs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No jobs available</h3>
+        <p className="text-gray-600 dark:text-gray-300">Check back later for new opportunities!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {jobs.slice(0, 6).map((job) => (
+        <Card key={job.id} className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-lg line-clamp-2" data-testid={`job-title-${job.id}`}>
+              {job.title}
+            </CardTitle>
+            <CardDescription className="flex items-center text-sm">
+              <Briefcase className="w-4 h-4 mr-1" />
+              {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3" data-testid={`job-description-${job.id}`}>
+                {job.description}
+              </p>
+              
+              <div className="flex flex-wrap gap-2">
+                {job.skills.slice(0, 3).map((skill, index) => (
+                  <span 
+                    key={index}
+                    className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs"
+                    data-testid={`job-skill-${job.id}-${index}`}
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {job.skills.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+                    +{job.skills.length - 3} more
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                {job.budget && (
+                  <div className="flex items-center">
+                    <DollarSign className="w-4 h-4 mr-1" />
+                    <span data-testid={`job-budget-${job.id}`}>${job.budget}</span>
+                  </div>
+                )}
+                {job.duration && (
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span data-testid={`job-duration-${job.id}`}>{job.duration}</span>
+                  </div>
+                )}
+              </div>
+
+              <Link href="/auth">
+                <Button className="w-full mt-4" data-testid={`button-apply-${job.id}`}>
+                  Apply Now
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
@@ -67,8 +171,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* Jobs Section */}
         <section className="py-16 bg-gray-50 dark:bg-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Latest Job Opportunities
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                Discover amazing opportunities from top companies
+              </p>
+            </div>
+            <JobsList />
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
