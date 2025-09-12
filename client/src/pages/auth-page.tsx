@@ -369,7 +369,11 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-800 dark:to-indigo-900 items-center justify-center p-8">
         <div className="text-center text-white max-w-lg">
           <div className="w-24 h-24 mx-auto mb-8 bg-white/20 rounded-full flex items-center justify-center">
-            <Briefcase className="w-12 h-12" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-8 0V6a2 2 0 00-2 2v6.341" />
+              </svg>
+            </div>
           </div>
           <h1 className="text-4xl font-bold mb-4">Welcome to TalentX</h1>
           <p className="text-xl opacity-90 mb-6">
