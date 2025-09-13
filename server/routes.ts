@@ -2,6 +2,21 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
+import { 
+  getGoogleOAuthURL, 
+  exchangeGoogleCode, 
+  getGoogleUserInfo, 
+  getAppleOAuthURL, 
+  validateAppleIdToken, 
+  extractAppleUserInfo, 
+  createOrLinkOAuthUser, 
+  generateSecureState, 
+  generateSecureNonce, 
+  storeOAuthState, 
+  validateOAuthState, 
+  validateOAuthNonce, 
+  getDashboardRedirect 
+} from "./replitAuth";
 import { storage } from "./storage";
 import { db } from "./db";
 import { 
@@ -23,6 +38,106 @@ import { eq, desc } from "drizzle-orm";
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
+
+  // OAuth routes for Google authentication
+  app.get('/api/auth/google', async (req, res) => {
+    try {
+      const state = generateSecureState();
+      storeOAuthState(req.session, state);
+      const authUrl = await getGoogleOAuthURL(state);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Google OAuth initiation error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
+
+  app.get('/api/auth/google/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state as string)) {
+        return res.redirect('/auth?error=invalid_state');
+      }
+      
+      // Exchange code for tokens
+      const tokens = await exchangeGoogleCode(code as string);
+      const userInfo = await getGoogleUserInfo(tokens.access_token);
+      
+      // Create or link OAuth user
+      const { user, isNewUser } = await createOrLinkOAuthUser('google', {
+        providerUserId: userInfo.id,
+        email: userInfo.email,
+        firstName: userInfo.given_name,
+        lastName: userInfo.family_name,
+        profileImageUrl: userInfo.picture
+      });
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      // Redirect to appropriate dashboard
+      const redirectUrl = getDashboardRedirect(user, isNewUser);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
+
+  // OAuth routes for Apple authentication
+  app.get('/api/auth/apple', async (req, res) => {
+    try {
+      const state = generateSecureState();
+      const nonce = generateSecureNonce();
+      storeOAuthState(req.session, state, nonce);
+      const authUrl = await getAppleOAuthURL(state, nonce);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Apple OAuth initiation error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
+
+  app.post('/api/auth/apple/callback', async (req, res) => {
+    try {
+      const { id_token, state, user } = req.body;
+      
+      if (!id_token || !state) {
+        return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state)) {
+        return res.redirect('/auth?error=invalid_state');
+      }
+      
+      // Validate Apple ID token
+      const nonce = req.session.oauthNonce;
+      const payload = await validateAppleIdToken(id_token, nonce);
+      
+      // Extract user info
+      const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
+      
+      // Create or link OAuth user
+      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
+      
+      // Set session
+      req.session.userId = dbUser.id;
+      
+      // Redirect to appropriate dashboard
+      const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Apple OAuth callback error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
 
   // Middleware to check authentication for protected routes
   function requireAuth(req: any, res: any, next: any) {
