@@ -101,6 +101,18 @@ export function setupAuth(app: Express) {
       // Check for existing email (case-insensitive)
       const existingEmail = await storage.getUserByEmail(email);
       if (existingEmail) {
+        // If user exists but has no password, allow setting one
+        if (!existingEmail.password) {
+          const hashedPassword = await hashPassword(password);
+          await storage.updateUserPassword(existingEmail.id, hashedPassword);
+          
+          const safeUser = safeUserSchema.parse(existingEmail);
+          req.login(safeUser, (err) => {
+            if (err) return next(err);
+            res.status(200).json(safeUser);
+          });
+          return;
+        }
         return res.status(400).json({ message: "Email already exists" });
       }
 
