@@ -42,9 +42,17 @@ export function registerRoutes(app: Express): Server {
   // OAuth routes for Google authentication
   app.get('/api/auth/google', async (req, res) => {
     try {
+      console.log('[OAuth] Google OAuth initiation started');
+      console.log('[OAuth] GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
+      console.log('[OAuth] GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
+      
       const state = generateSecureState();
       storeOAuthState(req.session, state);
       const authUrl = await getGoogleOAuthURL(state);
+      
+      console.log('[OAuth] Generated Google auth URL:', authUrl);
+      console.log('[OAuth] Redirecting to Google OAuth...');
+      
       res.redirect(authUrl);
     } catch (error) {
       console.error('Google OAuth initiation error:', error);

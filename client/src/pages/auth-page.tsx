@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, UserPlus, LogIn, Loader2 } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { SiApple } from "react-icons/si";
+import { Separator } from "@/components/ui/separator";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -195,6 +198,40 @@ export default function AuthPage() {
                         </>
                       )}
                     </Button>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator className="w-full" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.location.href = '/api/auth/google'}
+                        data-testid="button-google-login"
+                      >
+                        <FcGoogle className="mr-2 h-4 w-4" />
+                        Google
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.location.href = '/api/auth/apple'}
+                        data-testid="button-apple-login"
+                      >
+                        <SiApple className="mr-2 h-4 w-4" />
+                        Apple
+                      </Button>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
