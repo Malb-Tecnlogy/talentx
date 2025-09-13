@@ -124,7 +124,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<SafeUser> {
-    const [newUser] = await db.insert(users).values(user).returning();
+    const normalizedUser = {
+      ...user,
+      email: user.email.toLowerCase() // Normalize email to lowercase
+    };
+    const [newUser] = await db.insert(users).values(normalizedUser).returning();
     return safeUserSchema.parse(newUser);
   }
 
