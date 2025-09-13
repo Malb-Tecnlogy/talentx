@@ -94,7 +94,6 @@ export interface IStorage {
   getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccount | undefined>;
   getOAuthAccountsByUserId(userId: string): Promise<OAuthAccount[]>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -464,15 +463,6 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.email, email.toLowerCase()))
       .limit(1);
-    return user;
-  }
-
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ password: hashedPassword })
-      .where(eq(users.id, userId))
-      .returning();
     return user;
   }
 }
