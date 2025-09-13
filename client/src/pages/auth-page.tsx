@@ -13,7 +13,7 @@ import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Valid email is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -33,7 +33,7 @@ export default function AuthPage() {
   
   // Login form state
   const [loginData, setLoginData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const [loginErrors, setLoginErrors] = useState<Record<string, string>>({});
@@ -126,19 +126,19 @@ export default function AuthPage() {
                 <CardContent>
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-username">Username</Label>
+                      <Label htmlFor="login-email">Email</Label>
                       <Input
-                        id="login-username"
-                        data-testid="input-login-username"
-                        type="text"
-                        value={loginData.username}
-                        onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                        placeholder="Enter your username"
+                        id="login-email"
+                        data-testid="input-login-email"
+                        type="email"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        placeholder="Enter your email"
                         required
                       />
-                      {loginErrors.username && (
+                      {loginErrors.email && (
                         <Alert variant="destructive">
-                          <AlertDescription>{loginErrors.username}</AlertDescription>
+                          <AlertDescription>{loginErrors.email}</AlertDescription>
                         </Alert>
                       )}
                     </div>
