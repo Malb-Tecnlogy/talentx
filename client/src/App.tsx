@@ -12,6 +12,7 @@ import CompanyDashboard from "@/pages/company-dashboard";
 import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import About from "@/pages/about";
+import Jobs from "@/pages/jobs";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import NotFound from "@/pages/not-found";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/about" component={About} />
+      <Route path="/jobs" component={Jobs} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       
