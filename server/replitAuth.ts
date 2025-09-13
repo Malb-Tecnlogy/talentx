@@ -147,9 +147,11 @@ export async function createOrLinkOAuthUser(provider: 'google' | 'apple', userDa
   let isNewUser = false;
   
   if (!user) {
-    // Create new user
+    // Create new user with OAuth
     user = await storage.upsertUser({
       email: userData.email.toLowerCase(),
+      username: `${provider}_${userData.providerUserId}`, // Unique username for OAuth users
+      password: 'oauth_user', // Dummy password since OAuth users don't use password auth
       firstName: userData.firstName,
       lastName: userData.lastName,
       profileImageUrl: userData.profileImageUrl,
