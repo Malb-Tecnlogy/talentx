@@ -1,6 +1,9 @@
 import { Rocket } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-card border-t border-border py-12" data-testid="footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,41 +16,41 @@ export default function Footer() {
               <span className="text-xl font-bold text-card-foreground" data-testid="text-footer-brand">MaGenX</span>
             </div>
             <p className="text-muted-foreground" data-testid="text-footer-description">
-              Connecting global companies with exceptional Latin American tech talent.
+              {t('footer.description')}
             </p>
           </div>
           
           <div>
-            <h4 className="font-semibold text-card-foreground mb-4">For Companies</h4>
+            <h4 className="font-semibold text-card-foreground mb-4">{t('footer.forCompanies')}</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-find-talent">Find Talent</a></p>
-              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-enterprise">Enterprise Solutions</a></p>
-              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-success-stories">Success Stories</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-find-talent">{t('footer.findTalent')}</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-enterprise">{t('footer.enterprise')}</a></p>
+              <p><a href="/company" className="hover:text-foreground transition-colors" data-testid="link-success-stories">{t('footer.successStories')}</a></p>
             </div>
           </div>
           
           <div>
-            <h4 className="font-semibold text-card-foreground mb-4">For Professionals</h4>
+            <h4 className="font-semibold text-card-foreground mb-4">{t('footer.forProfessionals')}</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-find-work">Find Work</a></p>
-              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-build-profile">Build Profile</a></p>
-              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-resources">Resources</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-find-work">{t('footer.findWork')}</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-build-profile">{t('footer.buildProfile')}</a></p>
+              <p><a href="/professional" className="hover:text-foreground transition-colors" data-testid="link-resources">{t('footer.resources')}</a></p>
             </div>
           </div>
           
           <div>
-            <h4 className="font-semibold text-card-foreground mb-4">Company</h4>
+            <h4 className="font-semibold text-card-foreground mb-4">{t('footer.company')}</h4>
             <div className="space-y-2 text-muted-foreground">
-              <p><a href="/about" className="hover:text-foreground transition-colors" data-testid="link-about">About</a></p>
-              <p><a href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">Privacy Policy</a></p>
-              <p><a href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms">Terms of Service</a></p>
+              <p><a href="/about" className="hover:text-foreground transition-colors" data-testid="link-about">{t('nav.about')}</a></p>
+              <p><a href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">{t('footer.privacy')}</a></p>
+              <p><a href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms">{t('footer.terms')}</a></p>
             </div>
           </div>
         </div>
         
         <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
           <p data-testid="text-copyright">
-            &copy; 2024 MaGenX. All rights reserved. LGPD/GDPR compliant.
+            &copy; 2024 MaGenX. {t('footer.copyright')}
           </p>
         </div>
       </div>

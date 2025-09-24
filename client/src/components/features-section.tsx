@@ -1,55 +1,58 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Brain, Shield, MessageCircle, Lock, Globe, ClipboardCheck } from "lucide-react";
-
-const features = [
-  {
-    icon: Brain,
-    title: "AI-Powered Matching",
-    description: "Advanced algorithms analyze skills, experience, and project requirements to find perfect matches in minutes, not weeks.",
-    color: "primary"
-  },
-  {
-    icon: Shield,
-    title: "Verified Professionals",
-    description: "Every talent goes through rigorous screening including technical assessments, background checks, and portfolio reviews.",
-    color: "accent"
-  },
-  {
-    icon: MessageCircle,
-    title: "Seamless Communication",
-    description: "Built-in messaging, video calls, and project management tools keep everyone aligned and productive.",
-    color: "orange-500"
-  },
-  {
-    icon: Lock,
-    title: "Secure Payments",
-    description: "Automated escrow system, milestone-based payments, and compliance with international financial regulations.",
-    color: "green-500"
-  },
-  {
-    icon: Globe,
-    title: "Cultural Alignment",
-    description: "Latin American professionals in overlapping time zones with strong English proficiency and cultural compatibility.",
-    color: "blue-500"
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Full Compliance",
-    description: "LGPD/GDPR compliant data handling, employment law adherence, and comprehensive contract management.",
-    color: "purple-500"
-  }
-];
+import { useLanguage } from "@/contexts/language-context";
 
 export default function FeaturesSection() {
+  const { t } = useLanguage();
+
+  const features = [
+    {
+      icon: Brain,
+      titleKey: "features.ai.title",
+      descKey: "features.ai.desc",
+      color: "primary"
+    },
+    {
+      icon: Shield,
+      titleKey: "features.verified.title",
+      descKey: "features.verified.desc",
+      color: "accent"
+    },
+    {
+      icon: MessageCircle,
+      titleKey: "features.communication.title",
+      descKey: "features.communication.desc",
+      color: "orange-500"
+    },
+    {
+      icon: Lock,
+      titleKey: "features.payments.title",
+      descKey: "features.payments.desc",
+      color: "green-500"
+    },
+    {
+      icon: Globe,
+      titleKey: "features.cultural.title",
+      descKey: "features.cultural.desc",
+      color: "blue-500"
+    },
+    {
+      icon: ClipboardCheck,
+      titleKey: "features.compliance.title",
+      descKey: "features.compliance.desc",
+      color: "purple-500"
+    }
+  ];
+
   return (
     <section className="py-20 bg-background" data-testid="features-section">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-foreground mb-4" data-testid="text-features-title">
-            Why Choose MaGenX?
+            {t('features.title')}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto" data-testid="text-features-description">
-            Our platform revolutionizes nearshore outsourcing with cutting-edge technology and human expertise.
+            {t('features.description')}
           </p>
         </div>
         
@@ -63,10 +66,10 @@ export default function FeaturesSection() {
                     <Icon className={`text-${feature.color}`} size={24} />
                   </div>
                   <h3 className="text-xl font-semibold text-card-foreground mb-4" data-testid={`text-feature-title-${index}`}>
-                    {feature.title}
+                    {t(feature.titleKey)}
                   </h3>
                   <p className="text-muted-foreground" data-testid={`text-feature-description-${index}`}>
-                    {feature.description}
+                    {t(feature.descKey)}
                   </p>
                 </CardContent>
               </Card>

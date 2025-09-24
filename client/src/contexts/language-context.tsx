@@ -46,6 +46,60 @@ const translations: Translations = {
   'advantages.compliance.desc': { en: 'Stronger adaptation to US and international regulations, ensuring smooth business operations.', 'pt-br': 'Maior adaptação a regulamentações americanas e internacionais, garantindo operações comerciais suaves.' },
   'advantages.conclusion': { en: 'With Brazil, you get talent + time alignment + trust — a real competitive edge.', 'pt-br': 'Com o Brasil, você obtém talento + alinhamento de tempo + confiança — uma verdadeira vantagem competitiva.' },
   
+  // Features section
+  'features.title': { en: 'Why Choose MaGenX?', 'pt-br': 'Por que Escolher MaGenX?' },
+  'features.description': { en: 'Our platform revolutionizes nearshore outsourcing with cutting-edge technology and human expertise.', 'pt-br': 'Nossa plataforma revoluciona o outsourcing nearshore com tecnologia de ponta e expertise humana.' },
+  'features.ai.title': { en: 'AI-Powered Matching', 'pt-br': 'Correspondência com IA' },
+  'features.ai.desc': { en: 'Advanced algorithms analyze skills, experience, and project requirements to find perfect matches in minutes, not weeks.', 'pt-br': 'Algoritmos avançados analisam habilidades, experiência e requisitos do projeto para encontrar correspondências perfeitas em minutos, não semanas.' },
+  'features.verified.title': { en: 'Verified Professionals', 'pt-br': 'Profissionais Verificados' },
+  'features.verified.desc': { en: 'Every talent goes through rigorous screening including technical assessments, background checks, and portfolio reviews.', 'pt-br': 'Cada talento passa por uma triagem rigorosa incluindo avaliações técnicas, verificação de antecedentes e análise de portfólio.' },
+  'features.communication.title': { en: 'Seamless Communication', 'pt-br': 'Comunicação Perfeita' },
+  'features.communication.desc': { en: 'Built-in messaging, video calls, and project management tools keep everyone aligned and productive.', 'pt-br': 'Mensagens integradas, videochamadas e ferramentas de gestão de projetos mantêm todos alinhados e produtivos.' },
+  'features.payments.title': { en: 'Secure Payments', 'pt-br': 'Pagamentos Seguros' },
+  'features.payments.desc': { en: 'Automated escrow system, milestone-based payments, and compliance with international financial regulations.', 'pt-br': 'Sistema de custódia automatizado, pagamentos baseados em marcos e conformidade com regulamentações financeiras internacionais.' },
+  'features.cultural.title': { en: 'Cultural Alignment', 'pt-br': 'Alinhamento Cultural' },
+  'features.cultural.desc': { en: 'Latin American professionals in overlapping time zones with strong English proficiency and cultural compatibility.', 'pt-br': 'Profissionais latino-americanos em fusos horários sobrepostos com forte proficiência em inglês e compatibilidade cultural.' },
+  'features.compliance.title': { en: 'Full Compliance', 'pt-br': 'Conformidade Total' },
+  'features.compliance.desc': { en: 'LGPD/GDPR compliant data handling, employment law adherence, and comprehensive contract management.', 'pt-br': 'Tratamento de dados conforme LGPD/GDPR, aderência à legislação trabalhista e gestão abrangente de contratos.' },
+
+  // CTA section
+  'cta.title': { en: 'Ready to Transform Your Team?', 'pt-br': 'Pronto para Transformar Sua Equipe?' },
+  'cta.description': { en: 'Join thousands of companies already building exceptional products with Latin American talent through MaGenX.', 'pt-br': 'Junte-se a milhares de empresas que já estão construindo produtos excepcionais com talentos latino-americanos através do MaGenX.' },
+  'cta.startHiring': { en: 'Start Hiring', 'pt-br': 'Começar a Contratar' },
+  'cta.scheduleDemo': { en: 'Schedule Demo', 'pt-br': 'Agendar Demo' },
+
+  // Jobs section
+  'jobs.title': { en: 'Latest Job Opportunities', 'pt-br': 'Últimas Oportunidades de Trabalho' },
+  'jobs.description': { en: 'Explore exciting opportunities with top companies looking for Latin American tech talent.', 'pt-br': 'Explore oportunidades empolgantes com empresas de primeira linha procurando talentos de TI latino-americanos.' },
+  'jobs.searchPlaceholder': { en: 'Search jobs by title, skills, or company...', 'pt-br': 'Pesquisar vagas por título, habilidades ou empresa...' },
+  'jobs.allTypes': { en: 'All Types', 'pt-br': 'Todos os Tipos' },
+  'jobs.fullTime': { en: 'Full Time', 'pt-br': 'Tempo Integral' },
+  'jobs.partTime': { en: 'Part Time', 'pt-br': 'Meio Período' },
+  'jobs.contract': { en: 'Contract', 'pt-br': 'Contrato' },
+  'jobs.remote': { en: 'Remote', 'pt-br': 'Remoto' },
+  'jobs.location': { en: 'Location', 'pt-br': 'Localização' },
+  'jobs.experience': { en: 'Experience', 'pt-br': 'Experiência' },
+  'jobs.salary': { en: 'Salary', 'pt-br': 'Salário' },
+  'jobs.apply': { en: 'Apply Now', 'pt-br': 'Candidatar-se Agora' },
+  'jobs.viewAll': { en: 'View All Jobs', 'pt-br': 'Ver Todas as Vagas' },
+  'jobs.noResults': { en: 'No jobs found matching your criteria.', 'pt-br': 'Nenhuma vaga encontrada que corresponda aos seus critérios.' },
+  'jobs.loading': { en: 'Loading jobs...', 'pt-br': 'Carregando vagas...' },
+
+  // Footer section
+  'footer.description': { en: 'Connecting global companies with exceptional Latin American tech talent.', 'pt-br': 'Conectando empresas globais com talentos excepcionais de TI da América Latina.' },
+  'footer.forCompanies': { en: 'For Companies', 'pt-br': 'Para Empresas' },
+  'footer.findTalent': { en: 'Find Talent', 'pt-br': 'Encontrar Talentos' },
+  'footer.enterprise': { en: 'Enterprise Solutions', 'pt-br': 'Soluções Empresariais' },
+  'footer.successStories': { en: 'Success Stories', 'pt-br': 'Histórias de Sucesso' },
+  'footer.forProfessionals': { en: 'For Professionals', 'pt-br': 'Para Profissionais' },
+  'footer.findWork': { en: 'Find Work', 'pt-br': 'Encontrar Trabalho' },
+  'footer.buildProfile': { en: 'Build Profile', 'pt-br': 'Criar Perfil' },
+  'footer.resources': { en: 'Resources', 'pt-br': 'Recursos' },
+  'footer.company': { en: 'Company', 'pt-br': 'Empresa' },
+  'footer.privacy': { en: 'Privacy Policy', 'pt-br': 'Política de Privacidade' },
+  'footer.terms': { en: 'Terms of Service', 'pt-br': 'Termos de Serviço' },
+  'footer.copyright': { en: 'All rights reserved. LGPD/GDPR compliant.', 'pt-br': 'Todos os direitos reservados. Conforme LGPD/GDPR.' },
+  
   // Auth page
   'auth.login.title': { en: 'Welcome back', 'pt-br': 'Bem-vindo de volta' },
   'auth.login.subtitle': { en: 'Login to MaGenX', 'pt-br': 'Entrar no MaGenX' },
@@ -60,14 +114,6 @@ const translations: Translations = {
   
   // Footer
   'footer.description': { en: 'MaGenX connects companies with top Latin American tech talent, offering timezone advantages and cultural alignment.', 'pt-br': 'MaGenX conecta empresas com os melhores talentos de TI da América Latina, oferecendo vantagens de fuso horário e alinhamento cultural.' },
-  'footer.company': { en: 'Company', 'pt-br': 'Empresa' },
-  'footer.support': { en: 'Support', 'pt-br': 'Suporte' },
-  'footer.legal': { en: 'Legal', 'pt-br': 'Legal' },
-  'footer.privacy': { en: 'Privacy Policy', 'pt-br': 'Política de Privacidade' },
-  'footer.terms': { en: 'Terms of Service', 'pt-br': 'Termos de Serviço' },
-  'footer.contact': { en: 'Contact', 'pt-br': 'Contato' },
-  'footer.help': { en: 'Help Center', 'pt-br': 'Central de Ajuda' },
-  'footer.rights': { en: 'All rights reserved.', 'pt-br': 'Todos os direitos reservados.' },
 };
 
 interface LanguageProviderProps {

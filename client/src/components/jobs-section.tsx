@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, Clock, DollarSign, Briefcase, Filter, ArrowRight } from "lucide-react";
 import { Job } from "@shared/schema";
 import { Link } from "wouter";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function JobsSection() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [jobType, setJobType] = useState<string>("all");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -53,10 +55,10 @@ export default function JobsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4" data-testid="text-jobs-title">
-            Latest Job Opportunities
+            {t('jobs.title')}
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" data-testid="text-jobs-description">
-            Discover amazing remote and on-site opportunities from top companies worldwide
+            {t('jobs.description')}
           </p>
         </div>
 
@@ -74,7 +76,7 @@ export default function JobsSection() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Search by job title, description, or skills..."
+                  placeholder={t('jobs.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -88,10 +90,10 @@ export default function JobsSection() {
                   <SelectValue placeholder="Job Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="full-time">Full Time</SelectItem>
-                  <SelectItem value="part-time">Part Time</SelectItem>
-                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="all">{t('jobs.allTypes')}</SelectItem>
+                  <SelectItem value="full-time">{t('jobs.fullTime')}</SelectItem>
+                  <SelectItem value="part-time">{t('jobs.partTime')}</SelectItem>
+                  <SelectItem value="contract">{t('jobs.contract')}</SelectItem>
                   <SelectItem value="freelance">Freelance</SelectItem>
                 </SelectContent>
               </Select>
