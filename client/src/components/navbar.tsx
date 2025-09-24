@@ -16,7 +16,7 @@ export default function Navbar() {
               <img 
                 src={logoImage} 
                 alt="MaGenX Logo" 
-                className="h-10 md:h-12 w-auto"
+                className="h-14 md:h-16 w-auto"
                 data-testid="logo"
               />
             </Link>
