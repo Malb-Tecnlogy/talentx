@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
+  
   return (
     <section 
       className="relative min-h-[600px] bg-cover bg-center bg-no-repeat flex items-center" 
@@ -12,16 +15,26 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-4xl mx-auto space-y-8">
           <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight" data-testid="text-hero-title">
-            Connect with Top-Tier <br />
-            <span className="text-blue-400">Latin American</span> Tech Talent
+            {t('home.title')}
           </h1>
-          <div className="pt-4">
+          <p className="text-xl md:text-2xl text-gray-200 leading-relaxed max-w-3xl mx-auto" data-testid="text-hero-subtitle">
+            {t('home.subtitle')}
+          </p>
+          <div className="pt-4 space-x-4">
             <Button 
               className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/auth"}
               data-testid="button-get-started"
             >
-              Get Started
+              {t('home.getStarted')}
+            </Button>
+            <Button 
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 text-lg font-semibold rounded-full"
+              onClick={() => window.location.href = "/about"}
+              data-testid="button-learn-more"
+            >
+              {t('home.learnMore')}
             </Button>
           </div>
         </div>
