@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import logoImage from "@assets/image (1)_1758752465355.png";
+import logoImage from "@assets/image (1)_1758753116840.png";
 import { useLanguage } from "@/contexts/language-context";
 import LanguageSelector from "@/components/language-selector";
 
