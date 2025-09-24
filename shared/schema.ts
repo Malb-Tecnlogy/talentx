@@ -149,7 +149,7 @@ export const applications = pgTable("applications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Contracts (TalentX as employer)
+// Contracts (MaGenX as employer)
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").notNull().references(() => jobs.id),
@@ -163,7 +163,7 @@ export const contracts = pgTable("contracts", {
   endDate: timestamp("end_date"),
   status: contractStatusEnum("status").default("draft"),
   terms: text("terms"),
-  managedBy: varchar("managed_by").references(() => users.id), // TalentX staff member
+  managedBy: varchar("managed_by").references(() => users.id), // MaGenX staff member
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

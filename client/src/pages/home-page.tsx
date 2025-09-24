@@ -62,7 +62,7 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Welcome to TalentX
+              Welcome to MaGenX
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               Your job matching platform dashboard
@@ -120,7 +120,7 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Get started with TalentX</CardDescription>
+              <CardDescription>Get started with MaGenX</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

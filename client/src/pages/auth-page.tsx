@@ -123,7 +123,7 @@ export default function AuthPage() {
                 <CardHeader>
                   <CardTitle>Welcome back!</CardTitle>
                   <CardDescription>
-                    Sign in to your TalentX account
+                    Sign in to your MaGenX account
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -242,7 +242,7 @@ export default function AuthPage() {
                 <CardHeader>
                   <CardTitle>Create account</CardTitle>
                   <CardDescription>
-                    Join TalentX to connect with opportunities
+                    Join MaGenX to connect with opportunities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -412,7 +412,7 @@ export default function AuthPage() {
               </svg>
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-4">Welcome to TalentX</h1>
+          <h1 className="text-4xl font-bold mb-4">Welcome to MaGenX</h1>
           <p className="text-xl opacity-90 mb-6">
             The premier platform connecting global companies with top Latin American tech talent.
           </p>
