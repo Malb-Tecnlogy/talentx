@@ -11,7 +11,7 @@ export default function Navbar() {
             <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity" data-testid="link-logo">
               <img 
                 src={logoImage} 
-                alt="TalentX Logo" 
+                alt="MaGenX Logo" 
                 className="h-6 md:h-8 w-auto"
                 data-testid="logo"
               />
