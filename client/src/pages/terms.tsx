@@ -49,7 +49,7 @@ export default function Terms() {
       icon: AlertTriangle,
       title: "Limitation of Liability",
       content: [
-        "TalentX provides a platform to connect companies and professionals",
+        "MaGenX provides a platform to connect companies and professionals",
         "We are not responsible for employment outcomes or business relationships",
         "Users are responsible for their own due diligence in hiring or job decisions",
         "Our liability is limited to the amount paid for our services"
@@ -83,7 +83,7 @@ export default function Terms() {
             Terms of Service
           </h1>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
-            Please read these terms carefully before using our platform. By using TalentX, you agree to these conditions.
+            Please read these terms carefully before using our platform. By using MaGenX, you agree to these conditions.
           </p>
           <p className="text-sm text-muted-foreground">
             Last updated: December 2024
@@ -96,16 +96,16 @@ export default function Terms() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-2xl">Welcome to TalentX</CardTitle>
+              <CardTitle className="text-2xl">Welcome to MaGenX</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">
-                TalentX is a professional platform that connects global companies with talented Latin American 
+                MaGenX is a professional platform that connects global companies with talented Latin American 
                 professionals. These Terms of Service govern your use of our platform, including our website, 
                 services, and any related applications or tools we provide.
               </p>
               <p className="text-muted-foreground mt-4 leading-relaxed">
-                By accessing or using TalentX, you agree to be bound by these terms. If you disagree with 
+                By accessing or using MaGenX, you agree to be bound by these terms. If you disagree with 
                 any part of these terms, then you may not access the service.
               </p>
             </CardContent>
@@ -158,8 +158,8 @@ export default function Terms() {
                 If you have any questions about these Terms of Service, please contact our legal team.
               </p>
               <div className="space-y-2">
-                <p><strong>Email:</strong> legal@talentx.com</p>
-                <p><strong>Address:</strong> TalentX Legal Department, São Paulo, Brazil</p>
+                <p><strong>Email:</strong> legal@magenx.com</p>
+                <p><strong>Address:</strong> MaGenX Legal Department, São Paulo, Brazil</p>
               </div>
             </CardContent>
           </Card>

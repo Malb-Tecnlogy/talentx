@@ -78,7 +78,7 @@ function CompanyProfileForm({ onSuccess }: { onSuccess: () => void }) {
         <CardHeader>
           <CardTitle className="text-center text-2xl font-bold">Complete Your Company Profile</CardTitle>
           <p className="text-center text-muted-foreground">
-            Tell us about your company to get started with TalentX
+            Tell us about your company to get started with MaGenX
           </p>
         </CardHeader>
         <CardContent>

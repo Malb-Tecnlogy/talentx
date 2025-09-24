@@ -74,7 +74,7 @@ export default function AdminDashboard() {
                 <Shield className="text-destructive-foreground" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-card-foreground">TalentX Admin</h3>
+                <h3 className="font-semibold text-card-foreground">MaGenX Admin</h3>
                 <p className="text-sm text-muted-foreground">Platform Management</p>
               </div>
             </div>

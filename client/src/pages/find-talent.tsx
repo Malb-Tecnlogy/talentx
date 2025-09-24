@@ -65,7 +65,7 @@ export default function FindTalent() {
             </h1>
             <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
               Access a curated pool of pre-vetted professionals from across Latin America. 
-              All managed by TalentX for seamless hiring and compliance.
+              All managed by MaGenX for seamless hiring and compliance.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <div className="relative flex-1 max-w-md">
@@ -180,7 +180,7 @@ export default function FindTalent() {
             Ready to Build Your Dream Team?
           </h2>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
-            Join hundreds of companies that trust TalentX to manage their Latin American talent.
+            Join hundreds of companies that trust MaGenX to manage their Latin American talent.
           </p>
           <Button size="lg" className="px-8" data-testid="button-get-started">
             Get Started Today

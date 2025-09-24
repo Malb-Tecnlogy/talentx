@@ -1,6 +1,6 @@
 # Overview
 
-TalentX is a comprehensive job marketplace platform that connects global companies with Latin American tech professionals. The application features AI-powered matching capabilities, real-time communication through WebSockets, and role-based dashboards for companies, professionals, and administrators. Built with a modern full-stack architecture using React for the frontend and Express.js for the backend.
+MaGenX is a comprehensive job marketplace platform that connects global companies with Latin American tech professionals. The application features AI-powered matching capabilities, real-time communication through WebSockets, and role-based dashboards for companies, professionals, and administrators. Built with a modern full-stack architecture using React for the frontend and Express.js for the backend.
 
 # User Preferences
 

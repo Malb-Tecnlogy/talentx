@@ -10,7 +10,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Rocket className="text-primary-foreground" size={16} />
               </div>
-              <span className="text-xl font-bold text-card-foreground" data-testid="text-footer-brand">TalentX</span>
+              <span className="text-xl font-bold text-card-foreground" data-testid="text-footer-brand">MaGenX</span>
             </div>
             <p className="text-muted-foreground" data-testid="text-footer-description">
               Connecting global companies with exceptional Latin American tech talent.
@@ -47,7 +47,7 @@ export default function Footer() {
         
         <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
           <p data-testid="text-copyright">
-            &copy; 2024 TalentX. All rights reserved. LGPD/GDPR compliant.
+            &copy; 2024 MaGenX. All rights reserved. LGPD/GDPR compliant.
           </p>
         </div>
       </div>

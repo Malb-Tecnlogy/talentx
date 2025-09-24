@@ -109,7 +109,7 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
           <CardHeader>
             <CardTitle className="text-center text-2xl font-bold">Complete Your Professional Profile</CardTitle>
             <p className="text-center text-muted-foreground">
-              Showcase your skills and experience to connect with opportunities on TalentX
+              Showcase your skills and experience to connect with opportunities on MaGenX
             </p>
           </CardHeader>
           <CardContent>

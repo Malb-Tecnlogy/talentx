@@ -81,7 +81,7 @@ export default function FindWork() {
             </h1>
             <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
               Access exclusive opportunities with top companies worldwide. 
-              TalentX handles contracts, compliance, and payments so you can focus on what you do best.
+              MaGenX handles contracts, compliance, and payments so you can focus on what you do best.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <div className="relative flex-1 max-w-md">
@@ -236,7 +236,7 @@ export default function FindWork() {
             Ready to Start Your Remote Career?
           </h2>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
-            Join thousands of professionals who found their dream jobs through TalentX.
+            Join thousands of professionals who found their dream jobs through MaGenX.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="px-8" data-testid="button-create-profile">

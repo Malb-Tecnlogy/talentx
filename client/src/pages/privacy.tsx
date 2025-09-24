@@ -127,8 +127,8 @@ export default function Privacy() {
                 please don't hesitate to contact us.
               </p>
               <div className="space-y-2">
-                <p><strong>Email:</strong> privacy@talentx.com</p>
-                <p><strong>Address:</strong> TalentX Privacy Team, São Paulo, Brazil</p>
+                <p><strong>Email:</strong> privacy@magenx.com</p>
+                <p><strong>Address:</strong> MaGenX Privacy Team, São Paulo, Brazil</p>
               </div>
             </CardContent>
           </Card>

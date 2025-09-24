@@ -64,7 +64,7 @@ export default function About() {
       <section className="py-20 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-6" data-testid="text-hero-title">
-            About TalentX
+            About MaGenX
           </h1>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
             We're revolutionizing how companies access Latin American talent by removing barriers, 
@@ -82,7 +82,7 @@ export default function About() {
                 Our Mission
               </h2>
               <p className="text-lg text-muted-foreground mb-6" data-testid="text-mission-description">
-                TalentX bridges the gap between exceptional Latin American professionals and global opportunities. 
+                MaGenX bridges the gap between exceptional Latin American professionals and global opportunities. 
                 We serve as the official employer, handling all compliance, contracts, and administrative complexities 
                 so our clients can focus on building great products with amazing talent.
               </p>
@@ -164,7 +164,7 @@ export default function About() {
           </h2>
           <div className="prose prose-lg mx-auto text-muted-foreground">
             <p className="text-center mb-8">
-              Founded in 2020, TalentX emerged from a simple observation: Latin America was home to 
+              Founded in 2020, MaGenX emerged from a simple observation: Latin America was home to 
               world-class technical talent, but accessing this talent pool was complicated by legal, 
               cultural, and administrative barriers.
             </p>

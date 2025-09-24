@@ -91,21 +91,21 @@ export default function Enterprise() {
     {
       company: "TechCorp International",
       logo: "TC",
-      quote: "TalentX transformed our hiring process. We scaled from 5 to 50 Latin American developers in just 3 months.",
+      quote: "MaGenX transformed our hiring process. We scaled from 5 to 50 Latin American developers in just 3 months.",
       author: "Sarah Johnson",
       role: "VP of Engineering"
     },
     {
       company: "InnovateLabs",
       logo: "IL",
-      quote: "The compliance handling is exceptional. We can focus on building products while TalentX manages all the legal complexities.",
+      quote: "The compliance handling is exceptional. We can focus on building products while MaGenX manages all the legal complexities.",
       author: "Michael Chen",
       role: "CTO"
     },
     {
       company: "GlobalSoft Solutions",
       logo: "GS",
-      quote: "Cost-effective, reliable, and scalable. TalentX is our trusted partner for international talent acquisition.",
+      quote: "Cost-effective, reliable, and scalable. MaGenX is our trusted partner for international talent acquisition.",
       author: "Lisa Rodriguez",
       role: "Head of HR"
     }
@@ -286,7 +286,7 @@ export default function Enterprise() {
             Ready to Scale Your Engineering Team?
           </h2>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
-            Join leading companies who trust TalentX for their Latin American talent needs. 
+            Join leading companies who trust MaGenX for their Latin American talent needs. 
             Schedule a call to discuss your specific requirements.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
