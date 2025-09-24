@@ -111,9 +111,48 @@ const translations: Translations = {
   // About page
   'about.title': { en: 'About MaGenX', 'pt-br': 'Sobre o MaGenX' },
   'about.subtitle': { en: 'Connecting Global Companies with Latin American Tech Excellence', 'pt-br': 'Conectando Empresas Globais com a Excelência em TI da América Latina' },
-  
-  // Footer
-  'footer.description': { en: 'MaGenX connects companies with top Latin American tech talent, offering timezone advantages and cultural alignment.', 'pt-br': 'MaGenX conecta empresas com os melhores talentos de TI da América Latina, oferecendo vantagens de fuso horário e alinhamento cultural.' },
+
+  // Find Talent page (for companies)
+  'findTalent.title': { en: 'Find Top Latin American Tech Talent', 'pt-br': 'Encontre os Melhores Talentos de TI da América Latina' },
+  'findTalent.subtitle': { en: 'Connect with pre-vetted professionals who are ready to transform your business', 'pt-br': 'Conecte-se com profissionais pré-selecionados prontos para transformar seu negócio' },
+  'findTalent.journey.title': { en: 'Your Hiring Journey', 'pt-br': 'Sua Jornada de Contratação' },
+  'findTalent.step1.title': { en: 'Tell Us Your Needs', 'pt-br': 'Conte-nos Suas Necessidades' },
+  'findTalent.step1.desc': { en: 'Define your project requirements, technical skills needed, and team preferences through our detailed intake form.', 'pt-br': 'Defina os requisitos do seu projeto, habilidades técnicas necessárias e preferências da equipe através do nosso formulário detalhado.' },
+  'findTalent.step2.title': { en: 'AI-Powered Matching', 'pt-br': 'Correspondência com IA' },
+  'findTalent.step2.desc': { en: 'Our intelligent algorithm analyzes your requirements and matches you with the most suitable professionals from our talent pool.', 'pt-br': 'Nosso algoritmo inteligente analisa seus requisitos e combina você com os profissionais mais adequados do nosso banco de talentos.' },
+  'findTalent.step3.title': { en: 'Interview & Select', 'pt-br': 'Entreviste e Selecione' },
+  'findTalent.step3.desc': { en: 'Review candidate profiles, conduct interviews, and choose the perfect fit for your team with our built-in communication tools.', 'pt-br': 'Revise perfis de candidatos, conduza entrevistas e escolha o ajuste perfeito para sua equipe com nossas ferramentas de comunicação integradas.' },
+  'findTalent.step4.title': { en: 'Start Working', 'pt-br': 'Comece a Trabalhar' },
+  'findTalent.step4.desc': { en: 'Onboard your new team members and start building with integrated project management and secure payment systems.', 'pt-br': 'Integre seus novos membros da equipe e comece a construir com gerenciamento de projetos integrado e sistemas de pagamento seguros.' },
+  'findTalent.benefits.title': { en: 'Why Companies Choose MaGenX', 'pt-br': 'Por que Empresas Escolhem MaGenX' },
+  'findTalent.benefit1.title': { en: 'Pre-Vetted Talent', 'pt-br': 'Talentos Pré-Selecionados' },
+  'findTalent.benefit1.desc': { en: 'Every professional goes through rigorous technical assessments and background verification.', 'pt-br': 'Todo profissional passa por avaliações técnicas rigorosas e verificação de antecedentes.' },
+  'findTalent.benefit2.title': { en: 'Timezone Advantage', 'pt-br': 'Vantagem de Fuso Horário' },
+  'findTalent.benefit2.desc': { en: 'Work with professionals in similar time zones for real-time collaboration and faster project delivery.', 'pt-br': 'Trabalhe com profissionais em fusos horários similares para colaboração em tempo real e entrega mais rápida de projetos.' },
+  'findTalent.benefit3.title': { en: 'Full Compliance', 'pt-br': 'Conformidade Total' },
+  'findTalent.benefit3.desc': { en: 'We handle all legal, tax, and HR complexities so you can focus on what matters most.', 'pt-br': 'Cuidamos de todas as complexidades legais, fiscais e de RH para que você possa focar no que mais importa.' },
+  'findTalent.getStarted': { en: 'Start Hiring Now', 'pt-br': 'Comece a Contratar Agora' },
+
+  // Find Work page (for professionals)
+  'findWork.title': { en: 'Find Your Dream Tech Job', 'pt-br': 'Encontre Seu Emprego dos Sonhos em TI' },
+  'findWork.subtitle': { en: 'Join a global network of opportunities with top companies worldwide', 'pt-br': 'Junte-se a uma rede global de oportunidades com as melhores empresas do mundo' },
+  'findWork.journey.title': { en: 'Your Career Journey', 'pt-br': 'Sua Jornada de Carreira' },
+  'findWork.step1.title': { en: 'Create Your Profile', 'pt-br': 'Crie Seu Perfil' },
+  'findWork.step1.desc': { en: 'Build a comprehensive profile showcasing your skills, experience, and portfolio. Our system highlights your strengths.', 'pt-br': 'Construa um perfil abrangente mostrando suas habilidades, experiência e portfólio. Nosso sistema destaca seus pontos fortes.' },
+  'findWork.step2.title': { en: 'Get Discovered', 'pt-br': 'Seja Descoberto' },
+  'findWork.step2.desc': { en: 'Our AI matches your profile with relevant opportunities. Companies can also discover and reach out to you directly.', 'pt-br': 'Nossa IA combina seu perfil com oportunidades relevantes. Empresas também podem descobri-lo e contatá-lo diretamente.' },
+  'findWork.step3.title': { en: 'Interview Process', 'pt-br': 'Processo de Entrevista' },
+  'findWork.step3.desc': { en: 'Participate in streamlined interview processes with built-in video calls and technical assessment tools.', 'pt-br': 'Participe de processos de entrevista simplificados com videochamadas integradas e ferramentas de avaliação técnica.' },
+  'findWork.step4.title': { en: 'Secure Employment', 'pt-br': 'Emprego Seguro' },
+  'findWork.step4.desc': { en: 'Enjoy secure contracts, timely payments, and ongoing support throughout your employment journey.', 'pt-br': 'Desfrute de contratos seguros, pagamentos pontuais e suporte contínuo durante sua jornada de emprego.' },
+  'findWork.benefits.title': { en: 'Why Professionals Choose MaGenX', 'pt-br': 'Por que Profissionais Escolhem MaGenX' },
+  'findWork.benefit1.title': { en: 'Global Opportunities', 'pt-br': 'Oportunidades Globais' },
+  'findWork.benefit1.desc': { en: 'Access jobs from companies worldwide without leaving Latin America.', 'pt-br': 'Acesse vagas de empresas do mundo todo sem sair da América Latina.' },
+  'findWork.benefit2.title': { en: 'Fair Compensation', 'pt-br': 'Compensação Justa' },
+  'findWork.benefit2.desc': { en: 'Earn competitive international salaries with transparent payment processes.', 'pt-br': 'Ganhe salários internacionais competitivos com processos de pagamento transparentes.' },
+  'findWork.benefit3.title': { en: 'Career Growth', 'pt-br': 'Crescimento de Carreira' },
+  'findWork.benefit3.desc': { en: 'Develop your skills working with cutting-edge technologies and methodologies.', 'pt-br': 'Desenvolva suas habilidades trabalhando com tecnologias e metodologias de ponta.' },
+  'findWork.getStarted': { en: 'Start Your Journey', 'pt-br': 'Comece Sua Jornada' },
 };
 
 interface LanguageProviderProps {

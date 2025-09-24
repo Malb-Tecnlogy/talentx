@@ -23,8 +23,8 @@ export default function Navbar() {
             <div className="flex space-x-3 md:space-x-6">
               <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-about">{t('nav.about')}</Link>
               <Link href="/jobs" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-jobs">{t('nav.jobs')}</Link>
-              <Link href="/company" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-talent">{t('nav.findTalent')}</Link>
-              <Link href="/professional" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-work">{t('nav.findWork')}</Link>
+              <Link href="/find-talent" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-talent">{t('nav.findTalent')}</Link>
+              <Link href="/find-work" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-work">{t('nav.findWork')}</Link>
             </div>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">

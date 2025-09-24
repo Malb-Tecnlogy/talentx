@@ -54,9 +54,16 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+- **User Journey Pages Created (September 2025):** Created comprehensive "Find Talent" and "Find Work" pages with step-by-step journey explanations before user registration
+  - Find Talent page (/find-talent): For companies looking to hire, includes hiring journey (4 steps), benefits section, and CTA
+  - Find Work page (/find-work): For professionals seeking jobs, includes career journey (4 steps), benefits section, and CTA
+  - Both pages use internationalization system with Portuguese and English translations
+  - Added public routes to App.tsx router configuration
+  - Fixed navbar links to point to public pages instead of protected dashboard routes
+- **Translation System Enhancement:** Extended internationalization with comprehensive translations for both user journey pages covering all sections (hero, steps, benefits, CTA)
 - **Navbar Optimization (September 2025):** Removed Admin button from navbar and optimized mobile layout with responsive sizing (logo h-6 md:h-8, navbar height h-14 md:h-16, tighter spacing space-x-3 md:space-x-6)
 - **Jobs Page Creation:** Fixed Jobs page 404 error by creating dedicated /jobs route with proper page structure
 - **Navigation Structure:** Final navbar shows About | Jobs | Find Talent | Find Work (Admin removed per user request)
 - **Mobile Responsiveness:** Implemented comprehensive mobile-first design with adaptive text sizing, spacing, and button padding
 - **Public Pages:** Created Privacy Policy and Terms of Service pages with proper routing
-- **Navigation Testing:** Successfully tested all navigation flows without 404 errors
+- **Navigation Testing:** Successfully tested all navigation flows including new user journey pages without 404 errors

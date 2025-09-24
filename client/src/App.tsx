@@ -14,6 +14,8 @@ import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import About from "@/pages/about";
 import Jobs from "@/pages/jobs";
+import FindTalent from "@/pages/find-talent";
+import FindWork from "@/pages/find-work";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import NotFound from "@/pages/not-found";
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/about" component={About} />
       <Route path="/jobs" component={Jobs} />
+      <Route path="/find-talent" component={FindTalent} />
+      <Route path="/find-work" component={FindWork} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       

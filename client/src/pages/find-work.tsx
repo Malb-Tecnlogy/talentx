@@ -1,71 +1,59 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/language-context";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { Search, MapPin, Clock, DollarSign, Building, Calendar, Filter } from "lucide-react";
+import { User, Eye, VideoIcon, Shield, Globe, DollarSign, TrendingUp } from "lucide-react";
 
 export default function FindWork() {
-  const jobs = [
+  const { t } = useLanguage();
+
+  const steps = [
     {
-      id: 1,
-      title: "Senior React Developer",
-      company: "TechCorp Solutions",
-      location: "Remote - US/Canada",
-      type: "Full-time",
-      salary: "$70,000 - $90,000",
-      posted: "2 days ago",
-      skills: ["React", "TypeScript", "Node.js", "GraphQL"],
-      description: "Join our dynamic team building next-generation web applications for enterprise clients.",
-      urgent: false
+      icon: User,
+      titleKey: "findWork.step1.title",
+      descKey: "findWork.step1.desc",
+      color: "bg-green-500"
     },
     {
-      id: 2,
-      title: "UX/UI Designer",
-      company: "DesignCo Inc",
-      location: "Remote - Global",
-      type: "Contract",
-      salary: "$45 - $60/hour",
-      posted: "1 day ago",
-      skills: ["Figma", "User Research", "Prototyping", "Adobe Creative Suite"],
-      description: "Create beautiful and intuitive user experiences for our SaaS platform.",
-      urgent: true
+      icon: Eye,
+      titleKey: "findWork.step2.title",
+      descKey: "findWork.step2.desc",
+      color: "bg-purple-500"
     },
     {
-      id: 3,
-      title: "DevOps Engineer",
-      company: "CloudFirst Technologies",
-      location: "Remote - Americas",
-      type: "Full-time",
-      salary: "$80,000 - $100,000",
-      posted: "3 days ago",
-      skills: ["AWS", "Docker", "Kubernetes", "Terraform", "Python"],
-      description: "Build and maintain scalable cloud infrastructure for high-traffic applications.",
-      urgent: false
+      icon: VideoIcon,
+      titleKey: "findWork.step3.title",
+      descKey: "findWork.step3.desc",
+      color: "bg-blue-500"
     },
     {
-      id: 4,
-      title: "Full Stack Engineer",
-      company: "StartupXYZ",
-      location: "Remote - Latin America",
-      type: "Full-time",
-      salary: "$60,000 - $75,000",
-      posted: "1 week ago",
-      skills: ["Vue.js", "Python", "PostgreSQL", "Redis"],
-      description: "Help build innovative fintech solutions from the ground up.",
-      urgent: false
+      icon: Shield,
+      titleKey: "findWork.step4.title",
+      descKey: "findWork.step4.desc",
+      color: "bg-orange-500"
     }
   ];
 
-  const categories = [
-    { name: "Frontend Development", count: "150+ jobs" },
-    { name: "Backend Development", count: "120+ jobs" },
-    { name: "Full Stack", count: "200+ jobs" },
-    { name: "Mobile Development", count: "80+ jobs" },
-    { name: "DevOps", count: "60+ jobs" },
-    { name: "Design", count: "90+ jobs" },
-    { name: "Data Science", count: "40+ jobs" },
-    { name: "Product Management", count: "30+ jobs" }
+  const benefits = [
+    {
+      icon: Globe,
+      titleKey: "findWork.benefit1.title",
+      descKey: "findWork.benefit1.desc",
+      color: "text-green-600"
+    },
+    {
+      icon: DollarSign,
+      titleKey: "findWork.benefit2.title",
+      descKey: "findWork.benefit2.desc",
+      color: "text-blue-600"
+    },
+    {
+      icon: TrendingUp,
+      titleKey: "findWork.benefit3.title",
+      descKey: "findWork.benefit3.desc",
+      color: "text-purple-600"
+    }
   ];
 
   return (
@@ -73,179 +61,119 @@ export default function FindWork() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/10 to-accent/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-5xl font-bold text-foreground mb-6" data-testid="text-hero-title">
-              Find Your Dream Remote Job
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
-              Access exclusive opportunities with top companies worldwide. 
-              MaGenX handles contracts, compliance, and payments so you can focus on what you do best.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search jobs, skills, or companies..."
-                  className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  data-testid="input-search"
-                />
-              </div>
-              <Button size="lg" className="px-8" data-testid="button-search">
-                Search Jobs
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Filters and Categories */}
-      <section className="py-8 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-2">
-              {categories.slice(0, 4).map((category, index) => (
-                <Button 
-                  key={index} 
-                  variant="outline" 
-                  size="sm" 
-                  className="hover:bg-primary hover:text-primary-foreground"
-                  data-testid={`button-category-${index}`}
-                >
-                  {category.name}
-                </Button>
-              ))}
-            </div>
-            <Button variant="outline" size="sm" data-testid="button-filters">
-              <Filter size={16} className="mr-2" />
-              More Filters
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Job Listings */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold" data-testid="text-jobs-title">
-              Available Positions
-            </h2>
-            <p className="text-muted-foreground">{jobs.length} jobs found</p>
-          </div>
-          
-          <div className="space-y-6">
-            {jobs.map((job) => (
-              <Card key={job.id} className="hover:shadow-lg transition-shadow" data-testid={`card-job-${job.id}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-xl">{job.title}</CardTitle>
-                        {job.urgent && (
-                          <Badge variant="destructive" className="text-xs">
-                            Urgent
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-4 text-muted-foreground mb-3">
-                        <div className="flex items-center space-x-1">
-                          <Building size={16} />
-                          <span>{job.company}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MapPin size={16} />
-                          <span>{job.location}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock size={16} />
-                          <span>{job.type}</span>
-                        </div>
-                      </div>
-                      <CardDescription className="text-base mb-3">
-                        {job.description}
-                      </CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-primary mb-1">
-                        {job.salary}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Posted {job.posted}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-wrap gap-2">
-                      {job.skills.map((skill, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" data-testid={`button-save-${job.id}`}>
-                        Save
-                      </Button>
-                      <Button size="sm" data-testid={`button-apply-${job.id}`}>
-                        Apply Now
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Load More */}
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg" data-testid="button-load-more">
-              Load More Jobs
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Job Categories Grid */}
-      <section className="py-16 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12" data-testid="text-categories-title">
-            Browse by Category
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow cursor-pointer" data-testid={`card-category-${index}`}>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-lg mb-2">{category.name}</h3>
-                  <p className="text-muted-foreground">{category.count}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-6" data-testid="text-cta-title">
-            Ready to Start Your Remote Career?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
-            Join thousands of professionals who found their dream jobs through MaGenX.
+      <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-100" data-testid="hero-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6" data-testid="text-hero-title">
+            {t('findWork.title')}
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8" data-testid="text-hero-subtitle">
+            {t('findWork.subtitle')}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-8" data-testid="button-create-profile">
-              Create Your Profile
-            </Button>
-            <Button variant="outline" size="lg" className="px-8" data-testid="button-upload-resume">
-              Upload Resume
-            </Button>
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
+            onClick={() => window.location.href = "/auth"}
+            data-testid="button-get-started"
+          >
+            {t('findWork.getStarted')}
+          </Button>
+        </div>
+      </section>
+
+      {/* Journey Steps Section */}
+      <section className="py-20 bg-white" data-testid="journey-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4" data-testid="text-journey-title">
+              {t('findWork.journey.title')}
+            </h2>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => {
+              const IconComponent = step.icon;
+              return (
+                <Card 
+                  key={index} 
+                  className="text-center hover:shadow-lg transition-shadow duration-300"
+                  data-testid={`step-card-${index}`}
+                >
+                  <CardContent className="p-8">
+                    <div className={`w-16 h-16 ${step.color} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                      <IconComponent className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="text-sm font-semibold text-gray-500 mb-2">
+                      {index + 1}. 
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4" data-testid={`text-step-title-${index}`}>
+                      {t(step.titleKey)}
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed" data-testid={`text-step-desc-${index}`}>
+                      {t(step.descKey)}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20 bg-gray-50" data-testid="benefits-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4" data-testid="text-benefits-title">
+              {t('findWork.benefits.title')}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => {
+              const IconComponent = benefit.icon;
+              return (
+                <Card 
+                  key={index} 
+                  className="hover:shadow-lg transition-shadow duration-300 border-l-4 border-green-500"
+                  data-testid={`benefit-card-${index}`}
+                >
+                  <CardContent className="p-8">
+                    <div className="flex items-start space-x-4">
+                      <div className={`flex-shrink-0 p-3 rounded-lg bg-gray-100 ${benefit.color}`}>
+                        <IconComponent className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3" data-testid={`text-benefit-title-${index}`}>
+                          {t(benefit.titleKey)}
+                        </h3>
+                        <p className="text-gray-600 leading-relaxed" data-testid={`text-benefit-desc-${index}`}>
+                          {t(benefit.descKey)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="py-20 bg-gradient-to-br from-green-600 to-emerald-700" data-testid="cta-section">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-white mb-6" data-testid="text-cta-title">
+            {t('findWork.getStarted')}
+          </h2>
+          <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+            {t('findWork.subtitle')}
+          </p>
+          <Button 
+            className="bg-white text-green-600 px-8 py-4 text-lg font-semibold hover:bg-gray-50 transition-all shadow-lg"
+            onClick={() => window.location.href = "/auth"}
+            data-testid="button-cta"
+          >
+            {t('findWork.getStarted')}
+          </Button>
         </div>
       </section>
 
