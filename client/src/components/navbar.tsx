@@ -16,7 +16,7 @@ export default function Navbar() {
               <img 
                 src={logoImage} 
                 alt="MaGenX Logo" 
-                className="w-[953px] h-[262px] max-w-[200px] max-h-[55px] md:max-w-[300px] md:max-h-[82px] object-contain"
+                className="w-[953px] h-[262px] max-w-[140px] max-h-[38px] md:max-w-[210px] md:max-h-[57px] object-contain"
                 data-testid="logo"
               />
             </Link>
