@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LogOut, User, Briefcase, Shield } from "lucide-react";
 import Navbar from "@/components/navbar";
 import HeroSection from "@/components/hero-section";
+import StrategicShortcuts from "@/components/strategic-shortcuts";
 import BrazilAdvantages from "@/components/brazil-advantages";
+import WhyChooseUs from "@/components/why-choose-us";
 import FeaturesSection from "@/components/features-section";
+import ContactSection from "@/components/contact-section";
 import JobsSection from "@/components/jobs-section";
 import CtaSection from "@/components/cta-section";
 import Footer from "@/components/footer";
@@ -20,8 +23,11 @@ export default function HomePage() {
       <div className="min-h-screen bg-background" data-testid="landing-page">
         <Navbar />
         <HeroSection />
+        <StrategicShortcuts />
         <BrazilAdvantages />
+        <WhyChooseUs />
         <FeaturesSection />
+        <ContactSection />
         <CtaSection />
         <JobsSection />
         <Footer />

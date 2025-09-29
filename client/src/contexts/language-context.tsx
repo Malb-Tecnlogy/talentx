@@ -153,6 +153,42 @@ const translations: Translations = {
   'findWork.benefit3.title': { en: 'Career Growth', 'pt-br': 'Crescimento de Carreira' },
   'findWork.benefit3.desc': { en: 'Develop your skills working with cutting-edge technologies and methodologies.', 'pt-br': 'Desenvolva suas habilidades trabalhando com tecnologias e metodologias de ponta.' },
   'findWork.getStarted': { en: 'Start Your Journey', 'pt-br': 'Comece Sua Jornada' },
+
+  // Strategic shortcuts section
+  'shortcuts.title': { en: 'Quick Access', 'pt-br': 'Acesso Rápido' },
+  'shortcuts.services': { en: 'Our Services', 'pt-br': 'Nossos Serviços' },
+  'shortcuts.cases': { en: 'Success Cases', 'pt-br': 'Casos de Sucesso' },
+  'shortcuts.contact': { en: 'Contact Us', 'pt-br': 'Fale Conosco' },
+  'shortcuts.hireTalent': { en: 'Hire Talent', 'pt-br': 'Contratar Talentos' },
+
+  // Contact section
+  'contact.title': { en: 'Ready to Hire Top Talent?', 'pt-br': 'Pronto para Contratar os Melhores Talentos?' },
+  'contact.subtitle': { en: 'Get in touch with our team and discover how we can accelerate your projects', 'pt-br': 'Entre em contato com nossa equipe e descubra como podemos acelerar seus projetos' },
+  'contact.cta': { en: 'I Want to Hire Talent', 'pt-br': 'Quero Contratar Talentos' },
+  'contact.form.name': { en: 'Your Name', 'pt-br': 'Seu Nome' },
+  'contact.form.email': { en: 'Company Email', 'pt-br': 'Email da Empresa' },
+  'contact.form.company': { en: 'Company Name', 'pt-br': 'Nome da Empresa' },
+  'contact.form.message': { en: 'Tell us about your project', 'pt-br': 'Conte-nos sobre seu projeto' },
+  'contact.form.send': { en: 'Send Message', 'pt-br': 'Enviar Mensagem' },
+  'contact.form.sending': { en: 'Sending...', 'pt-br': 'Enviando...' },
+
+  // Why choose us section
+  'whyChoose.title': { en: 'Why Choose MaGenX?', 'pt-br': 'Por que Escolher MaGenX?' },
+  'whyChoose.subtitle': { en: 'Discover the competitive advantages that make us the preferred choice for global companies', 'pt-br': 'Descubra as vantagens competitivas que nos tornam a escolha preferida de empresas globais' },
+  'whyChoose.reliability.title': { en: 'Proven Reliability', 'pt-br': 'Confiabilidade Comprovada' },
+  'whyChoose.reliability.desc': { en: '98% client satisfaction rate with over 500 successful projects delivered across 50+ countries.', 'pt-br': '98% de satisfação do cliente com mais de 500 projetos bem-sucedidos entregues em mais de 50 países.' },
+  'whyChoose.results.title': { en: 'Proven Results', 'pt-br': 'Resultados Comprovados' },
+  'whyChoose.results.desc': { en: 'Our clients report 40% faster delivery times and 60% cost savings compared to traditional hiring.', 'pt-br': 'Nossos clientes relatam 40% de redução no tempo de entrega e 60% de economia de custos comparado à contratação tradicional.' },
+  'whyChoose.expertise.title': { en: 'Technical Expertise', 'pt-br': 'Expertise Técnica' },
+  'whyChoose.expertise.desc': { en: 'Rigorous vetting process ensures only the top 3% of Latin American developers join our platform.', 'pt-br': 'Processo rigoroso de seleção garante que apenas os 3% melhores desenvolvedores da América Latina se juntem à nossa plataforma.' },
+  'whyChoose.support.title': { en: '24/7 Support', 'pt-br': 'Suporte 24/7' },
+  'whyChoose.support.desc': { en: 'Dedicated account managers and round-the-clock support in English, Spanish, and Portuguese.', 'pt-br': 'Gerentes de conta dedicados e suporte 24 horas em inglês, espanhol e português.' },
+  
+  // Statistics labels
+  'stats.satisfaction': { en: 'Client Satisfaction', 'pt-br': 'Satisfação do Cliente' },
+  'stats.projects': { en: 'Projects Delivered', 'pt-br': 'Projetos Entregues' },
+  'stats.countries': { en: 'Countries Served', 'pt-br': 'Países Atendidos' },
+  'stats.savings': { en: 'Cost Savings', 'pt-br': 'Economia de Custos' },
 };
 
 interface LanguageProviderProps {
