@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 async function optimizeFavicon() {
-  const inputImage = 'attached_assets/image (3)_1759177200016.png';
+  const inputImage = 'attached_assets/apple-touch-icon_1759178677451.png';
   const outputDir = 'client/public';
   
   // Ensure output directory exists
@@ -43,20 +43,11 @@ async function optimizeFavicon() {
       .toFile(path.join(outputDir, 'apple-touch-icon.png'));
     console.log('✅ Generated apple-touch-icon.png');
 
-    // Generate favicon.svg (if we want a vector version for modern browsers)
-    // Note: Since the source is PNG, we'll just create an optimized 48x48 version instead
-    await sharp(inputImage)
-      .resize(48, 48)
-      .png({ quality: 90, compressionLevel: 9 })
-      .toFile(path.join(outputDir, 'favicon-48x48.png'));
-    console.log('✅ Generated favicon-48x48.png');
-
     // Get file sizes for verification
     const files = [
       'favicon-16x16.png',
       'favicon-32x32.png', 
       'favicon.png',
-      'favicon-48x48.png',
       'apple-touch-icon.png'
     ];
 
