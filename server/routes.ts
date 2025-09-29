@@ -291,18 +291,18 @@ export function registerRoutes(app: Express): Server {
 
       // Create nodemailer transporter
       const transporter = nodemailer.createTransporter({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        host: process.env.SMTP_HOST || 'mail.alugae.mobi',
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: false, // true for 465, false for other ports
         auth: {
-          user: process.env.SMTP_USER,
+          user: process.env.SMTP_USER || 'noreply@alugae.mobi',
           pass: process.env.SMTP_PASS,
         },
       });
 
       // Email content
       const mailOptions = {
-        from: process.env.SMTP_USER,
+        from: process.env.SMTP_USER || 'noreply@alugae.mobi',
         to: 'contact@magenx.tech',
         subject: `Nova mensagem de contato - ${company || name}`,
         html: `
