@@ -16,6 +16,7 @@ import About from "@/pages/about";
 import Jobs from "@/pages/jobs";
 import FindTalent from "@/pages/find-talent";
 import FindWork from "@/pages/find-work";
+import Contact from "@/pages/contact";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import NotFound from "@/pages/not-found";
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/jobs" component={Jobs} />
       <Route path="/find-talent" component={FindTalent} />
       <Route path="/find-work" component={FindWork} />
+      <Route path="/contact" component={Contact} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       

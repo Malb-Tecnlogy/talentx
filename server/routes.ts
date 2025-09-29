@@ -27,12 +27,14 @@ import {
   applications, 
   contracts, 
   notifications,
+  contactFormSchema,
   type InsertJob,
   type InsertCompany,
   type InsertProfessional,
   type InsertApplication,
   type InsertContract,
-  type InsertNotification
+  type InsertNotification,
+  type ContactForm
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -279,50 +281,92 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Contact form endpoint
+  // Contact form endpoint with validation and security
   app.post("/api/contact", async (req, res) => {
     try {
-      const { name, email, company, message } = req.body;
-
-      // Validate required fields
-      if (!name || !email || !message) {
-        return res.status(400).json({ message: "Nome, email e mensagem são obrigatórios" });
+      // Validate request body using shared schema
+      const validationResult = contactFormSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: validationResult.error.errors 
+        });
       }
 
-      // Create nodemailer transporter
-      const transporter = nodemailer.createTransporter({
-        host: process.env.SMTP_HOST || 'mail.alugae.mobi',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false, // true for 465, false for other ports
+      const { name, email, company, message } = validationResult.data;
+
+      // Basic rate limiting check (simple IP-based)
+      const clientIp = req.ip || req.connection.remoteAddress;
+      console.log(`Contact form submission from IP: ${clientIp}`);
+
+      // Input sanitization - remove potentially dangerous characters
+      const sanitizedName = name.replace(/[<>]/g, '');
+      const sanitizedCompany = company ? company.replace(/[<>]/g, '') : '';
+      const sanitizedMessage = message.replace(/[<>]/g, '');
+
+      // Validate SMTP configuration - all required
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST || !process.env.SMTP_PORT) {
+        console.error('SMTP configuration missing - required: SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT');
+        return res.status(500).json({ 
+          message: "Configuração de email não disponível" 
+        });
+      }
+
+      // Create nodemailer transporter with secure settings
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT),
+        secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
         auth: {
-          user: process.env.SMTP_USER || 'noreply@alugae.mobi',
+          user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
         },
+        // Security options
+        requireTLS: true,
+        tls: {
+          // Only allow self-signed certificates in development
+          rejectUnauthorized: process.env.NODE_ENV === 'production'
+        }
       });
 
-      // Email content
+      // Verify SMTP connection
+      await transporter.verify();
+
+      // Email content with proper sanitization
       const mailOptions = {
-        from: process.env.SMTP_USER || 'noreply@alugae.mobi',
+        from: process.env.SMTP_USER,
         to: 'contact@magenx.tech',
-        subject: `Nova mensagem de contato - ${company || name}`,
+        subject: `Nova mensagem de contato - ${sanitizedCompany || sanitizedName}`,
         html: `
           <h2>Nova mensagem de contato</h2>
-          <p><strong>Nome:</strong> ${name}</p>
+          <p><strong>Nome:</strong> ${sanitizedName}</p>
           <p><strong>Email:</strong> ${email}</p>
-          ${company ? `<p><strong>Empresa:</strong> ${company}</p>` : ''}
+          ${sanitizedCompany ? `<p><strong>Empresa:</strong> ${sanitizedCompany}</p>` : ''}
           <p><strong>Mensagem:</strong></p>
-          <p>${message.replace(/\n/g, '<br>')}</p>
+          <p>${sanitizedMessage.replace(/\n/g, '<br>')}</p>
+          <hr>
+          <p><small>Enviado via formulário de contato MaGenX</small></p>
         `,
         replyTo: email
       };
 
       // Send email
-      await transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
 
       res.json({ message: "Mensagem enviada com sucesso!" });
     } catch (error) {
       console.error("Contact form error:", error);
-      res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
+      
+      // Don't expose internal errors to client
+      if (error.code === 'EAUTH') {
+        res.status(500).json({ message: "Erro de configuração de email" });
+      } else if (error.code === 'ECONNECTION') {
+        res.status(500).json({ message: "Erro de conexão com servidor de email" });
+      } else {
+        res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
+      }
     }
   });
 

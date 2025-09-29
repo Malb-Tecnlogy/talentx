@@ -352,3 +352,13 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertOAuthAccount = z.infer<typeof insertOAuthAccountSchema>;
 export type OAuthAccount = typeof oauthAccounts.$inferSelect;
+
+// Contact form schema (no database table needed, just validation)
+export const contactFormSchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(100, "Nome muito longo"),
+  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  company: z.string().max(100, "Nome da empresa muito longo").optional(),
+  message: z.string().min(10, "Mensagem deve ter pelo menos 10 caracteres").max(1000, "Mensagem muito longa"),
+});
+
+export type ContactForm = z.infer<typeof contactFormSchema>;

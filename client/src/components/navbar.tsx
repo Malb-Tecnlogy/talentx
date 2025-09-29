@@ -25,6 +25,7 @@ export default function Navbar() {
               <Link href="/jobs" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-jobs">{t('nav.jobs')}</Link>
               <Link href="/find-talent" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-talent">{t('nav.findTalent')}</Link>
               <Link href="/find-work" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-find-work">{t('nav.findWork')}</Link>
+              <Link href="/contact" className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm md:text-base" data-testid="link-contact">{t('nav.contact')}</Link>
             </div>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
