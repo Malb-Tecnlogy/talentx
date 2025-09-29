@@ -1,6 +1,7 @@
 // Server routes using blueprint:javascript_auth_all_persistance
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import * as nodemailer from "nodemailer";
 import { setupAuth } from "./auth";
 import { 
   getGoogleOAuthURL, 
@@ -275,6 +276,53 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Mark notification read error:", error);
       res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Contact form endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, company, message } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !message) {
+        return res.status(400).json({ message: "Nome, email e mensagem são obrigatórios" });
+      }
+
+      // Create nodemailer transporter
+      const transporter = nodemailer.createTransporter({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      // Email content
+      const mailOptions = {
+        from: process.env.SMTP_USER,
+        to: 'contact@magenx.tech',
+        subject: `Nova mensagem de contato - ${company || name}`,
+        html: `
+          <h2>Nova mensagem de contato</h2>
+          <p><strong>Nome:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          ${company ? `<p><strong>Empresa:</strong> ${company}</p>` : ''}
+          <p><strong>Mensagem:</strong></p>
+          <p>${message.replace(/\n/g, '<br>')}</p>
+        `,
+        replyTo: email
+      };
+
+      // Send email
+      await transporter.sendMail(mailOptions);
+
+      res.json({ message: "Mensagem enviada com sucesso!" });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
     }
   });
 

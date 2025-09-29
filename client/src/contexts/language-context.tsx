@@ -88,11 +88,11 @@ const translations: Translations = {
   // Footer section
   'footer.description': { en: 'Connecting global companies with exceptional Latin American tech talent.', 'pt-br': 'Conectando empresas globais com talentos excepcionais de TI da América Latina.' },
   'footer.forCompanies': { en: 'For Companies', 'pt-br': 'Para Empresas' },
-  'footer.findTalent': { en: 'Find Talent', 'pt-br': 'Encontrar Talentos' },
+  'footer.findTalent': { en: 'Find Talent', 'pt-br': 'Encontrar Talentos', es: 'Encontrar Talento' },
   'footer.enterprise': { en: 'Enterprise Solutions', 'pt-br': 'Soluções Empresariais' },
   'footer.successStories': { en: 'Success Stories', 'pt-br': 'Histórias de Sucesso' },
   'footer.forProfessionals': { en: 'For Professionals', 'pt-br': 'Para Profissionais' },
-  'footer.findWork': { en: 'Find Work', 'pt-br': 'Encontrar Trabalho' },
+  'footer.findWork': { en: 'Find Work', 'pt-br': 'Encontrar Trabalho', es: 'Encontrar Trabajo' },
   'footer.buildProfile': { en: 'Build Profile', 'pt-br': 'Criar Perfil' },
   'footer.resources': { en: 'Resources', 'pt-br': 'Recursos' },
   'footer.company': { en: 'Company', 'pt-br': 'Empresa' },
@@ -113,9 +113,9 @@ const translations: Translations = {
   'about.subtitle': { en: 'Connecting Global Companies with Latin American Tech Excellence', 'pt-br': 'Conectando Empresas Globais com a Excelência em TI da América Latina' },
 
   // Find Talent page (for companies)
-  'findTalent.title': { en: 'Find Top Latin American Tech Talent', 'pt-br': 'Encontre os Melhores Talentos de TI da América Latina' },
-  'findTalent.subtitle': { en: 'Connect with pre-vetted professionals who are ready to transform your business', 'pt-br': 'Conecte-se com profissionais pré-selecionados prontos para transformar seu negócio' },
-  'findTalent.journey.title': { en: 'Your Hiring Journey', 'pt-br': 'Sua Jornada de Contratação' },
+  'findTalent.title': { en: 'Find Top Latin American Tech Talent', 'pt-br': 'Encontre os Melhores Talentos de TI da América Latina', es: 'Encuentra el Mejor Talento Tecnológico de Latinoamérica' },
+  'findTalent.subtitle': { en: 'Connect with pre-vetted professionals who are ready to transform your business', 'pt-br': 'Conecte-se com profissionais pré-selecionados prontos para transformar seu negócio', es: 'Conecta con profesionales pre-seleccionados listos para transformar tu negocio' },
+  'findTalent.journey.title': { en: 'Your Hiring Journey', 'pt-br': 'Sua Jornada de Contratação', es: 'Tu Jornada de Contratación' },
   'findTalent.step1.title': { en: 'Tell Us Your Needs', 'pt-br': 'Conte-nos Suas Necessidades' },
   'findTalent.step1.desc': { en: 'Define your project requirements, technical skills needed, and team preferences through our detailed intake form.', 'pt-br': 'Defina os requisitos do seu projeto, habilidades técnicas necessárias e preferências da equipe através do nosso formulário detalhado.' },
   'findTalent.step2.title': { en: 'AI-Powered Matching', 'pt-br': 'Correspondência com IA' },

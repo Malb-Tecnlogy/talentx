@@ -3,13 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/language-context";
 import { useLocation } from "wouter";
 import { Send, ArrowRight } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ContactSection() {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,12 +30,35 @@ export default function ContactSection() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simular envio do formulário
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Redirecionar para auth após envio
-    setLocation("/auth");
-    setIsSubmitting(false);
+    try {
+      // Enviar dados do formulário para a API
+      await apiRequest('/api/contact', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      // Mostrar mensagem de sucesso
+      toast({
+        title: "Mensagem enviada!",
+        description: "Recebemos sua mensagem e entraremos em contato em breve.",
+      });
+      
+      // Limpar formulário
+      setFormData({ name: "", email: "", company: "", message: "" });
+      
+    } catch (error) {
+      console.error('Erro ao enviar formulário:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar mensagem",
+        description: "Ocorreu um erro. Tente novamente ou entre em contato diretamente.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleQuickContact = () => {
@@ -109,7 +135,6 @@ export default function ContactSection() {
                     placeholder={t('contact.form.company')}
                     value={formData.company}
                     onChange={handleInputChange}
-                    required
                     className="w-full"
                     data-testid="input-contact-company"
                   />
