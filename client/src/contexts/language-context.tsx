@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Language = 'en' | 'pt-br';
+export type Language = 'en' | 'pt-br' | 'es';
 
 interface LanguageContextType {
   language: Language;
@@ -18,61 +18,61 @@ interface Translations {
 
 const translations: Translations = {
   // Navbar
-  'nav.about': { en: 'About', 'pt-br': 'Sobre' },
-  'nav.jobs': { en: 'Jobs', 'pt-br': 'Vagas' },
-  'nav.findTalent': { en: 'Find Talent', 'pt-br': 'Encontrar Talentos' },
-  'nav.findWork': { en: 'Find Work', 'pt-br': 'Encontrar Trabalho' },
-  'nav.login': { en: 'Log In', 'pt-br': 'Entrar' },
-  'nav.signup': { en: 'Sign Up', 'pt-br': 'Cadastrar' },
+  'nav.about': { en: 'About', 'pt-br': 'Sobre', es: 'Acerca de' },
+  'nav.jobs': { en: 'Jobs', 'pt-br': 'Vagas', es: 'Empleos' },
+  'nav.findTalent': { en: 'Find Talent', 'pt-br': 'Encontrar Talentos', es: 'Encontrar Talento' },
+  'nav.findWork': { en: 'Find Work', 'pt-br': 'Encontrar Trabalho', es: 'Encontrar Trabajo' },
+  'nav.login': { en: 'Log In', 'pt-br': 'Entrar', es: 'Iniciar Sesión' },
+  'nav.signup': { en: 'Sign Up', 'pt-br': 'Cadastrar', es: 'Registrarse' },
   
   // Home page
-  'home.title': { en: 'Connect with Top Latin American Tech Talent', 'pt-br': 'Conecte-se com os Melhores Talentos de TI da América Latina' },
-  'home.subtitle': { en: 'Access vetted professionals from Brazil and Latin America, offering timezone advantages, cultural alignment, and exceptional skills for your next project.', 'pt-br': 'Acesse profissionais qualificados do Brasil e América Latina, oferecendo vantagens de fuso horário, alinhamento cultural e habilidades excepcionais para seu próximo projeto.' },
-  'home.getStarted': { en: 'Get Started', 'pt-br': 'Começar' },
-  'home.learnMore': { en: 'Learn More', 'pt-br': 'Saiba Mais' },
+  'home.title': { en: 'Connect with Top Latin American Tech Talent', 'pt-br': 'Conecte-se com os Melhores Talentos de TI da América Latina', es: 'Conecta con el Mejor Talento Tecnológico de Latinoamérica' },
+  'home.subtitle': { en: 'Access vetted professionals from Brazil and Latin America, offering timezone advantages, cultural alignment, and exceptional skills for your next project.', 'pt-br': 'Acesse profissionais qualificados do Brasil e América Latina, oferecendo vantagens de fuso horário, alinhamento cultural e habilidades excepcionais para seu próximo projeto.', es: 'Accede a profesionales calificados de Brasil y Latinoamérica, ofreciendo ventajas de zona horaria, alineación cultural y habilidades excepcionales para tu próximo proyecto.' },
+  'home.getStarted': { en: 'Get Started', 'pt-br': 'Começar', es: 'Comenzar' },
+  'home.learnMore': { en: 'Learn More', 'pt-br': 'Saiba Mais', es: 'Saber Más' },
   
   // Brazil advantages section
-  'advantages.title': { en: 'Why Choose Brazilian Talent?', 'pt-br': 'Por que Escolher Talentos Brasileiros?' },
-  'advantages.subtitle': { en: 'Brazil offers unique advantages that give you a real competitive edge', 'pt-br': 'O Brasil oferece vantagens únicas que lhe dão uma verdadeira vantagem competitiva' },
-  'advantages.timezone.title': { en: 'Timezone Advantage', 'pt-br': 'Vantagem de Fuso Horário' },
-  'advantages.timezone.desc': { en: 'Near-shore to the US, enabling real-time collaboration and seamless communication during business hours.', 'pt-br': 'Próximo aos EUA, permitindo colaboração em tempo real e comunicação fluida durante o horário comercial.' },
-  'advantages.cultural.title': { en: 'Cultural Fit', 'pt-br': 'Adequação Cultural' },
-  'advantages.cultural.desc': { en: 'Greater alignment with Western business practices, making integration smoother and more effective.', 'pt-br': 'Maior alinhamento com práticas comerciais ocidentais, tornando a integração mais suave e eficaz.' },
-  'advantages.reliability.title': { en: 'Reliability', 'pt-br': 'Confiabilidade' },
-  'advantages.reliability.desc': { en: 'Faster response times and seamless communication ensure your projects stay on track.', 'pt-br': 'Tempos de resposta mais rápidos e comunicação fluida garantem que seus projetos permaneçam no caminho certo.' },
-  'advantages.talent.title': { en: 'Skilled Talent', 'pt-br': 'Talentos Qualificados' },
-  'advantages.talent.desc': { en: 'Access to highly qualified professionals with world-class technical expertise and innovation mindset.', 'pt-br': 'Acesso a profissionais altamente qualificados com expertise técnica de classe mundial e mentalidade inovadora.' },
-  'advantages.compliance.title': { en: 'Compliance', 'pt-br': 'Conformidade' },
-  'advantages.compliance.desc': { en: 'Stronger adaptation to US and international regulations, ensuring smooth business operations.', 'pt-br': 'Maior adaptação a regulamentações americanas e internacionais, garantindo operações comerciais suaves.' },
-  'advantages.conclusion': { en: 'With Brazil, you get talent + time alignment + trust — a real competitive edge.', 'pt-br': 'Com o Brasil, você obtém talento + alinhamento de tempo + confiança — uma verdadeira vantagem competitiva.' },
+  'advantages.title': { en: 'Why Choose Brazilian Talent?', 'pt-br': 'Por que Escolher Talentos Brasileiros?', es: '¿Por qué Elegir Talento Brasileño?' },
+  'advantages.subtitle': { en: 'Brazil offers unique advantages that give you a real competitive edge', 'pt-br': 'O Brasil oferece vantagens únicas que lhe dão uma verdadeira vantagem competitiva', es: 'Brasil ofrece ventajas únicas que te dan una verdadera ventaja competitiva' },
+  'advantages.timezone.title': { en: 'Timezone Advantage', 'pt-br': 'Vantagem de Fuso Horário', es: 'Ventaja de Zona Horaria' },
+  'advantages.timezone.desc': { en: 'Near-shore to the US, enabling real-time collaboration and seamless communication during business hours.', 'pt-br': 'Próximo aos EUA, permitindo colaboração em tempo real e comunicação fluida durante o horário comercial.', es: 'Cerca de EE.UU., permitiendo colaboración en tiempo real y comunicación fluida durante horas laborales.' },
+  'advantages.cultural.title': { en: 'Cultural Fit', 'pt-br': 'Adequação Cultural', es: 'Ajuste Cultural' },
+  'advantages.cultural.desc': { en: 'Greater alignment with Western business practices, making integration smoother and more effective.', 'pt-br': 'Maior alinhamento com práticas comerciais ocidentais, tornando a integração mais suave e eficaz.', es: 'Mayor alineación con prácticas comerciales occidentales, haciendo la integración más suave y efectiva.' },
+  'advantages.reliability.title': { en: 'Reliability', 'pt-br': 'Confiabilidade', es: 'Confiabilidad' },
+  'advantages.reliability.desc': { en: 'Faster response times and seamless communication ensure your projects stay on track.', 'pt-br': 'Tempos de resposta mais rápidos e comunicação fluida garantem que seus projetos permaneçam no caminho certo.', es: 'Tiempos de respuesta más rápidos y comunicación fluida aseguran que tus proyectos se mantengan en el camino correcto.' },
+  'advantages.talent.title': { en: 'Skilled Talent', 'pt-br': 'Talentos Qualificados', es: 'Talento Calificado' },
+  'advantages.talent.desc': { en: 'Access to highly qualified professionals with world-class technical expertise and innovation mindset.', 'pt-br': 'Acesso a profissionais altamente qualificados com expertise técnica de classe mundial e mentalidade inovadora.', es: 'Acceso a profesionales altamente calificados con expertise técnica de clase mundial y mentalidad innovadora.' },
+  'advantages.compliance.title': { en: 'Compliance', 'pt-br': 'Conformidade', es: 'Cumplimiento' },
+  'advantages.compliance.desc': { en: 'Stronger adaptation to US and international regulations, ensuring smooth business operations.', 'pt-br': 'Maior adaptação a regulamentações americanas e internacionais, garantindo operações comerciais suaves.', es: 'Mayor adaptación a regulaciones estadounidenses e internacionales, asegurando operaciones comerciales fluidas.' },
+  'advantages.conclusion': { en: 'With Brazil, you get talent + time alignment + trust — a real competitive edge.', 'pt-br': 'Com o Brasil, você obtém talento + alinhamento de tempo + confiança — uma verdadeira vantagem competitiva.', es: 'Con Brasil, obtienes talento + alineación de tiempo + confianza — una verdadera ventaja competitiva.' },
   
   // Features section
-  'features.title': { en: 'Why Choose MaGenX?', 'pt-br': 'Por que Escolher MaGenX?' },
-  'features.description': { en: 'Our platform revolutionizes nearshore outsourcing with cutting-edge technology and human expertise.', 'pt-br': 'Nossa plataforma revoluciona o outsourcing nearshore com tecnologia de ponta e expertise humana.' },
-  'features.ai.title': { en: 'AI-Powered Matching', 'pt-br': 'Correspondência com IA' },
-  'features.ai.desc': { en: 'Advanced algorithms analyze skills, experience, and project requirements to find perfect matches in minutes, not weeks.', 'pt-br': 'Algoritmos avançados analisam habilidades, experiência e requisitos do projeto para encontrar correspondências perfeitas em minutos, não semanas.' },
-  'features.verified.title': { en: 'Verified Professionals', 'pt-br': 'Profissionais Verificados' },
-  'features.verified.desc': { en: 'Every talent goes through rigorous screening including technical assessments, background checks, and portfolio reviews.', 'pt-br': 'Cada talento passa por uma triagem rigorosa incluindo avaliações técnicas, verificação de antecedentes e análise de portfólio.' },
-  'features.communication.title': { en: 'Seamless Communication', 'pt-br': 'Comunicação Perfeita' },
-  'features.communication.desc': { en: 'Built-in messaging, video calls, and project management tools keep everyone aligned and productive.', 'pt-br': 'Mensagens integradas, videochamadas e ferramentas de gestão de projetos mantêm todos alinhados e produtivos.' },
-  'features.payments.title': { en: 'Secure Payments', 'pt-br': 'Pagamentos Seguros' },
-  'features.payments.desc': { en: 'Automated escrow system, milestone-based payments, and compliance with international financial regulations.', 'pt-br': 'Sistema de custódia automatizado, pagamentos baseados em marcos e conformidade com regulamentações financeiras internacionais.' },
-  'features.cultural.title': { en: 'Cultural Alignment', 'pt-br': 'Alinhamento Cultural' },
-  'features.cultural.desc': { en: 'Latin American professionals in overlapping time zones with strong English proficiency and cultural compatibility.', 'pt-br': 'Profissionais latino-americanos em fusos horários sobrepostos com forte proficiência em inglês e compatibilidade cultural.' },
-  'features.compliance.title': { en: 'Full Compliance', 'pt-br': 'Conformidade Total' },
-  'features.compliance.desc': { en: 'LGPD/GDPR compliant data handling, employment law adherence, and comprehensive contract management.', 'pt-br': 'Tratamento de dados conforme LGPD/GDPR, aderência à legislação trabalhista e gestão abrangente de contratos.' },
+  'features.title': { en: 'Why Choose MaGenX?', 'pt-br': 'Por que Escolher MaGenX?', es: '¿Por qué Elegir MaGenX?' },
+  'features.description': { en: 'Our platform revolutionizes nearshore outsourcing with cutting-edge technology and human expertise.', 'pt-br': 'Nossa plataforma revoluciona o outsourcing nearshore com tecnologia de ponta e expertise humana.', es: 'Nuestra plataforma revoluciona el outsourcing nearshore con tecnología de punta y expertise humano.' },
+  'features.ai.title': { en: 'AI-Powered Matching', 'pt-br': 'Correspondência com IA', es: 'Matching con IA' },
+  'features.ai.desc': { en: 'Advanced algorithms analyze skills, experience, and project requirements to find perfect matches in minutes, not weeks.', 'pt-br': 'Algoritmos avançados analisam habilidades, experiência e requisitos do projeto para encontrar correspondências perfeitas em minutos, não semanas.', es: 'Algoritmos avanzados analizan habilidades, experiencia y requisitos del proyecto para encontrar coincidencias perfectas en minutos, no semanas.' },
+  'features.verified.title': { en: 'Verified Professionals', 'pt-br': 'Profissionais Verificados', es: 'Profesionales Verificados' },
+  'features.verified.desc': { en: 'Every talent goes through rigorous screening including technical assessments, background checks, and portfolio reviews.', 'pt-br': 'Cada talento passa por uma triagem rigorosa incluindo avaliações técnicas, verificação de antecedentes e análise de portfólio.', es: 'Cada talento pasa por una evaluación rigurosa incluyendo evaluaciones técnicas, verificación de antecedentes y revisión de portafolio.' },
+  'features.communication.title': { en: 'Seamless Communication', 'pt-br': 'Comunicação Perfeita', es: 'Comunicación Perfecta' },
+  'features.communication.desc': { en: 'Built-in messaging, video calls, and project management tools keep everyone aligned and productive.', 'pt-br': 'Mensagens integradas, videochamadas e ferramentas de gestão de projetos mantêm todos alinhados e produtivos.', es: 'Mensajería integrada, videollamadas y herramientas de gestión de proyectos mantienen a todos alineados y productivos.' },
+  'features.payments.title': { en: 'Secure Payments', 'pt-br': 'Pagamentos Seguros', es: 'Pagos Seguros' },
+  'features.payments.desc': { en: 'Automated escrow system, milestone-based payments, and compliance with international financial regulations.', 'pt-br': 'Sistema de custódia automatizado, pagamentos baseados em marcos e conformidade com regulamentações financeiras internacionais.', es: 'Sistema de custodia automatizado, pagos basados en hitos y cumplimiento con regulaciones financieras internacionales.' },
+  'features.cultural.title': { en: 'Cultural Alignment', 'pt-br': 'Alinhamento Cultural', es: 'Alineación Cultural' },
+  'features.cultural.desc': { en: 'Latin American professionals in overlapping time zones with strong English proficiency and cultural compatibility.', 'pt-br': 'Profissionais latino-americanos em fusos horários sobrepostos com forte proficiência em inglês e compatibilidade cultural.', es: 'Profesionales latinoamericanos en zonas horarias superpuestas con fuerte competencia en inglés y compatibilidad cultural.' },
+  'features.compliance.title': { en: 'Full Compliance', 'pt-br': 'Conformidade Total', es: 'Cumplimiento Total' },
+  'features.compliance.desc': { en: 'LGPD/GDPR compliant data handling, employment law adherence, and comprehensive contract management.', 'pt-br': 'Tratamento de dados conforme LGPD/GDPR, aderência à legislação trabalhista e gestão abrangente de contratos.', es: 'Manejo de datos conforme LGPD/GDPR, adherencia a la ley laboral y gestión integral de contratos.' },
 
   // CTA section
-  'cta.title': { en: 'Ready to Transform Your Team?', 'pt-br': 'Pronto para Transformar Sua Equipe?' },
-  'cta.description': { en: 'Join thousands of companies already building exceptional products with Latin American talent through MaGenX.', 'pt-br': 'Junte-se a milhares de empresas que já estão construindo produtos excepcionais com talentos latino-americanos através do MaGenX.' },
-  'cta.startHiring': { en: 'Start Hiring', 'pt-br': 'Começar a Contratar' },
-  'cta.scheduleDemo': { en: 'Schedule Demo', 'pt-br': 'Agendar Demo' },
+  'cta.title': { en: 'Ready to Transform Your Team?', 'pt-br': 'Pronto para Transformar Sua Equipe?', es: '¿Listo para Transformar tu Equipo?' },
+  'cta.description': { en: 'Join thousands of companies already building exceptional products with Latin American talent through MaGenX.', 'pt-br': 'Junte-se a milhares de empresas que já estão construindo produtos excepcionais com talentos latino-americanos através do MaGenX.', es: 'Únete a miles de empresas que ya están construyendo productos excepcionales con talento latinoamericano a través de MaGenX.' },
+  'cta.startHiring': { en: 'Start Hiring', 'pt-br': 'Começar a Contratar', es: 'Comenzar a Contratar' },
+  'cta.scheduleDemo': { en: 'Schedule Demo', 'pt-br': 'Agendar Demo', es: 'Programar Demo' },
 
   // Jobs section
-  'jobs.title': { en: 'Latest Job Opportunities', 'pt-br': 'Últimas Oportunidades de Trabalho' },
-  'jobs.description': { en: 'Explore exciting opportunities with top companies looking for Latin American tech talent.', 'pt-br': 'Explore oportunidades empolgantes com empresas de primeira linha procurando talentos de TI latino-americanos.' },
-  'jobs.searchPlaceholder': { en: 'Search jobs by title, skills, or company...', 'pt-br': 'Pesquisar vagas por título, habilidades ou empresa...' },
-  'jobs.allTypes': { en: 'All Types', 'pt-br': 'Todos os Tipos' },
+  'jobs.title': { en: 'Latest Job Opportunities', 'pt-br': 'Últimas Oportunidades de Trabalho', es: 'Últimas Oportunidades de Empleo' },
+  'jobs.description': { en: 'Explore exciting opportunities with top companies looking for Latin American tech talent.', 'pt-br': 'Explore oportunidades empolgantes com empresas de primeira linha procurando talentos de TI latino-americanos.', es: 'Explora oportunidades emocionantes con empresas top buscando talento tecnológico latinoamericano.' },
+  'jobs.searchPlaceholder': { en: 'Search jobs by title, skills, or company...', 'pt-br': 'Pesquisar vagas por título, habilidades ou empresa...', es: 'Buscar empleos por título, habilidades o empresa...' },
+  'jobs.allTypes': { en: 'All Types', 'pt-br': 'Todos os Tipos', es: 'Todos los Tipos' },
   'jobs.fullTime': { en: 'Full Time', 'pt-br': 'Tempo Integral' },
   'jobs.partTime': { en: 'Part Time', 'pt-br': 'Meio Período' },
   'jobs.contract': { en: 'Contract', 'pt-br': 'Contrato' },
@@ -200,8 +200,23 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt-br')) {
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pt-br' || savedLanguage === 'es')) {
       setLanguageState(savedLanguage);
+    } else {
+      // Auto-detect language based on browser locale
+      const browserLang = navigator.language.toLowerCase();
+      let detectedLang: Language = 'en'; // default fallback
+      
+      if (browserLang.startsWith('pt')) {
+        detectedLang = 'pt-br';
+      } else if (browserLang.startsWith('es')) {
+        detectedLang = 'es';
+      } else {
+        detectedLang = 'en';
+      }
+      
+      setLanguageState(detectedLang);
+      localStorage.setItem('language', detectedLang);
     }
   }, []);
 

@@ -14,6 +14,7 @@ export default function LanguageSelector() {
   const languages = [
     { code: 'en' as Language, name: 'English', flag: '🇺🇸' },
     { code: 'pt-br' as Language, name: 'Português', flag: '🇧🇷' },
+    { code: 'es' as Language, name: 'Español', flag: '🇪🇸' },
   ];
 
   const currentLanguage = languages.find(lang => lang.code === language);
@@ -29,7 +30,7 @@ export default function LanguageSelector() {
         >
           <Globe className="h-4 w-4" />
           <span className="hidden md:inline">{currentLanguage?.flag}</span>
-          <span className="text-sm">{language === 'pt-br' ? 'PT' : 'EN'}</span>
+          <span className="text-sm">{language === 'pt-br' ? 'PT' : language === 'es' ? 'ES' : 'EN'}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[150px]">
