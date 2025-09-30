@@ -17,7 +17,7 @@ export default function CtaSection() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             className="bg-background text-foreground px-8 py-4 text-lg font-semibold hover:bg-background/90 transition-all shadow-lg"
-            onClick={() => window.location.href = "/auth"}
+            onClick={() => window.location.href = "/contact"}
             data-testid="button-start-hiring"
           >
             <Rocket className="mr-2" size={20} />

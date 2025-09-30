@@ -6,6 +6,7 @@ import { Target, Users, Globe, Shield, Award, Handshake } from "lucide-react";
 import andersonImage from "@assets/Anderson Alves_1759194411047.jfif";
 import andreImage from "@assets/Andre Felipe ALves_1759194411049.jpeg";
 import { useLanguage } from "@/contexts/language-context";
+import { Link } from "wouter";
 
 export default function About() {
   const { t } = useLanguage();
@@ -188,11 +189,15 @@ export default function About() {
             {t('about.cta.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-8" data-testid="button-hire-talent">
-              {t('about.cta.button.hire')}
+            <Button size="lg" className="px-8" data-testid="button-hire-talent" asChild>
+              <Link href="/contact">
+                {t('about.cta.button.hire')}
+              </Link>
             </Button>
-            <Button variant="outline" size="lg" className="px-8" data-testid="button-join-talent">
-              {t('about.cta.button.join')}
+            <Button variant="outline" size="lg" className="px-8" data-testid="button-join-talent" asChild>
+              <Link href="/find-work">
+                {t('about.cta.button.join')}
+              </Link>
             </Button>
           </div>
         </div>

@@ -23,7 +23,7 @@ export default function HeroSection() {
           <div className="pt-4 space-x-4">
             <Button 
               className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
-              onClick={() => window.location.href = "/auth"}
+              onClick={() => window.location.href = "/contact"}
               data-testid="button-get-started"
             >
               {t('home.getStarted')}
