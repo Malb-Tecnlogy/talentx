@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Email/password authentication system
 - **Real-time**: Native WebSocket implementation for live updates
 - **UI Framework**: shadcn/ui component library built on Radix UI
-- **Email/Notifications**: WebSocket-based real-time notification system
+- **Email Service**: Resend API for transactional email delivery
 - **File Storage**: Not currently implemented (future enhancement)
 
 ## Key Features
@@ -70,12 +70,13 @@ Preferred communication style: Simple, everyday language.
   - Multi-size support: Generated optimized favicons for 16x16, 32x32, and 180x180 (Apple touch icon) 
   - Professional implementation: Proper HTML references with size-specific icons for different devices and displays
   - Automated tooling: Created reusable optimization script for future favicon updates
-- **Production-Ready Contact System (September 2025):** Implemented complete contact form system with professional email delivery to contact@magenx.tech using secure SMTP configuration
-  - Backend: Secure nodemailer implementation with TLS verification, comprehensive SMTP validation, input sanitization, and Zod schema validation
-  - Frontend: react-hook-form + zodResolver integration with shadcn components, comprehensive error handling, and translated toast notifications
-  - Security: Production-safe TLS settings, input sanitization, environment-based SMTP configuration, and proper error handling
-  - Internationalization: Full trilingual support (EN/PT-BR/ES) for all contact form elements, validation messages, and user feedback
-  - Integration: Contact page routing (/contact), navbar integration, and shared schema validation between frontend and backend
+- **Resend Email Integration (September 2025):** Migrated contact form from SMTP to Resend API for reliable transactional email delivery
+  - Backend: Integrated Resend SDK with environment-based recipient configuration (development: asouzamax@gmail.com, production: contact@magenx.tech)
+  - API Configuration: Uses RESEND_API_KEY environment variable, sends from 'MaGenX Contact <onboarding@resend.dev>', includes replyTo for direct responses
+  - Contact Form: Complete system with Zod schema validation, input sanitization, comprehensive error handling, and trilingual toast notifications (EN/PT-BR/ES)
+  - Frontend: react-hook-form + zodResolver integration with shadcn components and full internationalization support
+  - Testing: Automated Playwright tests verify successful email submission, form clearing, and error handling
+  - Security: Input sanitization (removes dangerous characters), environment-based configuration, and proper API error handling
 - **User Journey Pages Created (September 2025):** Created comprehensive "Find Talent" and "Find Work" pages with step-by-step journey explanations before user registration
   - Find Talent page (/find-talent): For companies looking to hire, includes hiring journey (4 steps), benefits section, and CTA
   - Find Work page (/find-work): For professionals seeking jobs, includes career journey (4 steps), benefits section, and CTA
