@@ -139,7 +139,7 @@ export default function About() {
                   <img
                     src={member.image}
                     alt={`${member.name} profile`}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
+                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 grayscale"
                   />
                   <h3 className="font-semibold text-lg mb-1">{member.name}</h3>
                   <p className="text-primary font-medium mb-3">{member.role}</p>

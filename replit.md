@@ -65,6 +65,7 @@ Preferred communication style: Simple, everyday language.
   - Added Anderson Alves (CEO & Founder) with professional photo
   - Added Andre Felipe Alves (COO & Co-Founder) with professional photo
   - Adjusted layout to 2-column centered grid for better visual presentation
+  - Applied grayscale filter to team photos for professional black and white aesthetic
 - **Favicon Optimization (September 2025):** Implemented production-ready favicon system with massive performance improvements
   - Performance: Reduced favicon size from ~22MB to ~7KB (99.97% reduction) using Sharp image optimization
   - Multi-size support: Generated optimized favicons for 16x16, 32x32, and 180x180 (Apple touch icon) 
