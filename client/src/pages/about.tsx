@@ -4,7 +4,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Target, Users, Globe, Shield, Award, Handshake } from "lucide-react";
 import andersonImage from "@assets/Anderson Alves_1759194411047.jfif";
-import andreImage from "@assets/Andre Felipe ALves_1759194411049.jpeg";
+import andreImage from "@assets/image_1759247934172.png";
 import { useLanguage } from "@/contexts/language-context";
 import { Link } from "wouter";
 
