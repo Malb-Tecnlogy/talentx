@@ -100,7 +100,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{t('contact.info.phone')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300">+55 (61) 99509-8662</p>
+                    <p className="text-gray-600 dark:text-gray-300">+1 (347) 636-7686</p>
                   </div>
                 </div>
 
@@ -110,7 +110,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{t('contact.info.location')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300">São Paulo, Brasil</p>
+                    <p className="text-gray-600 dark:text-gray-300">Palo Alto - California</p>
                   </div>
                 </div>
               </div>
