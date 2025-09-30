@@ -110,7 +110,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{t('contact.info.location')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300">Palo Alto - California</p>
+                    <p className="text-gray-600 dark:text-gray-300">Palo Alto, California</p>
                   </div>
                 </div>
               </div>
