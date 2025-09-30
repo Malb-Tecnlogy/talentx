@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Target, Users, Globe, Shield, Award, Handshake } from "lucide-react";
+import andersonImage from "@assets/Anderson Alves_1759194411047.jfif";
+import andreImage from "@assets/Andre Felipe ALves_1759194411049.jpeg";
 
 export default function About() {
   const values = [
@@ -37,22 +39,16 @@ export default function About() {
 
   const team = [
     {
-      name: "Ana Rodriguez",
+      name: "Anderson Alves",
       role: "CEO & Founder",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b332e234?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      description: "15+ years in HR and international business development."
+      image: andersonImage,
+      description: "Visionary leader driving innovation and growth in the Latin American tech talent market."
     },
     {
-      name: "Carlos Martinez",
-      role: "CTO",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      description: "Former tech lead at major Silicon Valley companies."
-    },
-    {
-      name: "Sofia Garcia",
-      role: "Head of Talent",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      description: "Expert in Latin American talent acquisition and development."
+      name: "Andre Felipe Alves",
+      role: "COO & Co-Founder",
+      image: andreImage,
+      description: "Operations expert ensuring seamless service delivery and client satisfaction."
     }
   ];
 
@@ -137,7 +133,7 @@ export default function About() {
           <h2 className="text-3xl font-bold text-center mb-12" data-testid="text-team-title">
             Meet Our Leadership Team
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {team.map((member, index) => (
               <Card key={index} className="text-center" data-testid={`card-team-${index}`}>
                 <CardContent className="p-6">
