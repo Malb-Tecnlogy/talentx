@@ -316,10 +316,16 @@ export function registerRoutes(app: Express): Server {
       // Initialize Resend client
       const resend = new Resend(process.env.RESEND_API_KEY);
 
+      // In development/testing, Resend only allows sending to the account owner's email
+      // In production, use a verified domain to send to any email
+      const recipientEmail = process.env.NODE_ENV === 'production' 
+        ? 'contact@magenx.tech' 
+        : 'asouzamax@gmail.com';
+
       // Send email using Resend API
       const { data, error } = await resend.emails.send({
         from: 'MaGenX Contact <onboarding@resend.dev>',
-        to: 'contact@magenx.tech',
+        to: recipientEmail,
         replyTo: email,
         subject: `Nova mensagem de contato - ${sanitizedCompany || sanitizedName}`,
         html: `
