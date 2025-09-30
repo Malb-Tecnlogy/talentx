@@ -5,50 +5,52 @@ import Footer from "@/components/footer";
 import { Target, Users, Globe, Shield, Award, Handshake } from "lucide-react";
 import andersonImage from "@assets/Anderson Alves_1759194411047.jfif";
 import andreImage from "@assets/Andre Felipe ALves_1759194411049.jpeg";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function About() {
+  const { t } = useLanguage();
   const values = [
     {
       icon: Target,
-      title: "Excellence",
-      description: "We maintain the highest standards in talent vetting and service delivery."
+      title: t('about.values.excellence.title'),
+      description: t('about.values.excellence.desc')
     },
     {
       icon: Shield,
-      title: "Trust",
-      description: "Complete transparency and reliability in all our business relationships."
+      title: t('about.values.trust.title'),
+      description: t('about.values.trust.desc')
     },
     {
       icon: Globe,
-      title: "Global Reach",
-      description: "Connecting talent across Latin America with opportunities worldwide."
+      title: t('about.values.global.title'),
+      description: t('about.values.global.desc')
     },
     {
       icon: Handshake,
-      title: "Partnership",
-      description: "Building long-term relationships that benefit everyone involved."
+      title: t('about.values.partnership.title'),
+      description: t('about.values.partnership.desc')
     }
   ];
 
   const stats = [
-    { number: "10,000+", label: "Vetted Professionals" },
-    { number: "500+", label: "Partner Companies" },
-    { number: "15", label: "Countries Covered" },
-    { number: "98%", label: "Client Satisfaction" }
+    { number: "10,000+", label: t('about.stats.professionals') },
+    { number: "500+", label: t('about.stats.companies') },
+    { number: "15", label: t('about.stats.countries') },
+    { number: "98%", label: t('about.stats.satisfaction') }
   ];
 
   const team = [
     {
       name: "Anderson Alves",
-      role: "CEO & Founder",
+      role: t('about.team.anderson.role'),
       image: andersonImage,
-      description: "25+ years in Software Engineering and international business development."
+      description: t('about.team.anderson.desc')
     },
     {
       name: "Andre Felipe Alves",
-      role: "COO & Co-Founder",
+      role: t('about.team.andre.role'),
       image: andreImage,
-      description: "Former tech lead at major Silicon Valley companies and Operations expert ensuring seamless service delivery and client satisfaction."
+      description: t('about.team.andre.desc')
     }
   ];
 
@@ -60,11 +62,10 @@ export default function About() {
       <section className="py-20 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-6" data-testid="text-hero-title">
-            About MaGenX
+            {t('about.hero.title')}
           </h1>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-hero-description">
-            We're revolutionizing how companies access Latin American talent by removing barriers, 
-            ensuring compliance, and creating opportunities that benefit everyone.
+            {t('about.hero.subtitle')}
           </p>
         </div>
       </section>
@@ -75,19 +76,16 @@ export default function About() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6" data-testid="text-mission-title">
-                Our Mission
+                {t('about.mission.title')}
               </h2>
               <p className="text-lg text-muted-foreground mb-6" data-testid="text-mission-description">
-                MaGenX bridges the gap between exceptional Latin American professionals and global opportunities. 
-                We serve as the official employer, handling all compliance, contracts, and administrative complexities 
-                so our clients can focus on building great products with amazing talent.
+                {t('about.mission.desc1')}
               </p>
               <p className="text-lg text-muted-foreground mb-8">
-                Our unique model ensures legal compliance across 15+ countries while providing professionals 
-                with stable employment, benefits, and career growth opportunities.
+                {t('about.mission.desc2')}
               </p>
               <Button size="lg" data-testid="button-learn-more">
-                Learn More About Our Process
+                {t('about.mission.button')}
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-6">
@@ -108,7 +106,7 @@ export default function About() {
       <section className="py-16 bg-muted/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12" data-testid="text-values-title">
-            Our Values
+            {t('about.values.title')}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => {
@@ -131,7 +129,7 @@ export default function About() {
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12" data-testid="text-team-title">
-            Meet Our Leadership Team
+            {t('about.team.title')}
           </h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {team.map((member, index) => (
@@ -156,29 +154,23 @@ export default function About() {
       <section className="py-16 bg-muted/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12" data-testid="text-story-title">
-            Our Story
+            {t('about.story.title')}
           </h2>
           <div className="prose prose-lg mx-auto text-muted-foreground">
             <p className="text-center mb-8">
-              Founded in 2020, MaGenX emerged from a simple observation: Latin America was home to 
-              world-class technical talent, but accessing this talent pool was complicated by legal, 
-              cultural, and administrative barriers.
+              {t('about.story.intro')}
             </p>
             <div className="grid md:grid-cols-2 gap-8 text-left">
               <div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">The Challenge</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-4">{t('about.story.challenge.title')}</h3>
                 <p>
-                  Companies wanted to hire the best talent regardless of location, but navigating 
-                  international employment law, tax compliance, and cultural differences was overwhelming. 
-                  Meanwhile, talented professionals in Latin America struggled to access global opportunities.
+                  {t('about.story.challenge.desc')}
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">Our Solution</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-4">{t('about.story.solution.title')}</h3>
                 <p>
-                  We created a comprehensive platform that acts as the employer of record, handling 
-                  all legal and administrative complexities while ensuring professionals receive 
-                  competitive compensation, benefits, and career development opportunities.
+                  {t('about.story.solution.desc')}
                 </p>
               </div>
             </div>
@@ -190,18 +182,17 @@ export default function About() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-6" data-testid="text-cta-title">
-            Ready to Join Our Mission?
+            {t('about.cta.title')}
           </h2>
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
-            Whether you're a company looking for exceptional talent or a professional seeking global opportunities, 
-            we're here to make it happen.
+            {t('about.cta.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="px-8" data-testid="button-hire-talent">
-              Hire Talent
+              {t('about.cta.button.hire')}
             </Button>
             <Button variant="outline" size="lg" className="px-8" data-testid="button-join-talent">
-              Join as Professional
+              {t('about.cta.button.join')}
             </Button>
           </div>
         </div>
