@@ -1,7 +1,7 @@
 // Server routes using blueprint:javascript_auth_all_persistance
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import * as nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { setupAuth } from "./auth";
 import { 
   getGoogleOAuthURL, 
@@ -305,38 +305,22 @@ export function registerRoutes(app: Express): Server {
       const sanitizedCompany = company ? company.replace(/[<>]/g, '') : '';
       const sanitizedMessage = message.replace(/[<>]/g, '');
 
-      // Validate SMTP configuration - all required
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST || !process.env.SMTP_PORT) {
-        console.error('SMTP configuration missing - required: SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT');
+      // Validate Resend API key
+      if (!process.env.RESEND_API_KEY) {
+        console.error('RESEND_API_KEY not configured');
         return res.status(500).json({ 
           message: "Configuração de email não disponível" 
         });
       }
 
-      // Create nodemailer transporter with secure settings
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
-        secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-        // Security options
-        requireTLS: true,
-        tls: {
-          // Only allow self-signed certificates in development
-          rejectUnauthorized: process.env.NODE_ENV === 'production'
-        }
-      });
+      // Initialize Resend client
+      const resend = new Resend(process.env.RESEND_API_KEY);
 
-      // Verify SMTP connection
-      await transporter.verify();
-
-      // Email content with proper sanitization
-      const mailOptions = {
-        from: process.env.SMTP_USER,
+      // Send email using Resend API
+      const { data, error } = await resend.emails.send({
+        from: 'MaGenX Contact <onboarding@resend.dev>',
         to: 'contact@magenx.tech',
+        replyTo: email,
         subject: `Nova mensagem de contato - ${sanitizedCompany || sanitizedName}`,
         html: `
           <h2>Nova mensagem de contato</h2>
@@ -347,26 +331,21 @@ export function registerRoutes(app: Express): Server {
           <p>${sanitizedMessage.replace(/\n/g, '<br>')}</p>
           <hr>
           <p><small>Enviado via formulário de contato MaGenX</small></p>
-        `,
-        replyTo: email
-      };
+        `
+      });
 
-      // Send email
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', info.messageId);
+      if (error) {
+        console.error('Resend API error:', error);
+        return res.status(500).json({ 
+          message: "Erro ao enviar mensagem. Tente novamente." 
+        });
+      }
 
+      console.log('Email sent successfully via Resend:', data?.id);
       res.json({ message: "Mensagem enviada com sucesso!" });
     } catch (error) {
       console.error("Contact form error:", error);
-      
-      // Don't expose internal errors to client
-      if (error.code === 'EAUTH') {
-        res.status(500).json({ message: "Erro de configuração de email" });
-      } else if (error.code === 'ECONNECTION') {
-        res.status(500).json({ message: "Erro de conexão com servidor de email" });
-      } else {
-        res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
-      }
+      res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
     }
   });
 
