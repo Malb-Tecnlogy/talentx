@@ -42,13 +42,13 @@ export default function About() {
       name: "Anderson Alves",
       role: "CEO & Founder",
       image: andersonImage,
-      description: "Visionary leader driving innovation and growth in the Latin American tech talent market."
+      description: "25+ years in Software Engineering and international business development."
     },
     {
       name: "Andre Felipe Alves",
       role: "COO & Co-Founder",
       image: andreImage,
-      description: "Operations expert ensuring seamless service delivery and client satisfaction."
+      description: "Former tech lead at major Silicon Valley companies and Operations expert ensuring seamless service delivery and client satisfaction."
     }
   ];
 
