@@ -17,6 +17,23 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, CheckCircle2 } from "lucide-react";
 
 const profileUpdateSchema = z.object({
+  // Professional info
+  title: z.string().optional(),
+  bio: z.string().optional(),
+  experience: z.number().min(0).optional(),
+  hourlyRate: z.string().optional(),
+  availability: z.string().optional(),
+  location: z.string().optional(),
+  timezone: z.string().optional(),
+  
+  // Portfolio
+  portfolio: z.array(z.object({
+    title: z.string(),
+    description: z.string(),
+    url: z.string(),
+    tech: z.array(z.string()),
+  })).optional(),
+  
   // Academic experience
   education: z.array(z.object({
     formation: z.string(),
@@ -40,6 +57,13 @@ const profileUpdateSchema = z.object({
     endMonth: z.string().optional(),
     endYear: z.string().optional(),
     description: z.string(),
+  })).optional(),
+  
+  // Certifications
+  certifications: z.array(z.object({
+    name: z.string(),
+    issuer: z.string(),
+    year: z.number(),
   })).optional(),
   
   // Personal data
@@ -83,8 +107,17 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
   const form = useForm<ProfileUpdateFormData>({
     resolver: zodResolver(profileUpdateSchema),
     defaultValues: {
+      title: professional?.title || "",
+      bio: professional?.bio || "",
+      experience: professional?.experience || 0,
+      hourlyRate: professional?.hourlyRate || "",
+      availability: professional?.availability || "available",
+      location: professional?.location || "",
+      timezone: professional?.timezone || "",
+      portfolio: professional?.portfolio || [],
       education: professional?.education || [],
       workExperience: professional?.workExperience || [],
+      certifications: professional?.certifications || [],
       gender: professional?.gender || "",
       hasDisability: professional?.hasDisability || false,
       disabilityDetails: professional?.disabilityDetails || "",
@@ -104,6 +137,11 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
     },
   });
 
+  const { fields: portfolioFields, append: appendPortfolio, remove: removePortfolio } = useFieldArray({
+    control: form.control,
+    name: "portfolio",
+  });
+
   const { fields: educationFields, append: appendEducation, remove: removeEducation } = useFieldArray({
     control: form.control,
     name: "education",
@@ -112,6 +150,11 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
   const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({
     control: form.control,
     name: "workExperience",
+  });
+
+  const { fields: certificationFields, append: appendCertification, remove: removeCertification } = useFieldArray({
+    control: form.control,
+    name: "certifications",
   });
 
   const updateMutation = useMutation({
@@ -161,6 +204,251 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
         </div>
 
         <Accordion type="multiple" className="space-y-4">
+          {/* Professional Information */}
+          <AccordionItem value="professional-info">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <span>Informações Profissionais</span>
+                {form.getValues("title") && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-6 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título Profissional</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Desenvolvedor Full Stack" {...field} data-testid="input-title" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Localização</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: São Paulo, SP" {...field} data-testid="input-location" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Biografia</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Conte um pouco sobre você e sua experiência profissional..." 
+                        className="min-h-[100px]"
+                        {...field}
+                        data-testid="input-bio"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="experience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Anos de Experiência</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          placeholder="0" 
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                          value={field.value || 0}
+                          data-testid="input-experience"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hourlyRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Taxa Horária (USD)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="50.00" {...field} data-testid="input-hourly-rate" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="availability"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Disponibilidade</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-availability">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="available">Disponível</SelectItem>
+                          <SelectItem value="busy">Ocupado</SelectItem>
+                          <SelectItem value="unavailable">Indisponível</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="timezone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fuso Horário</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: America/Sao_Paulo" {...field} data-testid="input-timezone" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Portfolio */}
+          <AccordionItem value="portfolio">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <span>Portfólio</span>
+                {portfolioFields.length > 0 && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-6 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Adicione seus projetos mais relevantes para demonstrar suas habilidades.
+              </p>
+
+              {portfolioFields.map((field, index) => (
+                <Card key={field.id} className="mb-4">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Projeto {index + 1}</CardTitle>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePortfolio(index)}
+                        data-testid={`button-remove-portfolio-${index}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`portfolio.${index}.title`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título do Projeto *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: E-commerce Platform" {...field} data-testid={`input-portfolio-title-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`portfolio.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descrição *</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Descreva o projeto..." 
+                              {...field}
+                              data-testid={`input-portfolio-description-${index}`}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`portfolio.${index}.url`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL do Projeto *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} data-testid={`input-portfolio-url-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`portfolio.${index}.tech`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tecnologias (separadas por vírgula) *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="React, Node.js, PostgreSQL" 
+                              value={field.value?.join(", ") || ""}
+                              onChange={(e) => field.onChange(e.target.value.split(",").map(t => t.trim()).filter(Boolean))}
+                              data-testid={`input-portfolio-tech-${index}`}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => appendPortfolio({ title: "", description: "", url: "", tech: [] })}
+                data-testid="button-add-portfolio"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Projeto
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+
           {/* Academic Experience */}
           <AccordionItem value="education">
             <AccordionTrigger className="text-lg font-semibold">
@@ -575,6 +863,100 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
                   Adicionar outra experiência
                 </Button>
               </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Certifications */}
+          <AccordionItem value="certifications">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <span>Certificações</span>
+                {certificationFields.length > 0 && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-6 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Adicione suas certificações profissionais relevantes.
+              </p>
+
+              {certificationFields.map((field, index) => (
+                <Card key={field.id} className="mb-4">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Certificação {index + 1}</CardTitle>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeCertification(index)}
+                        data-testid={`button-remove-certification-${index}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`certifications.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome da Certificação *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: AWS Certified Solutions Architect" {...field} data-testid={`input-certification-name-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`certifications.${index}.issuer`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Instituição Emissora *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Amazon Web Services" {...field} data-testid={`input-certification-issuer-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`certifications.${index}.year`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ano de Obtenção *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="2024" 
+                              {...field}
+                              onChange={e => field.onChange(parseInt(e.target.value) || new Date().getFullYear())}
+                              value={field.value || ""}
+                              data-testid={`input-certification-year-${index}`}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => appendCertification({ name: "", issuer: "", year: new Date().getFullYear() })}
+                data-testid="button-add-certification"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Certificação
+              </Button>
             </AccordionContent>
           </AccordionItem>
 
