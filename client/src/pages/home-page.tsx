@@ -161,18 +161,6 @@ export default function HomePage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-              <CardDescription>Authentication system is working correctly</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-green-600 dark:text-green-400" data-testid="text-auth-status">
-                ✅ Authentication successful - New username/password system is active
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
