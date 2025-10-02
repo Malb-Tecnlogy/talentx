@@ -91,11 +91,11 @@ Preferred communication style: Simple, everyday language.
   - Mobile menu includes all navigation links (About, Jobs, Find Talent, Find Work, Contact) and action buttons
   - Auto-closes when navigation link is clicked for better UX
   - Language selector accessible on both desktop and mobile
-- **Quick Access Visual Integration (October 2025):** Enhanced visual integration of Quick Access section with homepage
-  - Changed from solid white background to gradient background (from-primary/10 via-primary/5 to-background)
-  - Updated text colors to use foreground color for consistency
-  - Improved visual flow between hero section and Quick Access cards
-  - Maintains responsive 2-column mobile / 4-column desktop grid layout
+- **Quick Access Section Removal (October 2025):** Removed Quick Access section from homepage per user request
+  - Completely removed StrategicShortcuts component from home-page.tsx
+  - Homepage now flows directly from Hero section to Brazil Advantages section
+  - Simplified page structure for cleaner user experience
+  - Page sections now ordered as: Hero → Brazil Advantages → Why Choose Us → Features → Contact → CTA → Jobs → Footer
 - **Jobs Page Creation:** Fixed Jobs page 404 error by creating dedicated /jobs route with proper page structure
 - **Navigation Structure:** Final navbar shows About | Jobs | Find Talent | Find Work (Admin removed per user request)
 - **Mobile Responsiveness:** Implemented comprehensive mobile-first design with adaptive text sizing, spacing, and button padding

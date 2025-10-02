@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LogOut, User, Briefcase, Shield } from "lucide-react";
 import Navbar from "@/components/navbar";
 import HeroSection from "@/components/hero-section";
-import StrategicShortcuts from "@/components/strategic-shortcuts";
 import BrazilAdvantages from "@/components/brazil-advantages";
 import WhyChooseUs from "@/components/why-choose-us";
 import FeaturesSection from "@/components/features-section";
@@ -23,7 +22,6 @@ export default function HomePage() {
       <div className="min-h-screen bg-background" data-testid="landing-page">
         <Navbar />
         <HeroSection />
-        <StrategicShortcuts />
         <BrazilAdvantages />
         <WhyChooseUs />
         <FeaturesSection />
