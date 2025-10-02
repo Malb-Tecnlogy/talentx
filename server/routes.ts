@@ -360,6 +360,43 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Application routes
+  app.get("/api/applications/my", requireAuth, async (req, res) => {
+    try {
+      const professional = await storage.getProfessionalByUserId(req.user.id);
+      if (!professional) {
+        return res.status(404).json({ message: "Professional profile not found" });
+      }
+
+      const applications = await storage.getApplicationsByProfessional(professional.id);
+      
+      const applicationsWithJobs = await Promise.all(
+        applications.map(async (app) => {
+          const job = await storage.getJob(app.jobId);
+          const company = job ? await storage.getCompany(job.companyId) : null;
+          return {
+            ...app,
+            job: job ? {
+              id: job.id,
+              title: job.title,
+              description: job.description,
+              type: job.type,
+              budget: job.budget,
+              company: company ? {
+                id: company.id,
+                name: company.name,
+              } : null
+            } : null
+          };
+        })
+      );
+
+      res.json(applicationsWithJobs);
+    } catch (error) {
+      console.error("Get applications error:", error);
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
   app.post("/api/applications", requireAuth, async (req, res) => {
     try {
       // Get user's professional profile

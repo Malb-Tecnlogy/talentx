@@ -109,3 +109,14 @@ Preferred communication style: Simple, everyday language.
   - Frontend: ProfileUpdateForm component already implemented with accordion UI for academic experience, work experience, personal data, diversity info, and skills (max 30)
   - Validation: Request body validated against strict schema before updates, rejecting unauthorized fields and returning 400 for invalid data
   - Best Practices: Followed secure coding practices with proper error handling, field whitelisting, and ownership checks
+- **Query Key Consistency Fix (October 2025):** Fixed critical bug causing professional profile creation screen to persist after profile creation
+  - Corrected all query key inconsistencies: changed /api/professionals/my to /api/professionals/me across dashboard and profile update form
+  - Fixed cache invalidation preventing dashboard from loading after profile creation
+  - All professional profile queries now use consistent /api/professionals/me endpoint
+- **Applied Jobs Section (October 2025):** Added comprehensive job applications tracking to professional dashboard
+  - Backend: Created GET /api/applications/my route that returns applications with full job and company details
+  - Frontend: Added "Vagas Aplicadas" card displaying all user job applications with status, match score, and proposed rate
+  - UI Components: Application cards show job title, company name, job type, budget, application date, and status badges (Pendente/Em Análise/Selecionado/Rejeitado)
+  - Visual Features: Match score progress bar, color-coded status badges (green for selected, red for rejected, gray for pending)
+  - Empty State: Friendly message when no applications exist, encouraging users to browse recommended jobs
+  - Data Enrichment: Each application includes nested job and company information for complete context
