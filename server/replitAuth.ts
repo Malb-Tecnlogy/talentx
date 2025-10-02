@@ -133,10 +133,16 @@ export async function createOrLinkOAuthUser(provider: 'google' | 'apple', userDa
   lastName?: string;
   profileImageUrl?: string;
 }): Promise<{ user: any; isNewUser: boolean }> {
+  console.log(`[OAuth] Creating/linking ${provider} user:`, { 
+    email: userData.email, 
+    providerUserId: userData.providerUserId 
+  });
+  
   // Check if OAuth account already exists
   const existingOAuthAccount = await storage.getOAuthAccount(provider, userData.providerUserId);
   
   if (existingOAuthAccount) {
+    console.log('[OAuth] Existing OAuth account found, fetching user');
     // Get existing user
     const user = await storage.getUser(existingOAuthAccount.userId);
     return { user, isNewUser: false };
@@ -147,18 +153,34 @@ export async function createOrLinkOAuthUser(provider: 'google' | 'apple', userDa
   let isNewUser = false;
   
   if (!user) {
+    console.log('[OAuth] Creating new user for OAuth account');
     // Create new user with OAuth
-    user = await storage.upsertUser({
-      email: userData.email.toLowerCase(),
-      username: `${provider}_${userData.providerUserId}`, // Unique username for OAuth users
-      password: 'oauth_user', // Dummy password since OAuth users don't use password auth
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      profileImageUrl: userData.profileImageUrl,
-      role: 'professional', // Default role
-      emailVerified: true // OAuth emails are considered verified
-    });
-    isNewUser = true;
+    // Generate a unique username from email or provider ID
+    const baseUsername = userData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const uniqueSuffix = userData.providerUserId.substring(0, 8);
+    const username = `${baseUsername}_${uniqueSuffix}`;
+    
+    console.log('[OAuth] Generated username:', username);
+    
+    try {
+      user = await storage.upsertUser({
+        email: userData.email.toLowerCase(),
+        username, // Unique username for OAuth users
+        password: 'oauth_user_no_password', // Dummy password since OAuth users don't use password auth
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: 'professional', // Default role
+        emailVerified: true // OAuth emails are considered verified
+      });
+      console.log('[OAuth] User created successfully:', user.id);
+      isNewUser = true;
+    } catch (error) {
+      console.error('[OAuth] Error creating user:', error);
+      throw error;
+    }
+  } else {
+    console.log('[OAuth] Existing user found by email:', user.id);
   }
   
   // Create OAuth account link
