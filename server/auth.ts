@@ -33,18 +33,29 @@ export function setupAuth(app: Express) {
   // Generate a session secret if not provided
   const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
   
+  // Detect production environment (REPLIT_DEPLOYMENT="true" in deployed apps)
+  const isProduction = Boolean(process.env.REPLIT_DEPLOYMENT) || process.env.NODE_ENV === 'production';
+  
+  console.log('[Auth Setup] Environment:', { 
+    isProduction, 
+    REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+    NODE_ENV: process.env.NODE_ENV 
+  });
+  
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction, // true in production for HTTPS
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for OAuth cross-site POST in production
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for OAuth cross-site POST in production
     },
   };
+
+  console.log('[Auth Setup] Cookie settings:', sessionSettings.cookie);
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
