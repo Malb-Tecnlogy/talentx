@@ -89,12 +89,17 @@ export function registerRoutes(app: Express): Server {
         profileImageUrl: userInfo.picture
       });
       
-      // Set session
-      req.session.userId = user.id;
-      
-      // Redirect to appropriate dashboard
-      const redirectUrl = getDashboardRedirect(user, isNewUser);
-      res.redirect(redirectUrl);
+      // Login user with Passport
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.redirect('/auth?error=login_failed');
+        }
+        
+        // Redirect to appropriate dashboard
+        const redirectUrl = getDashboardRedirect(user, isNewUser);
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       console.error('Google OAuth callback error:', error);
       res.redirect('/auth?error=oauth_failed');
@@ -138,12 +143,17 @@ export function registerRoutes(app: Express): Server {
       // Create or link OAuth user
       const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
       
-      // Set session
-      req.session.userId = dbUser.id;
-      
-      // Redirect to appropriate dashboard
-      const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
-      res.redirect(redirectUrl);
+      // Login user with Passport
+      req.login(dbUser, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.redirect('/auth?error=login_failed');
+        }
+        
+        // Redirect to appropriate dashboard
+        const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       console.error('Apple OAuth callback error:', error);
       res.redirect('/auth?error=oauth_failed');
@@ -177,12 +187,17 @@ export function registerRoutes(app: Express): Server {
         profileImageUrl: userInfo.picture
       });
       
-      // Set session
-      req.session.userId = user.id;
-      
-      // Redirect to appropriate dashboard
-      const redirectUrl = getDashboardRedirect(user, isNewUser);
-      res.redirect(redirectUrl);
+      // Login user with Passport
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.redirect('/auth?error=login_failed');
+        }
+        
+        // Redirect to appropriate dashboard
+        const redirectUrl = getDashboardRedirect(user, isNewUser);
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       console.error('Google OAuth callback error:', error);
       res.redirect('/auth?error=oauth_failed');
@@ -212,12 +227,17 @@ export function registerRoutes(app: Express): Server {
       // Create or link OAuth user
       const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
       
-      // Set session
-      req.session.userId = dbUser.id;
-      
-      // Redirect to appropriate dashboard
-      const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
-      res.redirect(redirectUrl);
+      // Login user with Passport
+      req.login(dbUser, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.redirect('/auth?error=login_failed');
+        }
+        
+        // Redirect to appropriate dashboard
+        const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       console.error('Apple OAuth callback error:', error);
       res.redirect('/auth?error=oauth_failed');
