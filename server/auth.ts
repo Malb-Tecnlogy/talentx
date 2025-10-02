@@ -6,7 +6,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, SafeUser, InsertUser, insertUserSchema, safeUserSchema } from "@shared/schema";
+import { User as SelectUser, SafeUser, InsertUser, insertUserSchema } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -72,7 +72,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: string, done) => {
     try {
-      const user = await storage.getSafeUser(id);
+      const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
       done(error);
@@ -99,9 +99,11 @@ export function setupAuth(app: Express) {
       }
 
       // Check for existing email (case-insensitive)
-      const existingEmail = await storage.getUserByEmail(email);
-      if (existingEmail) {
-        return res.status(400).json({ message: "Email already exists" });
+      if (email) {
+        const existingEmail = await storage.getUserByEmail(email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
       }
 
       const hashedPassword = await hashPassword(password);
@@ -114,7 +116,13 @@ export function setupAuth(app: Express) {
         role: role || "professional",
       });
 
-      req.login(safeUser, (err) => {
+      // Get full user for req.login (it needs the complete user object)
+      const fullUser = await storage.getUserByUsername(username);
+      if (!fullUser) {
+        return res.status(500).json({ message: "Failed to create user" });
+      }
+
+      req.login(fullUser, (err) => {
         if (err) return next(err);
         res.status(201).json(safeUser);
       });
@@ -136,7 +144,8 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-        const safeUser = safeUserSchema.parse(user);
+        // Remove sensitive fields manually
+        const { password, passwordHash, emailVerificationToken, passwordResetToken, ...safeUser } = user;
         return res.status(200).json(safeUser);
       });
     })(req, res, next);

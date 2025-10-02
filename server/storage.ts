@@ -115,7 +115,10 @@ export class DatabaseStorage implements IStorage {
   async getSafeUser(id: string): Promise<SafeUser | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     if (!user) return undefined;
-    return safeUserSchema.parse(user);
+    
+    // Remove sensitive fields manually to avoid Zod strict validation issues
+    const { password, passwordHash, emailVerificationToken, passwordResetToken, ...safeUser } = user;
+    return safeUser as SafeUser;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -126,10 +129,13 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<SafeUser> {
     const normalizedUser = {
       ...user,
-      email: user.email.toLowerCase() // Normalize email to lowercase
+      email: user.email?.toLowerCase() // Normalize email to lowercase
     };
     const [newUser] = await db.insert(users).values(normalizedUser).returning();
-    return safeUserSchema.parse(newUser);
+    
+    // Remove sensitive fields manually to avoid Zod strict validation issues
+    const { password, passwordHash, emailVerificationToken, passwordResetToken, ...safeUser } = newUser;
+    return safeUser as SafeUser;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
