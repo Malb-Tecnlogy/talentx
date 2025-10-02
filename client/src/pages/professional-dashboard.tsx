@@ -71,8 +71,8 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
         description: "Professional profile created successfully!",
       });
       // Invalidate both professional and user queries to update role
-      queryClient.invalidateQueries({ queryKey: ["/api/professionals/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/professionals/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       onSuccess();
     },
     onError: (error: any) => {
@@ -544,7 +544,14 @@ export default function ProfessionalDashboard() {
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={async () => {
+                  try {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = "/";
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                  }
+                }}
                 data-testid="button-logout"
               >
                 Logout

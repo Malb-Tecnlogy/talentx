@@ -55,8 +55,8 @@ function CompanyProfileForm({ onSuccess }: { onSuccess: () => void }) {
         description: "Company profile created successfully!",
       });
       // Invalidate both company and user queries to update role
-      queryClient.invalidateQueries({ queryKey: ["/api/companies/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/companies/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       onSuccess();
     },
     onError: (error: any) => {
@@ -349,7 +349,14 @@ export default function CompanyDashboard() {
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={async () => {
+                  try {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = "/";
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                  }
+                }}
                 data-testid="button-logout"
               >
                 Logout
