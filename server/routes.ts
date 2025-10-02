@@ -121,41 +121,64 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.post('/api/auth/apple/callback', async (req, res) => {
+    console.log('[Apple OAuth] Callback received');
+    console.log('[Apple OAuth] Body:', JSON.stringify(req.body).substring(0, 200));
+    console.log('[Apple OAuth] Session ID:', req.sessionID);
+    console.log('[Apple OAuth] Session state:', req.session?.oauthState);
+    
     try {
       const { id_token, state, user } = req.body;
       
       if (!id_token || !state) {
+        console.error('[Apple OAuth] Missing id_token or state');
         return res.redirect('/auth?error=invalid_oauth_response');
       }
       
+      console.log('[Apple OAuth] Validating state...');
       // Validate state to prevent CSRF
       if (!validateOAuthState(req.session, state)) {
+        console.error('[Apple OAuth] State validation failed');
         return res.redirect('/auth?error=invalid_state');
       }
       
+      console.log('[Apple OAuth] State validated, validating token...');
       // Validate Apple ID token
       const nonce = req.session.oauthNonce;
       const payload = await validateAppleIdToken(id_token, nonce);
       
+      console.log('[Apple OAuth] Token validated, extracting user info...');
       // Extract user info
       const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
+      console.log('[Apple OAuth] User info:', userInfo.email);
       
+      console.log('[Apple OAuth] Creating/linking user...');
       // Create or link OAuth user
       const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
+      console.log('[Apple OAuth] User created/linked, role:', dbUser.role);
       
       // Login user with Passport
       req.login(dbUser, (err) => {
         if (err) {
-          console.error('Passport login error:', err);
+          console.error('[Apple OAuth] Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
-        res.redirect(redirectUrl);
+        console.log('[Apple OAuth] User logged in successfully');
+        // Save session explicitly before redirect (important for mobile OAuth)
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Apple OAuth] Session save error:', saveErr);
+            return res.redirect('/auth?error=session_failed');
+          }
+          
+          // Redirect to appropriate dashboard
+          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          console.log('[Apple OAuth] Redirecting to:', redirectUrl);
+          res.redirect(redirectUrl);
+        });
       });
     } catch (error) {
-      console.error('Apple OAuth callback error:', error);
+      console.error('[Apple OAuth] Callback error:', error);
       res.redirect('/auth?error=oauth_failed');
     }
   });
@@ -205,38 +228,62 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.post('/auth/apple/callback', async (req, res) => {
+    console.log('[Apple OAuth ALT] Callback received (no /api prefix)');
+    console.log('[Apple OAuth ALT] Body:', JSON.stringify(req.body).substring(0, 200));
+    console.log('[Apple OAuth ALT] Session ID:', req.sessionID);
+    console.log('[Apple OAuth ALT] Session state:', req.session?.oauthState);
+    
     try {
       const { id_token, state, user } = req.body;
       
       if (!id_token || !state) {
+        console.error('[Apple OAuth ALT] Missing id_token or state');
         return res.redirect('/auth?error=invalid_oauth_response');
       }
       
+      console.log('[Apple OAuth ALT] Validating state...');
       // Validate state to prevent CSRF
       if (!validateOAuthState(req.session, state)) {
+        console.error('[Apple OAuth ALT] State validation failed');
         return res.redirect('/auth?error=invalid_state');
       }
       
+      console.log('[Apple OAuth ALT] State validated, validating token...');
       // Validate Apple ID token
       const nonce = req.session.oauthNonce;
       const payload = await validateAppleIdToken(id_token, nonce);
       
+      console.log('[Apple OAuth ALT] Token validated, extracting user info...');
       // Extract user info
       const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
+      console.log('[Apple OAuth ALT] User info:', userInfo.email);
       
+      console.log('[Apple OAuth ALT] Creating/linking user...');
       // Create or link OAuth user
       const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
+      console.log('[Apple OAuth ALT] User created/linked, role:', dbUser.role);
       
       // Login user with Passport
       req.login(dbUser, (err) => {
         if (err) {
-          console.error('Passport login error:', err);
+          console.error('[Apple OAuth ALT] Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
-        res.redirect(redirectUrl);
+        console.log('[Apple OAuth ALT] User logged in successfully');
+        // Save session explicitly before redirect (important for mobile OAuth)
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Apple OAuth ALT] Session save error:', saveErr);
+            return res.redirect('/auth?error=session_failed');
+          }
+          
+          console.log('[Apple OAuth ALT] Session saved, redirecting...');
+          // Redirect to appropriate dashboard
+          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl);
+          res.redirect(redirectUrl);
+        });
       });
     } catch (error) {
       console.error('Apple OAuth callback error:', error);
