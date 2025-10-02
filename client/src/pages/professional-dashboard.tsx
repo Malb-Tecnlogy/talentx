@@ -414,7 +414,7 @@ export default function ProfessionalDashboard() {
 
   // Fetch professional data
   const { data: professional, isLoading: professionalLoading, error: professionalError } = useQuery<Professional>({
-    queryKey: ["/api/professionals/my"],
+    queryKey: ["/api/professionals/me"],
     enabled: !!user, // Enable for any authenticated user
     retry: false,
   });
@@ -430,7 +430,7 @@ export default function ProfessionalDashboard() {
   });
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ["/api/professionals/my/job-recommendations"],
+    queryKey: ["/api/professionals/me/job-recommendations"],
     enabled: !!professional,
   });
 

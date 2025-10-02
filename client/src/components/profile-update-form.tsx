@@ -163,7 +163,7 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/professionals/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/professionals/me"] });
       toast({
         title: "Perfil atualizado",
         description: "Seu perfil foi atualizado com sucesso!",
