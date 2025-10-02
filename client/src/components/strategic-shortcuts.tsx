@@ -43,10 +43,10 @@ export default function StrategicShortcuts() {
   };
 
   return (
-    <section className="py-16 bg-white dark:bg-gray-900" data-testid="strategic-shortcuts">
+    <section className="py-16 bg-gradient-to-b from-primary/10 via-primary/5 to-background" data-testid="strategic-shortcuts">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4" data-testid="text-shortcuts-title">
+          <h2 className="text-3xl font-bold text-foreground mb-4" data-testid="text-shortcuts-title">
             {t('shortcuts.title')}
           </h2>
         </div>
@@ -67,7 +67,7 @@ export default function StrategicShortcuts() {
                     <div className={`w-16 h-16 ${shortcut.color} rounded-full flex items-center justify-center mx-auto mb-4 transition-transform group-hover:scale-110`}>
                       <IconComponent className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid={`text-shortcut-title-${index}`}>
+                    <h3 className="text-lg font-semibold text-foreground group-hover:text-blue-600 transition-colors" data-testid={`text-shortcut-title-${index}`}>
                       {t(shortcut.titleKey)}
                     </h3>
                   </CardContent>
@@ -82,7 +82,7 @@ export default function StrategicShortcuts() {
                     <div className={`w-16 h-16 ${shortcut.color} rounded-full flex items-center justify-center mx-auto mb-4 transition-transform group-hover:scale-110`}>
                       <IconComponent className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid={`text-shortcut-title-${index}`}>
+                    <h3 className="text-lg font-semibold text-foreground group-hover:text-blue-600 transition-colors" data-testid={`text-shortcut-title-${index}`}>
                       {t(shortcut.titleKey)}
                     </h3>
                   </CardContent>
