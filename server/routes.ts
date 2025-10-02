@@ -211,6 +211,11 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error('[Apple OAuth] Callback error:', error);
+      console.error('[Apple OAuth] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
       res.redirect('/auth?error=oauth_failed');
     }
   });
