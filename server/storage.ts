@@ -109,13 +109,8 @@ export class DatabaseStorage implements IStorage {
       this.sessionStore = new PostgresSessionStore({
         conString: process.env.DATABASE_URL,
         tableName: 'session',
-        createTableIfMissing: true,
-        // Suppress "already exists" errors - table may exist from previous runs
-        errorLog: (error: Error) => {
-          if (!error.message.includes('already exists')) {
-            console.error('[Session Store Error]:', error);
-          }
-        }
+        // Don't auto-create table in production - it already exists
+        createTableIfMissing: false
       });
     } else {
       console.log('[Storage] Using memory session store for development');

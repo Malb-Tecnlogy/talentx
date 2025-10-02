@@ -1,0 +1,100 @@
+2025-10-02 17:53:26.85
+6cc6107d
+User
+error: relation "IDX_session_expire" already exists
+2025-10-02 17:53:26.85
+6cc6107d
+User
+at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+2025-10-02 17:53:26.85
+6cc6107d
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-02 17:53:26.85
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:322:21)
+2025-10-02 17:53:26.85
+6cc6107d
+User
+at async PGStore._rawEnsureSessionStoreTable (/home/runner/workspace/node_modules/connect-pg-simple/index.js:186:9)
+2025-10-02 17:53:26.85
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:315:7)
+2025-10-02 17:53:31.91
+6cc6107d
+User
+error: relation "IDX_session_expire" already exists
+2025-10-02 17:53:31.91
+6cc6107d
+User
+at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+2025-10-02 17:53:31.91
+6cc6107d
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-02 17:53:31.91
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:322:21)
+2025-10-02 17:53:31.91
+6cc6107d
+User
+at async PGStore._rawEnsureSessionStoreTable (/home/runner/workspace/node_modules/connect-pg-simple/index.js:186:9)
+2025-10-02 17:53:31.91
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:315:7)
+2025-10-02 17:53:36.85
+6cc6107d
+User
+error: relation "IDX_session_expire" already exists
+2025-10-02 17:53:36.85
+6cc6107d
+User
+at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+2025-10-02 17:53:36.85
+6cc6107d
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-02 17:53:36.85
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:322:21)
+2025-10-02 17:53:36.85
+6cc6107d
+User
+at async PGStore._rawEnsureSessionStoreTable (/home/runner/workspace/node_modules/connect-pg-simple/index.js:186:9)
+2025-10-02 17:53:36.85
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:315:7)
+2025-10-02 17:53:39.64
+6cc6107d
+User
+error: relation "IDX_session_expire" already exists
+2025-10-02 17:53:39.64
+6cc6107d
+User
+at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+2025-10-02 17:53:39.64
+6cc6107d
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-02 17:53:39.64
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:322:21)
+2025-10-02 17:53:39.64
+6cc6107d
+User
+at async PGStore._rawEnsureSessionStoreTable (/home/runner/workspace/node_modules/connect-pg-simple/index.js:186:9)
+2025-10-02 17:53:39.64
+6cc6107d
+User
+at async PGStore._asyncQuery (/home/runner/workspace/node_modules/connect-pg-simple/index.js:315:7)
+2025-10-02 17:54:00.35
+510df79b
+System
+system: received signal terminated
