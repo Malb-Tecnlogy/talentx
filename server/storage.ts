@@ -110,6 +110,12 @@ export class DatabaseStorage implements IStorage {
         conString: process.env.DATABASE_URL,
         tableName: 'session',
         createTableIfMissing: true,
+        // Suppress "already exists" errors - table may exist from previous runs
+        errorLog: (error: Error) => {
+          if (!error.message.includes('already exists')) {
+            console.error('[Session Store Error]:', error);
+          }
+        }
       });
     } else {
       console.log('[Storage] Using memory session store for development');
