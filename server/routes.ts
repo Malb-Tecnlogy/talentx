@@ -51,12 +51,24 @@ export function registerRoutes(app: Express): Server {
       
       const state = generateSecureState();
       storeOAuthState(req.session, state);
-      const authUrl = await getGoogleOAuthURL(state);
       
-      console.log('[OAuth] Generated Google auth URL:', authUrl);
-      console.log('[OAuth] Redirecting to Google OAuth...');
-      
-      res.redirect(authUrl);
+      // Save session explicitly before redirect (critical for OAuth flow)
+      req.session.save(async (err) => {
+        if (err) {
+          console.error('[Google OAuth Init] Session save error:', err);
+          return res.redirect('/auth?error=session_failed');
+        }
+        
+        try {
+          const authUrl = await getGoogleOAuthURL(state);
+          console.log('[OAuth] Generated Google auth URL:', authUrl);
+          console.log('[OAuth] Redirecting to Google OAuth...');
+          res.redirect(authUrl);
+        } catch (error) {
+          console.error('Google OAuth URL generation error:', error);
+          res.redirect('/auth?error=oauth_failed');
+        }
+      });
     } catch (error) {
       console.error('Google OAuth initiation error:', error);
       res.redirect('/auth?error=oauth_failed');
@@ -112,8 +124,28 @@ export function registerRoutes(app: Express): Server {
       const state = generateSecureState();
       const nonce = generateSecureNonce();
       storeOAuthState(req.session, state, nonce);
-      const authUrl = await getAppleOAuthURL(state, nonce);
-      res.redirect(authUrl);
+      
+      console.log('[Apple OAuth Init] Storing state and nonce in session:', {
+        sessionID: req.sessionID,
+        state: state.substring(0, 10) + '...',
+        nonce: nonce.substring(0, 10) + '...'
+      });
+      
+      // Save session explicitly before redirect (critical for OAuth flow)
+      req.session.save((err) => {
+        if (err) {
+          console.error('[Apple OAuth Init] Session save error:', err);
+          return res.redirect('/auth?error=session_failed');
+        }
+        
+        console.log('[Apple OAuth Init] Session saved, redirecting to Apple');
+        getAppleOAuthURL(state, nonce).then(authUrl => {
+          res.redirect(authUrl);
+        }).catch(error => {
+          console.error('[Apple OAuth Init] URL generation error:', error);
+          res.redirect('/auth?error=oauth_failed');
+        });
+      });
     } catch (error) {
       console.error('Apple OAuth initiation error:', error);
       res.redirect('/auth?error=oauth_failed');
