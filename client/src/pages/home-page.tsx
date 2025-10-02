@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, User, Briefcase, Shield } from "lucide-react";
+import { Link } from "wouter";
 import Navbar from "@/components/navbar";
 import HeroSection from "@/components/hero-section";
 import BrazilAdvantages from "@/components/brazil-advantages";
@@ -130,32 +131,44 @@ export default function HomePage() {
               <div className="space-y-3">
                 {user?.role === "professional" && (
                   <>
-                    <Button className="w-full" variant="default" data-testid="button-find-jobs">
-                      Find Jobs
-                    </Button>
-                    <Button className="w-full" variant="outline" data-testid="button-update-profile">
-                      Update Profile
-                    </Button>
+                    <Link href="/jobs">
+                      <Button className="w-full" variant="default" data-testid="button-find-jobs">
+                        Find Jobs
+                      </Button>
+                    </Link>
+                    <Link href="/professional">
+                      <Button className="w-full" variant="outline" data-testid="button-update-profile">
+                        Update Profile
+                      </Button>
+                    </Link>
                   </>
                 )}
                 {user?.role === "company" && (
                   <>
-                    <Button className="w-full" variant="default" data-testid="button-post-job">
-                      Post a Job
-                    </Button>
-                    <Button className="w-full" variant="outline" data-testid="button-find-talent">
-                      Find Talent
-                    </Button>
+                    <Link href="/company">
+                      <Button className="w-full" variant="default" data-testid="button-post-job">
+                        Post a Job
+                      </Button>
+                    </Link>
+                    <Link href="/jobs">
+                      <Button className="w-full" variant="outline" data-testid="button-find-talent">
+                        Find Talent
+                      </Button>
+                    </Link>
                   </>
                 )}
                 {user?.role === "admin" && (
                   <>
-                    <Button className="w-full" variant="default" data-testid="button-manage-users">
-                      Manage Users
-                    </Button>
-                    <Button className="w-full" variant="outline" data-testid="button-view-analytics">
-                      View Analytics
-                    </Button>
+                    <Link href="/admin">
+                      <Button className="w-full" variant="default" data-testid="button-manage-users">
+                        Manage Users
+                      </Button>
+                    </Link>
+                    <Link href="/admin">
+                      <Button className="w-full" variant="outline" data-testid="button-view-analytics">
+                        View Analytics
+                      </Button>
+                    </Link>
                   </>
                 )}
               </div>
