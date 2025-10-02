@@ -111,8 +111,47 @@ export const professionals = pgTable("professionals", {
   location: varchar("location"),
   timezone: varchar("timezone"),
   portfolio: jsonb("portfolio").$type<{ title: string; description: string; url: string; tech: string[] }[]>(),
-  education: jsonb("education").$type<{ degree: string; institution: string; year: number }[]>(),
+  // Academic experience - array of education entries
+  education: jsonb("education").$type<{
+    formation: string; // Superior, Mestrado, etc
+    degree: string; // Graduação, Mestrado, etc
+    status: string; // Completo, Cursando, etc
+    course: string;
+    institution: string;
+    startMonth: string;
+    startYear: string;
+    endMonth?: string;
+    endYear?: string;
+  }[]>(),
+  // Professional experience - array of work entries
+  workExperience: jsonb("work_experience").$type<{
+    company: string;
+    position: string;
+    isCurrent: boolean;
+    startMonth: string;
+    startYear: string;
+    endMonth?: string;
+    endYear?: string;
+    description: string;
+  }[]>(),
   certifications: jsonb("certifications").$type<{ name: string; issuer: string; year: number }[]>(),
+  // Personal data
+  gender: varchar("gender"), // Feminino, Masculino, Não-binário, Outros, Prefiro não responder
+  hasDisability: boolean("has_disability"),
+  disabilityDetails: text("disability_details"),
+  address: varchar("address"),
+  zipCode: varchar("zip_code"),
+  state: varchar("state"),
+  city: varchar("city"),
+  linkedinUrl: varchar("linkedin_url"),
+  // Diversity data
+  originState: varchar("origin_state"),
+  originCity: varchar("origin_city"),
+  pronoun: varchar("pronoun"), // Ela/Dele, Ele/Dele, Prefiro não responder
+  genderIdentity: varchar("gender_identity"), // Cisgênero, Transgênero, Prefiro não responder
+  sexualOrientation: varchar("sexual_orientation"), // Assexual, Bissexual, Heterossexual, Homossexual, Pansexual, Prefiro não responder
+  race: varchar("race"), // Amarela, Branca, Indígena, Parda, Preta, Prefiro não responder
+  diversityConsent: boolean("diversity_consent"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -292,6 +331,13 @@ export const insertProfessionalSchema = createInsertSchema(professionals).omit({
   updatedAt: true,
 });
 
+export const updateProfessionalSchema = createInsertSchema(professionals).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 export const insertJobSchema = createInsertSchema(jobs).omit({
   id: true,
   createdAt: true,
@@ -341,6 +387,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type Company = typeof companies.$inferSelect;
 export type InsertProfessional = z.infer<typeof insertProfessionalSchema>;
+export type UpdateProfessional = z.infer<typeof updateProfessionalSchema>;
 export type Professional = typeof professionals.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;

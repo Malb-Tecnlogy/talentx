@@ -12,10 +12,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2 } from "lucide-react";
+import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2, Edit } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Professional } from "@shared/schema";
 import { SuggestionInput } from "@/components/ui/suggestion-input";
+import { ProfileUpdateForm } from "@/components/profile-update-form";
 
 // Professional profile form schema
 const professionalProfileSchema = z.object({
@@ -394,6 +395,7 @@ export default function ProfessionalDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [profileCreated, setProfileCreated] = useState(false);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -532,6 +534,15 @@ export default function ProfessionalDashboard() {
                 </span>
               </div>
               <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUpdateForm(!showUpdateForm)}
+                data-testid="button-edit-profile"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                {showUpdateForm ? "View Dashboard" : "Edit Profile"}
+              </Button>
+              <Button 
                 variant="ghost" 
                 onClick={() => window.location.href = "/api/logout"}
                 data-testid="button-logout"
@@ -544,6 +555,18 @@ export default function ProfessionalDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Show Update Form if toggled */}
+        {showUpdateForm ? (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">Meu currículo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProfileUpdateForm professional={professional} />
+            </CardContent>
+          </Card>
+        ) : (
+          <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -699,6 +722,8 @@ export default function ProfessionalDashboard() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

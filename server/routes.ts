@@ -300,6 +300,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch("/api/professionals/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Verify ownership
+      const professional = await storage.getProfessional(id);
+      if (!professional || professional.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized to update this profile" });
+      }
+
+      // Validate request body - only allow specific fields
+      const { updateProfessionalSchema } = await import("@shared/schema");
+      const validatedData = updateProfessionalSchema.parse(req.body);
+
+      const updated = await storage.updateProfessional(id, validatedData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update professional error:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid request data", errors: error });
+      }
+      res.status(500).json({ message: "Failed to update professional profile" });
+    }
+  });
+
   // Job routes
   app.get("/api/jobs", async (req, res) => {
     try {

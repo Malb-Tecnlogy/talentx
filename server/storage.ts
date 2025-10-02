@@ -186,6 +186,7 @@ export class DatabaseStorage implements IStorage {
       portfolio: professional.portfolio ? JSON.stringify(professional.portfolio) : null,
       education: professional.education ? JSON.stringify(professional.education) : null,
       certifications: professional.certifications ? JSON.stringify(professional.certifications) : null,
+      workExperience: (professional as any).workExperience ? JSON.stringify((professional as any).workExperience) : null,
     }).returning();
     return newProfessional;
   }
@@ -203,18 +204,21 @@ export class DatabaseStorage implements IStorage {
   async updateProfessional(id: string, professional: Partial<InsertProfessional>): Promise<Professional> {
     const updateData: any = { ...professional, updatedAt: new Date() };
     
-    // Handle JSON fields properly
-    if (professional.skills) {
+    // Handle JSON fields properly - allow clearing arrays by checking field existence
+    if ('skills' in professional) {
       updateData.skills = JSON.stringify(professional.skills);
     }
-    if (professional.portfolio) {
+    if ('portfolio' in professional) {
       updateData.portfolio = JSON.stringify(professional.portfolio);
     }
-    if (professional.education) {
+    if ('education' in professional) {
       updateData.education = JSON.stringify(professional.education);
     }
-    if (professional.certifications) {
+    if ('certifications' in professional) {
       updateData.certifications = JSON.stringify(professional.certifications);
+    }
+    if ('workExperience' in professional) {
+      updateData.workExperience = JSON.stringify((professional as any).workExperience);
     }
     
     const [updated] = await db
