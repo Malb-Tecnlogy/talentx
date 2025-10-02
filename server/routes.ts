@@ -150,6 +150,80 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Alternative OAuth callback routes without /api prefix (for provider redirect URIs)
+  app.get('/auth/google/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state as string)) {
+        return res.redirect('/auth?error=invalid_state');
+      }
+      
+      // Exchange code for tokens
+      const tokens = await exchangeGoogleCode(code as string);
+      const userInfo = await getGoogleUserInfo(tokens.access_token);
+      
+      // Create or link OAuth user
+      const { user, isNewUser } = await createOrLinkOAuthUser('google', {
+        providerUserId: userInfo.id,
+        email: userInfo.email,
+        firstName: userInfo.given_name,
+        lastName: userInfo.family_name,
+        profileImageUrl: userInfo.picture
+      });
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      // Redirect to appropriate dashboard
+      const redirectUrl = getDashboardRedirect(user, isNewUser);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
+
+  app.post('/auth/apple/callback', async (req, res) => {
+    try {
+      const { id_token, state, user } = req.body;
+      
+      if (!id_token || !state) {
+        return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state)) {
+        return res.redirect('/auth?error=invalid_state');
+      }
+      
+      // Validate Apple ID token
+      const nonce = req.session.oauthNonce;
+      const payload = await validateAppleIdToken(id_token, nonce);
+      
+      // Extract user info
+      const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
+      
+      // Create or link OAuth user
+      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
+      
+      // Set session
+      req.session.userId = dbUser.id;
+      
+      // Redirect to appropriate dashboard
+      const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Apple OAuth callback error:', error);
+      res.redirect('/auth?error=oauth_failed');
+    }
+  });
+
   // Middleware to check authentication for protected routes
   function requireAuth(req: any, res: any, next: any) {
     if (!req.isAuthenticated()) {
