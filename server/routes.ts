@@ -8,6 +8,7 @@ import {
   exchangeGoogleCode, 
   getGoogleUserInfo, 
   getAppleOAuthURL, 
+  exchangeAppleCode,
   validateAppleIdToken, 
   extractAppleUserInfo, 
   createOrLinkOAuthUser, 
@@ -118,17 +119,15 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // OAuth routes for Apple authentication
+  // OAuth routes for Apple authentication (alugae strategy: code flow)
   app.get('/api/auth/apple', async (req, res) => {
     try {
       const state = generateSecureState();
-      const nonce = generateSecureNonce();
-      storeOAuthState(req.session, state, nonce);
+      storeOAuthState(req.session, state);
       
-      console.log('[Apple OAuth Init] Storing state and nonce in session:', {
+      console.log('[Apple OAuth Init] Storing state in session:', {
         sessionID: req.sessionID,
-        state: state.substring(0, 10) + '...',
-        nonce: nonce.substring(0, 10) + '...'
+        state: state.substring(0, 10) + '...'
       });
       
       // Save session explicitly before redirect (critical for OAuth flow)
@@ -139,7 +138,7 @@ export function registerRoutes(app: Express): Server {
         }
         
         console.log('[Apple OAuth Init] Session saved, redirecting to Apple');
-        getAppleOAuthURL(state, nonce).then(authUrl => {
+        getAppleOAuthURL(state).then(authUrl => {
           res.redirect(authUrl);
         }).catch(error => {
           console.error('[Apple OAuth Init] URL generation error:', error);
@@ -159,24 +158,33 @@ export function registerRoutes(app: Express): Server {
     console.log('[Apple OAuth] Session state:', req.session?.oauthState);
     
     try {
-      const { id_token, state, user } = req.body;
+      const { code, state, user } = req.body;
       
-      if (!id_token || !state) {
-        console.error('[Apple OAuth] Missing id_token or state');
+      if (!code || !state) {
+        console.error('[Apple OAuth] Missing code or state');
         return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Extract state from "apple:BASE64" format (alugae pattern)
+      let actualState = state;
+      if (state.startsWith('apple:')) {
+        actualState = state.substring(6); // Remove "apple:" prefix
       }
       
       console.log('[Apple OAuth] Validating state...');
       // Validate state to prevent CSRF
-      if (!validateOAuthState(req.session, state)) {
+      if (!validateOAuthState(req.session, actualState)) {
         console.error('[Apple OAuth] State validation failed');
         return res.redirect('/auth?error=invalid_state');
       }
       
-      console.log('[Apple OAuth] State validated, validating token...');
+      console.log('[Apple OAuth] State validated, exchanging code for token...');
+      // Exchange code for id_token
+      const tokens = await exchangeAppleCode(code);
+      
+      console.log('[Apple OAuth] Token received, validating...');
       // Validate Apple ID token
-      const nonce = req.session.oauthNonce;
-      const payload = await validateAppleIdToken(id_token, nonce);
+      const payload = await validateAppleIdToken(tokens.id_token);
       
       console.log('[Apple OAuth] Token validated, extracting user info...');
       // Extract user info
@@ -271,24 +279,33 @@ export function registerRoutes(app: Express): Server {
     console.log('[Apple OAuth ALT] Session state:', req.session?.oauthState);
     
     try {
-      const { id_token, state, user } = req.body;
+      const { code, state, user } = req.body;
       
-      if (!id_token || !state) {
-        console.error('[Apple OAuth ALT] Missing id_token or state');
+      if (!code || !state) {
+        console.error('[Apple OAuth ALT] Missing code or state');
         return res.redirect('/auth?error=invalid_oauth_response');
+      }
+      
+      // Extract state from "apple:BASE64" format (alugae pattern)
+      let actualState = state;
+      if (state.startsWith('apple:')) {
+        actualState = state.substring(6); // Remove "apple:" prefix
       }
       
       console.log('[Apple OAuth ALT] Validating state...');
       // Validate state to prevent CSRF
-      if (!validateOAuthState(req.session, state)) {
+      if (!validateOAuthState(req.session, actualState)) {
         console.error('[Apple OAuth ALT] State validation failed');
         return res.redirect('/auth?error=invalid_state');
       }
       
-      console.log('[Apple OAuth ALT] State validated, validating token...');
+      console.log('[Apple OAuth ALT] State validated, exchanging code for token...');
+      // Exchange code for id_token
+      const tokens = await exchangeAppleCode(code);
+      
+      console.log('[Apple OAuth ALT] Token received, validating...');
       // Validate Apple ID token
-      const nonce = req.session.oauthNonce;
-      const payload = await validateAppleIdToken(id_token, nonce);
+      const payload = await validateAppleIdToken(tokens.id_token);
       
       console.log('[Apple OAuth ALT] Token validated, extracting user info...');
       // Extract user info

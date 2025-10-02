@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
-import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { jwtVerify, createRemoteJWKSet, SignJWT } from 'jose';
 
 // Extend session data interface
 declare module 'express-session' {
@@ -195,39 +195,91 @@ export async function createOrLinkOAuthUser(provider: 'google' | 'apple', userDa
 }
 
 // Apple Sign In Functions
-export async function getAppleOAuthURL(state: string, nonce: string): Promise<string> {
+export async function getAppleOAuthURL(state: string): Promise<string> {
+  // Use simple code flow like alugae (more reliable than id_token flow)
   const params = new URLSearchParams({
     client_id: process.env.APPLE_CLIENT_ID!,
     redirect_uri: process.env.APPLE_REDIRECT_URI!,
-    response_type: 'code id_token',
-    scope: 'name email',
+    response_type: 'code',  // Simplified: use code flow instead of id_token
+    scope: 'email name',
     response_mode: 'form_post',
-    state,
-    nonce
+    state: `apple:${state}`  // Prefix with provider like alugae
   });
   
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+}
+
+// Exchange Apple authorization code for tokens
+export async function exchangeAppleCode(code: string): Promise<{id_token: string}> {
+  try {
+    const clientSecret = await generateAppleClientSecret();
+    
+    const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        client_id: process.env.APPLE_CLIENT_ID!,
+        client_secret: clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: process.env.APPLE_REDIRECT_URI!
+      })
+    });
+    
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      throw new Error(`Apple token exchange failed: ${errorText}`);
+    }
+    
+    return await tokenResponse.json();
+  } catch (error) {
+    console.error('Apple code exchange error:', error);
+    throw error;
+  }
+}
+
+// Generate Apple client secret JWT using jose
+async function generateAppleClientSecret(): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  
+  // Clean up private key (remove line breaks added by env vars)
+  const privateKey = process.env.APPLE_PRIVATE_KEY!
+    .replace(/\\n/g, '\n')
+    .trim();
+  
+  // Import the ECDSA private key
+  const ecPrivateKey = await crypto.createPrivateKey({
+    key: privateKey,
+    format: 'pem'
+  });
+  
+  // Create and sign JWT with jose
+  return await new SignJWT({})
+    .setProtectedHeader({ 
+      alg: 'ES256', 
+      kid: process.env.APPLE_KEY_ID 
+    })
+    .setIssuer(process.env.APPLE_TEAM_ID!)
+    .setIssuedAt(now)
+    .setExpirationTime(now + 3600)
+    .setAudience('https://appleid.apple.com')
+    .setSubject(process.env.APPLE_CLIENT_ID!)
+    .sign(ecPrivateKey);
 }
 
 // Apple JWKS URL for secure token verification
 const APPLE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
 // Validate Apple ID token with proper signature verification
-export async function validateAppleIdToken(idToken: string, expectedNonce?: string): Promise<any> {
+export async function validateAppleIdToken(idToken: string): Promise<any> {
   try {
     // Verify the token with Apple's public keys using jose library
     const { payload } = await jwtVerify(idToken, APPLE_JWKS, {
       issuer: 'https://appleid.apple.com',
       audience: process.env.APPLE_CLIENT_ID,
     });
-    
-    // Validate nonce if provided (SHA256 hash of original nonce)
-    if (expectedNonce && payload.nonce) {
-      const expectedNonceHash = crypto.createHash('sha256').update(expectedNonce).digest('base64url');
-      if (payload.nonce !== expectedNonceHash) {
-        throw new Error('Nonce validation failed');
-      }
-    }
     
     // Additional security checks
     if (payload.email && !payload.email_verified) {
