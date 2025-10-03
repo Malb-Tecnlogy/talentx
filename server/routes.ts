@@ -38,6 +38,20 @@ import {
   type ContactForm
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
+import multer from "multer";
+import pdfParse from "pdf-parse";
+import OpenAI from "openai";
+import { ObjectStorageService } from "./objectStorage";
+
+// Configure multer for in-memory file upload
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// Initialize OpenAI client
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
@@ -423,6 +437,112 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Invalid request data", errors: error });
       }
       res.status(500).json({ message: "Failed to update professional profile" });
+    }
+  });
+
+  // Resume upload and parsing endpoint
+  app.post("/api/professionals/upload-resume", requireAuth, upload.single('resume'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      console.log('[Resume Upload] Starting resume processing...');
+      console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
+
+      // Extract text from PDF
+      const pdfData = await pdfParse(req.file.buffer);
+      const resumeText = pdfData.text;
+      
+      console.log('[Resume Upload] PDF extracted, text length:', resumeText.length);
+
+      // Use OpenAI to parse resume and extract structured data
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert HR assistant that extracts structured information from resumes. 
+Extract the following information from the resume text and return it as JSON:
+{
+  "title": "Professional title/role",
+  "bio": "Professional summary or about section",
+  "skills": ["skill1", "skill2", ...], // max 30 skills
+  "experience": number, // years of experience
+  "location": "City, State or Country",
+  "education": [{
+    "degree": "Degree name",
+    "course": "Field of study",
+    "institution": "University/School name",
+    "status": "Completo or Cursando",
+    "startMonth": "MM",
+    "startYear": "YYYY",
+    "endMonth": "MM",
+    "endYear": "YYYY"
+  }],
+  "workExperience": [{
+    "company": "Company name",
+    "position": "Job title",
+    "description": "Job description",
+    "isCurrent": boolean,
+    "startMonth": "MM",
+    "startYear": "YYYY",
+    "endMonth": "MM",
+    "endYear": "YYYY"
+  }],
+  "linkedinUrl": "LinkedIn URL if found"
+}
+
+Return ONLY valid JSON without any markdown formatting or additional text.`
+          },
+          {
+            role: "user",
+            content: `Extract information from this resume:\n\n${resumeText}`
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 4096
+      });
+
+      const parsedData = JSON.parse(response.choices[0].message.content || '{}');
+      console.log('[Resume Upload] AI parsing completed successfully');
+
+      // Save resume file to Object Storage
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      
+      // Upload file to presigned URL
+      const uploadResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: req.file.buffer,
+        headers: {
+          'Content-Type': 'application/pdf'
+        }
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
+      }
+
+      console.log('[Resume Upload] File uploaded to Object Storage');
+
+      // Normalize the path
+      const resumeUrl = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+      res.json({
+        success: true,
+        resumeUrl,
+        parsedData: {
+          ...parsedData,
+          resumeUrl
+        }
+      });
+    } catch (error) {
+      console.error("Resume upload error:", error);
+      res.status(500).json({ 
+        message: "Failed to process resume", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 
