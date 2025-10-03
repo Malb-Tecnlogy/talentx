@@ -212,61 +212,97 @@ export async function getAppleOAuthURL(state: string): Promise<string> {
 // Exchange Apple authorization code for tokens
 export async function exchangeAppleCode(code: string): Promise<{id_token: string}> {
   try {
+    console.log('[Apple Code Exchange] Starting code exchange...');
+    console.log('[Apple Code Exchange] Code length:', code.length);
+    
     const clientSecret = await generateAppleClientSecret();
+    console.log('[Apple Code Exchange] Client secret generated successfully');
+    
+    const requestBody = {
+      client_id: process.env.APPLE_CLIENT_ID!,
+      client_secret: clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: process.env.APPLE_REDIRECT_URI!
+    };
+    
+    console.log('[Apple Code Exchange] Request params:', {
+      client_id: requestBody.client_id,
+      grant_type: requestBody.grant_type,
+      redirect_uri: requestBody.redirect_uri,
+      code_preview: code.substring(0, 10) + '...'
+    });
     
     const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: new URLSearchParams({
-        client_id: process.env.APPLE_CLIENT_ID!,
-        client_secret: clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: process.env.APPLE_REDIRECT_URI!
-      })
+      body: new URLSearchParams(requestBody)
     });
+    
+    console.log('[Apple Code Exchange] Response status:', tokenResponse.status);
     
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      throw new Error(`Apple token exchange failed: ${errorText}`);
+      console.error('[Apple Code Exchange] Error response:', errorText);
+      throw new Error(`Apple token exchange failed (${tokenResponse.status}): ${errorText}`);
     }
     
-    return await tokenResponse.json();
+    const tokens = await tokenResponse.json();
+    console.log('[Apple Code Exchange] Tokens received, id_token present:', !!tokens.id_token);
+    
+    return tokens;
   } catch (error) {
-    console.error('Apple code exchange error:', error);
+    console.error('[Apple Code Exchange] Exception:', error);
     throw error;
   }
 }
 
 // Generate Apple client secret JWT using jose
 async function generateAppleClientSecret(): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  
-  // Clean up private key (remove line breaks added by env vars)
-  const privateKey = process.env.APPLE_PRIVATE_KEY!
-    .replace(/\\n/g, '\n')
-    .trim();
-  
-  // Import the ECDSA private key
-  const ecPrivateKey = await crypto.createPrivateKey({
-    key: privateKey,
-    format: 'pem'
-  });
-  
-  // Create and sign JWT with jose
-  return await new SignJWT({})
-    .setProtectedHeader({ 
-      alg: 'ES256', 
-      kid: process.env.APPLE_KEY_ID 
-    })
-    .setIssuer(process.env.APPLE_TEAM_ID!)
-    .setIssuedAt(now)
-    .setExpirationTime(now + 3600)
-    .setAudience('https://appleid.apple.com')
-    .setSubject(process.env.APPLE_CLIENT_ID!)
-    .sign(ecPrivateKey);
+  try {
+    console.log('[Client Secret] Generating Apple client secret JWT...');
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Clean up private key (remove line breaks added by env vars)
+    const privateKey = process.env.APPLE_PRIVATE_KEY!
+      .replace(/\\n/g, '\n')
+      .trim();
+    
+    console.log('[Client Secret] Private key loaded, length:', privateKey.length);
+    console.log('[Client Secret] Key ID:', process.env.APPLE_KEY_ID);
+    console.log('[Client Secret] Team ID:', process.env.APPLE_TEAM_ID);
+    console.log('[Client Secret] Client ID:', process.env.APPLE_CLIENT_ID);
+    
+    // Import the ECDSA private key using jose's importPKCS8
+    const ecPrivateKey = await crypto.createPrivateKey({
+      key: privateKey,
+      format: 'pem'
+    });
+    
+    console.log('[Client Secret] Private key imported successfully');
+    
+    // Create and sign JWT with jose
+    const clientSecret = await new SignJWT({})
+      .setProtectedHeader({ 
+        alg: 'ES256', 
+        kid: process.env.APPLE_KEY_ID 
+      })
+      .setIssuer(process.env.APPLE_TEAM_ID!)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 3600)
+      .setAudience('https://appleid.apple.com')
+      .setSubject(process.env.APPLE_CLIENT_ID!)
+      .sign(ecPrivateKey);
+    
+    console.log('[Client Secret] JWT signed successfully, length:', clientSecret.length);
+    
+    return clientSecret;
+  } catch (error) {
+    console.error('[Client Secret] Error generating client secret:', error);
+    throw error;
+  }
 }
 
 // Apple JWKS URL for secure token verification
