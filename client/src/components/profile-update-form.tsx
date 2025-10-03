@@ -203,6 +203,8 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('[Resume Upload] File selected:', file.name, file.size, 'bytes');
+
     if (file.type !== 'application/pdf') {
       toast({
         title: "Erro",
@@ -228,17 +230,23 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
       const formData = new FormData();
       formData.append('resume', file);
 
+      console.log('[Resume Upload] Sending request to server...');
       const response = await fetch('/api/professionals/upload-resume', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
 
+      console.log('[Resume Upload] Server response:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('[Resume Upload] Error response:', errorData);
+        throw new Error(errorData.message || 'Upload failed');
       }
 
       const result = await response.json();
+      console.log('[Resume Upload] Success! Parsed data received:', result);
       const { parsedData } = result;
 
       // Auto-fill form fields with parsed data
