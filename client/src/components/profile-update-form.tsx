@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,9 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, CheckCircle2 } from "lucide-react";
+import { Plus, X, CheckCircle2, Upload, Sparkles, FileText } from "lucide-react";
 
 const profileUpdateSchema = z.object({
   // Professional info
@@ -103,6 +104,9 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newSkill, setNewSkill] = useState("");
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileUpdateFormData>({
     resolver: zodResolver(profileUpdateSchema),
@@ -195,6 +199,78 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
     form.setValue("skills", currentSkills.filter(s => s !== skill));
   };
 
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: "Erro",
+        description: "Por favor, envie apenas arquivos PDF.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "O arquivo deve ter no máximo 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedFileName(file.name);
+    setUploadingResume(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const response = await fetch('/api/professionals/upload-resume', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      const { parsedData } = result;
+
+      // Auto-fill form fields with parsed data
+      if (parsedData.title) form.setValue('title', parsedData.title);
+      if (parsedData.bio) form.setValue('bio', parsedData.bio);
+      if (parsedData.location) form.setValue('location', parsedData.location);
+      if (parsedData.experience) form.setValue('experience', parsedData.experience);
+      if (parsedData.skills) form.setValue('skills', parsedData.skills.slice(0, 30));
+      if (parsedData.education) form.setValue('education', parsedData.education);
+      if (parsedData.workExperience) form.setValue('workExperience', parsedData.workExperience);
+      if (parsedData.linkedinUrl) form.setValue('linkedinUrl', parsedData.linkedinUrl);
+
+      toast({
+        title: "Sucesso!",
+        description: "Currículo processado com sucesso! Os campos foram preenchidos automaticamente.",
+      });
+    } catch (error) {
+      console.error('Resume upload error:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao processar currículo. Por favor, tente novamente ou preencha o formulário manualmente.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingResume(false);
+      setSelectedFileName(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -202,6 +278,61 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
           Preencha os blocos com seus dados e mantenha seu currículo atualizado para se candidatar às vagas. 
           Caso realize alterações, estes ajustes serão <strong>replicados para todas as suas candidaturas ativas.</strong>
         </div>
+
+        {/* Resume Upload Section */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3 mb-4">
+              <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-1 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Atualização Rápida: Envie Seu Currículo
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Economize tempo! Envie seu currículo em PDF e nossa IA preencherá automaticamente os campos do seu perfil.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handleResumeUpload}
+                className="hidden"
+                id="resume-upload-update"
+                data-testid="input-resume-upload"
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingResume}
+                  variant="default"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="button-upload-resume"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploadingResume ? "Processando..." : "Enviar Currículo (PDF)"}
+                </Button>
+                {selectedFileName && (
+                  <span className="text-sm text-muted-foreground">
+                    {selectedFileName}
+                  </span>
+                )}
+              </div>
+
+              <Alert className="bg-blue-100/50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700">
+                <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
+                  💡 <strong>Dica:</strong> Certifique-se de que seu currículo inclui suas habilidades, experiência profissional, 
+                  formação acadêmica e informações de contato para melhores resultados. Tamanho máximo: 10MB.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
+        </Card>
 
         <Accordion type="multiple" className="space-y-4">
           {/* Professional Information */}
