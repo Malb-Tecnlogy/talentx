@@ -236,7 +236,8 @@ export async function exchangeAppleCode(code: string): Promise<{id_token: string
     const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'MaGenX/1.0'  // Required by Apple
       },
       body: new URLSearchParams(requestBody)
     });
