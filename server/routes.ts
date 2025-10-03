@@ -39,9 +39,10 @@ import {
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
-import pdfParse from "pdf-parse";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
+// pdf-parse requires dynamic import for ESM compatibility
+let pdfParse: any;
 
 // Configure multer for in-memory file upload
 const upload = multer({ 
@@ -408,7 +409,8 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/professionals/me", requireAuth, async (req, res) => {
     try {
       const professional = await storage.getProfessionalByUserId(req.user.id);
-      res.json(professional);
+      // Return null explicitly if no professional found (for new users)
+      res.json(professional || null);
     } catch (error) {
       console.error("Get professional error:", error);
       res.status(500).json({ message: "Failed to fetch professional profile" });
@@ -442,13 +444,20 @@ export function registerRoutes(app: Express): Server {
 
   // Resume upload and parsing endpoint
   app.post("/api/professionals/upload-resume", requireAuth, upload.single('resume'), async (req, res) => {
+    console.log('[Resume Upload] Endpoint hit!', { hasFile: !!req.file, user: req.user?.id });
     try {
       if (!req.file) {
+        console.log('[Resume Upload] No file in request');
         return res.status(400).json({ message: "No file uploaded" });
       }
 
       console.log('[Resume Upload] Starting resume processing...');
       console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
+
+      // Lazy load pdf-parse (CommonJS module)
+      if (!pdfParse) {
+        pdfParse = (await import('pdf-parse')).default;
+      }
 
       // Extract text from PDF
       const pdfData = await pdfParse(req.file.buffer);

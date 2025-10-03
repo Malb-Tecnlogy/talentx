@@ -12,11 +12,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2, Edit, Briefcase, Calendar, Clock } from "lucide-react";
+import { User, Eye, ListTodo, CheckCircle, DollarSign, Plus, Trash2, Edit, Briefcase, Calendar, Clock, Upload, FileText, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Professional } from "@shared/schema";
 import { SuggestionInput } from "@/components/ui/suggestion-input";
 import { ProfileUpdateForm } from "@/components/profile-update-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Professional profile form schema
 const professionalProfileSchema = z.object({
@@ -42,6 +43,8 @@ type ProfessionalProfileForm = z.infer<typeof professionalProfileSchema>;
 function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const form = useForm<ProfessionalProfileForm>({
     resolver: zodResolver(professionalProfileSchema),
@@ -103,6 +106,77 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
     form.setValue("skills", currentSkills.filter(skill => skill !== skillToRemove));
   };
 
+  // Resume upload and auto-fill
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: "Error",
+        description: "Please upload a PDF file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResumeFile(file);
+    setIsUploadingResume(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const response = await fetch('/api/professionals/upload-resume', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload resume');
+      }
+
+      const data = await response.json();
+      
+      // Auto-fill form fields with parsed data
+      if (data.parsedData) {
+        const parsed = data.parsedData;
+        
+        if (parsed.title) form.setValue('title', parsed.title);
+        if (parsed.bio) form.setValue('bio', parsed.bio);
+        if (parsed.skills && Array.isArray(parsed.skills)) {
+          form.setValue('skills', parsed.skills.slice(0, 30)); // max 30 skills
+        }
+        if (parsed.experience) form.setValue('experience', parsed.experience);
+        if (parsed.location) form.setValue('location', parsed.location);
+        
+        toast({
+          title: "Success! ✨",
+          description: "Resume processed successfully. Fields have been auto-filled. Please review and adjust as needed.",
+        });
+      }
+    } catch (error) {
+      console.error('Resume upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process resume. Please try again or fill the form manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingResume(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background py-8" data-testid="professional-profile-setup">
       <div className="max-w-4xl mx-auto px-4">
@@ -116,6 +190,73 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Resume Upload Section */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <Sparkles className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Quick Start: Upload Your Resume
+                          </h3>
+                          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            Save time! Upload your PDF resume and let our AI automatically fill in your profile details.
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="default"
+                            className="relative"
+                            disabled={isUploadingResume}
+                            onClick={() => document.getElementById('resume-upload')?.click()}
+                            data-testid="button-upload-resume"
+                          >
+                            {isUploadingResume ? (
+                              <>
+                                <Clock className="mr-2 h-4 w-4 animate-spin" />
+                                Processing Resume...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Resume (PDF)
+                              </>
+                            )}
+                          </Button>
+                          
+                          <input
+                            id="resume-upload"
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
+                            onChange={handleResumeUpload}
+                            disabled={isUploadingResume}
+                          />
+                          
+                          {resumeFile && (
+                            <span className="text-sm text-muted-foreground flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              {resumeFile.name}
+                            </span>
+                          )}
+                        </div>
+
+                        <Alert className="bg-white/50 dark:bg-black/20 border-blue-300 dark:border-blue-700">
+                          <AlertDescription className="text-xs text-blue-600 dark:text-blue-400">
+                            💡 <strong>Tip:</strong> Make sure your resume includes your skills, work experience, education, and contact info for best results. Max file size: 10MB.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Basic Information */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -463,24 +604,27 @@ export default function ProfessionalDashboard() {
 
   // Show profile creation form if no professional profile exists
   if (!professionalLoading && !professional && !profileCreated) {
-    // Check if this is a 404 or if user doesn't have professional role yet
+    // If there's no error, or it's a 404, show the profile creation form
+    // Backend returns null (200 status) for new users without profiles
+    if (!professionalError) {
+      return (
+        <ProfessionalProfileForm onSuccess={() => setProfileCreated(true)} />
+      );
+    }
+
+    // Check if this is a 404 error (user doesn't have profile yet)
     const errorMessage = professionalError?.message || '';
     const is404 = errorMessage.includes('404') || errorMessage.includes('not found') || 
                   (professionalError as any)?.status === 404;
     
-    // Show profile creation form for 404s, new users, or company users wanting to switch
-    const shouldShowProfileForm = is404 || 
-                                 !(user as any)?.role || 
-                                 (user as any)?.role === 'company' ||
-                                 !professionalError; // Default to showing form if no error
-    
-    if (shouldShowProfileForm) {
+    // Show profile creation form for 404s too
+    if (is404) {
       return (
         <ProfessionalProfileForm onSuccess={() => setProfileCreated(true)} />
       );
     }
     
-    // Only show error for genuine server errors (not 404s)
+    // Only show error for genuine server errors (500, network errors, etc.)
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">

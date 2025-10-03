@@ -120,3 +120,10 @@ Preferred communication style: Simple, everyday language.
   - Visual Features: Match score progress bar, color-coded status badges (green for selected, red for rejected, gray for pending)
   - Empty State: Friendly message when no applications exist, encouraging users to browse recommended jobs
   - Data Enrichment: Each application includes nested job and company information for complete context
+- **New User Onboarding Bug Fix (October 2025):** Fixed critical bug where new professional users saw "Error Loading Profile" instead of profile creation form
+  - Root Cause: Backend returned undefined which serialized as empty string, frontend interpreted as error
+  - Frontend Fix: Updated professional-dashboard.tsx to properly distinguish null response (new user) from genuine errors
+  - Backend Fix: GET /api/professionals/me now explicitly returns `null` for new users (res.json(professional || null))
+  - PDF Parser Fix: Changed pdf-parse import to use dynamic import with .default for ESM compatibility
+  - Result: New users now correctly see profile creation form with resume upload section after registration
+  - Testing: Automated e2e test confirms full registration → profile creation → resume upload flow works correctly
