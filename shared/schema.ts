@@ -144,6 +144,7 @@ export const professionals = pgTable("professionals", {
   state: varchar("state"),
   city: varchar("city"),
   linkedinUrl: varchar("linkedin_url"),
+  resumeUrl: varchar("resume_url"), // URL do currículo armazenado no Object Storage
   // Diversity data
   originState: varchar("origin_state"),
   originCity: varchar("origin_city"),
