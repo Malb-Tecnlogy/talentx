@@ -41,6 +41,15 @@ import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
+import { 
+  ServicePrincipalCredentials,
+  PDFServices,
+  MimeType,
+  ExtractPDFParams,
+  ExtractElementType,
+  ExtractPDFJob,
+  ExtractPDFResult
+} from "@adobe/pdfservices-node-sdk";
 
 // Configure multer for in-memory file upload
 const upload = multer({ 
@@ -451,21 +460,71 @@ export function registerRoutes(app: Express): Server {
 
       console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
 
-      // Convert PDF to base64 for OpenAI
-      const base64PDF = req.file.buffer.toString('base64');
-      console.log('[Resume Upload] PDF converted to base64');
+      // Check if Adobe credentials are configured
+      if (!process.env.PDF_SERVICES_CLIENT_ID || !process.env.PDF_SERVICES_CLIENT_SECRET) {
+        console.error('[Resume Upload] Adobe PDF Services credentials not configured');
+        return res.status(500).json({ 
+          message: "PDF extraction service not configured. Please contact support." 
+        });
+      }
 
-      // Use OpenAI to extract resume data (GPT-5 supports PDF directly)
-      console.log('[Resume Upload] Sending PDF to OpenAI for analysis...');
+      // Use Adobe PDF Extract API to extract resume data
+      console.log('[Resume Upload] Initializing Adobe PDF Services...');
+      const credentials = new ServicePrincipalCredentials({
+        clientId: process.env.PDF_SERVICES_CLIENT_ID!,
+        clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET!
+      });
+
+      const pdfServices = new PDFServices({ credentials });
+      
+      // Create ExtractPDF job
+      console.log('[Resume Upload] Creating PDF extraction job...');
+      const inputAsset = await pdfServices.upload({
+        readStream: req.file.buffer,
+        mimeType: MimeType.PDF
+      });
+
+      const params = new ExtractPDFParams({
+        elementsToExtract: [ExtractElementType.TEXT]
+      });
+
+      const job = new ExtractPDFJob({ inputAsset, params });
+      const pollingURL = await pdfServices.submit({ job });
+      const pdfServicesResponse = await pdfServices.getJobResult({
+        pollingURL,
+        resultType: ExtractPDFResult
+      });
+
+      // Download the result
+      const resultAsset = pdfServicesResponse.result.resource;
+      const streamAsset = await pdfServices.getContent({ asset: resultAsset });
+      
+      // Read the JSON result
+      const chunks: Buffer[] = [];
+      for await (const chunk of streamAsset.readStream) {
+        chunks.push(chunk);
+      }
+      const jsonResult = JSON.parse(Buffer.concat(chunks).toString());
+      
+      // Extract text from the structured JSON
+      let fullText = '';
+      if (jsonResult.elements) {
+        fullText = jsonResult.elements
+          .filter((el: any) => el.Text)
+          .map((el: any) => el.Text)
+          .join(' ');
+      }
+
+      console.log('[Resume Upload] Adobe extraction successful, text length:', fullText.length);
+
+      // Now use OpenAI to parse the extracted text into structured data
+      console.log('[Resume Upload] Using OpenAI to structure the data...');
       const completion = await openai.chat.completions.create({
         model: "gpt-5",
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this resume PDF and extract the following information in JSON format:
+            content: `Analyze this resume text and extract the following information in JSON format:
 {
   "title": "Professional title/current role",
   "bio": "Professional summary (max 500 chars)",
@@ -476,16 +535,10 @@ export function registerRoutes(app: Express): Server {
   "email": "Email address if found"
 }
 
-Extract only what you find in the resume. Return valid JSON only, no markdown.`
-              },
-              {
-                type: "input_file",
-                input_file: {
-                  data: base64PDF,
-                  format: "pdf"
-                }
-              }
-            ]
+Resume text:
+${fullText.substring(0, 8000)}
+
+Extract only what you find. Return valid JSON only, no markdown.`
           }
         ],
         response_format: { type: "json_object" },
@@ -493,7 +546,7 @@ Extract only what you find in the resume. Return valid JSON only, no markdown.`
       });
 
       const parsedData = JSON.parse(completion.choices[0].message.content || '{}');
-      console.log('[Resume Upload] OpenAI extraction successful:', Object.keys(parsedData));
+      console.log('[Resume Upload] Data extraction successful:', Object.keys(parsedData));
 
       // Save resume file to Object Storage
       const objectStorageService = new ObjectStorageService();
