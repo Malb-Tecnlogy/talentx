@@ -451,6 +451,50 @@ export function registerRoutes(app: Express): Server {
 
       console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
 
+      // Convert PDF to base64 for OpenAI
+      const base64PDF = req.file.buffer.toString('base64');
+      console.log('[Resume Upload] PDF converted to base64');
+
+      // Use OpenAI to extract resume data (GPT-5 supports PDF directly)
+      console.log('[Resume Upload] Sending PDF to OpenAI for analysis...');
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Analyze this resume PDF and extract the following information in JSON format:
+{
+  "title": "Professional title/current role",
+  "bio": "Professional summary (max 500 chars)",
+  "skills": ["skill1", "skill2", ...], // max 30 skills
+  "experience": number, // estimated years of experience
+  "location": "City, State/Country",
+  "linkedinUrl": "LinkedIn URL if found",
+  "email": "Email address if found"
+}
+
+Extract only what you find in the resume. Return valid JSON only, no markdown.`
+              },
+              {
+                type: "input_file",
+                input_file: {
+                  data: base64PDF,
+                  format: "pdf"
+                }
+              }
+            ]
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 2000
+      });
+
+      const parsedData = JSON.parse(completion.choices[0].message.content || '{}');
+      console.log('[Resume Upload] OpenAI extraction successful:', Object.keys(parsedData));
+
       // Save resume file to Object Storage
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -483,9 +527,10 @@ export function registerRoutes(app: Express): Server {
 
       res.json({
         success: true,
-        message: "Resume uploaded successfully",
+        message: "Resume uploaded and analyzed successfully",
         resumeUrl,
-        fileName: req.file.originalname
+        fileName: req.file.originalname,
+        parsedData
       });
     } catch (error) {
       console.error("Resume upload error:", error);

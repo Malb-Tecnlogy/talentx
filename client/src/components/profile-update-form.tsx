@@ -248,9 +248,42 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
       const result = await response.json();
       console.log('[Resume Upload] Success! File uploaded:', result);
 
+      // Auto-fill form fields with parsed data from OpenAI
+      const { parsedData } = result;
+      let filledFields = 0;
+      
+      if (parsedData) {
+        if (parsedData.title) {
+          form.setValue('title', parsedData.title);
+          filledFields++;
+        }
+        if (parsedData.bio) {
+          form.setValue('bio', parsedData.bio);
+          filledFields++;
+        }
+        if (parsedData.location) {
+          form.setValue('location', parsedData.location);
+          filledFields++;
+        }
+        if (parsedData.experience) {
+          form.setValue('experience', parsedData.experience);
+          filledFields++;
+        }
+        if (parsedData.skills && parsedData.skills.length > 0) {
+          form.setValue('skills', parsedData.skills.slice(0, 30));
+          filledFields++;
+        }
+        if (parsedData.linkedinUrl) {
+          form.setValue('linkedinUrl', parsedData.linkedinUrl);
+          filledFields++;
+        }
+      }
+
       toast({
-        title: "Currículo Carregado!",
-        description: `${result.fileName} foi salvo com sucesso. Agora preencha os campos do seu perfil abaixo.`,
+        title: "Currículo Analisado!",
+        description: filledFields > 0 
+          ? `Encontramos ${filledFields} informações no seu currículo e preenchemos automaticamente. Revise os campos abaixo.`
+          : `${result.fileName} foi salvo. Preencha os campos do seu perfil abaixo.`,
       });
     } catch (error) {
       console.error('Resume upload error:', error);
