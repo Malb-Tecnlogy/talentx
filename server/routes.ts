@@ -603,6 +603,86 @@ export function registerRoutes(app: Express): Server {
         parsedData.bio = summaryMatch[1].trim().substring(0, 500);
       }
       
+      // Extract work experience
+      const experienceSection = fullText.match(/(?:EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[\s\S]*?(?=(?:EDUCATION|CERTIFICATIONS|LANGUAGES|SKILLS|$))/i);
+      if (experienceSection) {
+        const workExperience: any[] = [];
+        const expText = experienceSection[0];
+        
+        // Match patterns like: "Senior Software Engineer | Company Name | Location"
+        // followed by date range like "November 2023 - Present" or "June 2023 - October 2023"
+        const jobPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\|\s*[^\n]+?)?\s*\n\s*([A-Z][a-z]+\s+\d{4}\s*-\s*(?:Present|[A-Z][a-z]+\s+\d{4}))/gi;
+        
+        let match;
+        while ((match = jobPattern.exec(expText)) && workExperience.length < 10) {
+          const position = match[1].trim();
+          const company = match[2].trim();
+          const dateRange = match[3].trim();
+          
+          // Parse dates
+          const dateMatch = dateRange.match(/([A-Z][a-z]+)\s+(\d{4})\s*-\s*(?:Present|([A-Z][a-z]+)\s+(\d{4}))/i);
+          if (dateMatch) {
+            const isCurrent = dateRange.toLowerCase().includes('present');
+            workExperience.push({
+              position,
+              company,
+              isCurrent,
+              startMonth: dateMatch[1],
+              startYear: dateMatch[2],
+              endMonth: dateMatch[3] || undefined,
+              endYear: dateMatch[4] || undefined,
+              description: '' // Will be filled by user
+            });
+          }
+        }
+        
+        if (workExperience.length > 0) {
+          parsedData.workExperience = workExperience;
+        }
+      }
+      
+      // Extract certifications
+      const certSection = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?)[\s\S]*?(?=(?:EDUCATION|LANGUAGES|SKILLS|$))/i);
+      if (certSection) {
+        const certifications: any[] = [];
+        const certText = certSection[0];
+        
+        // Match lines that look like certifications
+        const certLines = certText.split('\n').filter(line => {
+          const trimmed = line.trim();
+          // Skip the header and empty lines
+          if (!trimmed || trimmed.match(/^(?:CERTIFICATIONS?|CERTIFICATES?)$/i)) return false;
+          // Must have some length and not be too long
+          return trimmed.length > 10 && trimmed.length < 200;
+        });
+        
+        certLines.forEach(line => {
+          const trimmed = line.trim();
+          // Try to extract year if present
+          const yearMatch = trimmed.match(/\b(20\d{2})\b/);
+          const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
+          
+          // Clean the certification name (remove year, bullets, etc)
+          const name = trimmed
+            .replace(/^[-•*]\s*/, '') // Remove bullets
+            .replace(/\b20\d{2}\b/, '') // Remove year
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          if (name.length > 5) {
+            certifications.push({
+              name,
+              issuer: '', // Will be filled by user
+              year
+            });
+          }
+        });
+        
+        if (certifications.length > 0) {
+          parsedData.certifications = certifications.slice(0, 10);
+        }
+      }
+      
       console.log('[Resume Upload] Data extraction successful:', Object.keys(parsedData));
 
       // Save resume file to Object Storage
