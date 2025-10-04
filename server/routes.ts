@@ -572,16 +572,20 @@ export function registerRoutes(app: Express): Server {
       
       // Extract skills (common tech keywords)
       const commonSkills = [
-        'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
-        'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask', 'Spring',
+        'JavaScript', 'TypeScript', 'Python', 'Java', 'Kotlin', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
+        'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask', 'Spring', 'Spring Boot',
         'HTML', 'CSS', 'SASS', 'Tailwind', 'Bootstrap',
-        'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
-        'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Git', 'CI/CD',
-        'REST', 'GraphQL', 'API', 'Microservices', 'Agile', 'Scrum'
+        'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'Oracle',
+        'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Git', 'CI/CD', 'Jenkins', 'GitLab',
+        'REST', 'GraphQL', 'API', 'Microservices', 'Agile', 'Scrum', 'TDD', 'BDD',
+        'Hibernate', 'JPA', 'Kafka', 'RabbitMQ', 'Terraform', 'Ansible'
       ];
       
+      // Escape special regex characters in skill names
+      const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
       const foundSkills = commonSkills.filter(skill => 
-        fullText.match(new RegExp(`\\b${skill}\\b`, 'i'))
+        fullText.match(new RegExp(`\\b${escapeRegex(skill)}\\b`, 'i'))
       );
       if (foundSkills.length > 0) {
         parsedData.skills = foundSkills.slice(0, 30);
