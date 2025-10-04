@@ -620,8 +620,8 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] Bio found, length:', parsedData.bio.length);
       }
       
-      // Extract work experience - simplified approach
-      // Look for date ranges with job patterns near them
+      // Extract work experience - FLEXIBLE approach supporting multiple formats
+      // Supports: "Position | Company", "Company - JobType", "Position at Company", stacked lines
       const workExperience: any[] = [];
       
       // Pattern: Find all date ranges in format "Month YYYY - Month YYYY" or "Month YYYY - Present"
@@ -636,21 +636,60 @@ export function registerRoutes(app: Express): Server {
         const endMonth = dateMatch[4] || undefined;
         const endYear = dateMatch[5] || undefined;
         
-        // Look backwards for position and company (usually within 200 chars before the date)
-        const textBefore = fullText.substring(Math.max(0, dateMatch.index - 200), dateMatch.index);
-        const lines = textBefore.split('\n').filter(l => l.trim());
+        // Look backwards for position and company (up to 300 chars before the date)
+        const textBefore = fullText.substring(Math.max(0, dateMatch.index - 300), dateMatch.index);
+        const lines = textBefore.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
         if (lines.length >= 1) {
-          const lastLine = lines[lines.length - 1].trim();
+          // Get last 2-3 lines for context
+          const lastLine = lines[lines.length - 1];
+          const secondLastLine = lines.length >= 2 ? lines[lines.length - 2] : '';
           
-          // Try to extract position | company pattern
+          let position = '';
+          let company = '';
+          
+          // Format 1: "Position | Company" (pipe separator)
           const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\|.*)?$/);
           if (pipeMatch) {
-            const position = pipeMatch[1].trim();
-            const company = pipeMatch[2].trim();
-            
-            // Validate it looks like a job (not a section header)
-            if (position.length > 5 && position.length < 100 && company.length > 2) {
+            position = pipeMatch[1].trim();
+            company = pipeMatch[2].trim();
+          }
+          
+          // Format 2: "Company - JobType" or "Company – Full-Time" (hyphen/en-dash separator)
+          if (!position && lastLine.match(/[-–]/)) {
+            const parts = lastLine.split(/\s*[-–]\s*/);
+            if (parts.length >= 2) {
+              // First part is company, second is job type (Full-Time, Part-Time, Contract, etc.)
+              company = parts[0].trim();
+              // If we have a second line, it might be the position
+              if (secondLastLine && secondLastLine.length > 5 && secondLastLine.length < 100) {
+                position = secondLastLine;
+              } else {
+                // Use job type as position if no second line
+                position = parts[1].trim();
+              }
+            }
+          }
+          
+          // Format 3: "Position at Company"
+          if (!position) {
+            const atMatch = lastLine.match(/(.+?)\s+(?:at|em|en)\s+(.+)/i);
+            if (atMatch) {
+              position = atMatch[1].trim();
+              company = atMatch[2].trim();
+            }
+          }
+          
+          // Format 4: Stacked lines - position on one line, company on next
+          if (!position && secondLastLine) {
+            position = secondLastLine;
+            company = lastLine;
+          }
+          
+          // Validate it looks like a job (not a section header)
+          if (position && company && position.length > 2 && position.length < 150 && company.length > 2 && company.length < 150) {
+            // Skip if it looks like a section header
+            if (!position.match(/^(?:EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|EXPERIÊNCIA|EDUCAÇÃO|HABILIDADES|CERTIFICAÇÕES|EXPERIENCIA|EDUCACIÓN|FORMACIÓN)$/i)) {
               workExperience.push({
                 position,
                 company,
@@ -673,8 +712,8 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] No work experience found');
       }
       
-      // Extract education - simplified approach (EN/PT-BR/ES)
-      // Look for year ranges like "2006 - 2009" that are NOT part of work experience
+      // Extract education - FLEXIBLE approach (EN/PT-BR/ES)
+      // Supports: "Course | Institution", "Institution - Degree", stacked lines
       const education: any[] = [];
       const yearRangePattern = /(\d{4})\s*[-–]\s*(\d{4}|Present|Current|Atual|Presente|Actual)/gi;
       let eduMatch;
@@ -684,22 +723,54 @@ export function registerRoutes(app: Express): Server {
         const endYear = eduMatch[2].match(/\d{4}/) ? eduMatch[2] : undefined;
         const isCurrent = eduMatch[2].match(/Present|Current|Atual|Presente|Actual/i);
         
-        // Look backwards for course and institution
-        const textBefore = fullText.substring(Math.max(0, eduMatch.index - 200), eduMatch.index);
-        const lines = textBefore.split('\n').filter(l => l.trim());
+        // Look backwards for course and institution (up to 300 chars)
+        const textBefore = fullText.substring(Math.max(0, eduMatch.index - 300), eduMatch.index);
+        const lines = textBefore.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
         if (lines.length >= 1) {
-          const lastLine = lines[lines.length - 1].trim();
+          const lastLine = lines[lines.length - 1];
+          const secondLastLine = lines.length >= 2 ? lines[lines.length - 2] : '';
           
-          // Try to extract course | institution pattern
+          let course = '';
+          let institution = '';
+          
+          // Format 1: "Course | Institution" (pipe separator)
           const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\(.*?\))?(?:\s*\|.*)?$/);
           if (pipeMatch) {
-            const course = pipeMatch[1].trim();
-            const institution = pipeMatch[2].trim();
+            course = pipeMatch[1].trim();
+            institution = pipeMatch[2].trim();
+          }
+          
+          // Format 2: "Institution - Degree" or "University – Bachelor's"
+          if (!course && lastLine.match(/[-–]/)) {
+            const parts = lastLine.split(/\s*[-–]\s*/);
+            if (parts.length >= 2) {
+              institution = parts[0].trim();
+              course = parts[1].trim();
+              // Check if previous line has more context
+              if (secondLastLine && secondLastLine.length > 5) {
+                course = secondLastLine;
+              }
+            }
+          }
+          
+          // Format 3: Stacked lines - course on one line, institution on next
+          if (!course && secondLastLine) {
+            course = secondLastLine;
+            institution = lastLine;
+          }
+          
+          // Validate it looks like education (not work experience)
+          // Education keywords: degree, engineering, bachelor, master, university, college, etc.
+          const eduKeywords = /bachelor|master|phd|degree|engineering|science|arts|university|college|licenciatura|bacharelado|mestrado|doutorado|engenharia|ciências|universidade|faculdade|universidad|ingeniería|maestría|doctorado/i;
+          const hasEduKeyword = eduKeywords.test(course) || eduKeywords.test(institution);
+          
+          if (course && institution && course.length > 3 && institution.length > 3) {
+            // Skip if looks like work experience (has company/job keywords)
+            const workKeywords = /inc\.|ltd\.|llc|corporation|company|consulting|solutions|full-time|part-time|contract/i;
+            const hasWorkKeyword = workKeywords.test(course) || workKeywords.test(institution);
             
-            // Validate it looks like education (avoid work experience duplicates)
-            // Education courses usually have keywords like "Engineering", "Science", "Arts", etc.
-            if (course.length > 3 && institution.length > 3) {
+            if (!hasWorkKeyword || hasEduKeyword) {
               education.push({
                 formation: 'Superior',
                 degree: 'Graduação',
