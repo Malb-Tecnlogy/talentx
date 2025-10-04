@@ -473,6 +473,14 @@ export function registerRoutes(app: Express): Server {
       // Normalize the path
       const resumeUrl = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
+      // Update professional profile with resume URL
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
+      if (professional) {
+        console.log('[Resume Upload] Updating professional profile with resume URL...');
+        await storage.updateProfessional(professional.id, { resumeUrl });
+        console.log('[Resume Upload] Professional profile updated successfully');
+      }
+
       res.json({
         success: true,
         message: "Resume uploaded successfully",
