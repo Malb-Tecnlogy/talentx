@@ -606,15 +606,15 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] Skills found:', foundSkills.length, 'skills');
       }
       
-      // Extract years of experience (look for patterns like "5 years", "3+ years", "15+ years")
-      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?)\s*(?:of\s*)?(?:experience|experiência|experiencia)/i);
+      // Extract years of experience (EN: years, PT-BR: anos, ES: años)
+      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?|años?)\s*(?:of\s*|de\s*)?(?:experience|experiência|experiencia)/i);
       if (expMatch) {
         parsedData.experience = parseInt(expMatch[1]);
         console.log('[Resume Upload] Experience found:', parsedData.experience, 'years');
       }
       
-      // Extract bio/summary (look for summary section - more flexible patterns)
-      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective|Professional|Resumo|Perfil)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills|EXPERIENCE|EDUCATION)/i);
+      // Extract bio/summary (EN/PT-BR/ES)
+      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective|Professional|Resumo|Perfil|Sobre|Resumen|Perfil Profesional)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills|EXPERIENCE|EDUCATION|EXPERIENCIA|FORMACIÓN)/i);
       if (summaryMatch) {
         parsedData.bio = summaryMatch[1].trim().substring(0, 500);
         console.log('[Resume Upload] Bio found, length:', parsedData.bio.length);
@@ -625,7 +625,8 @@ export function registerRoutes(app: Express): Server {
       const workExperience: any[] = [];
       
       // Pattern: Find all date ranges in format "Month YYYY - Month YYYY" or "Month YYYY - Present"
-      const dateRangePattern = /([A-Z][a-z]+)\s+(\d{4})\s*[-–]\s*(?:(Present|Current|Atual)|([A-Z][a-z]+)\s+(\d{4}))/gi;
+      // Supports: English (January, Present), Portuguese (Janeiro, Atual), Spanish (Enero, Presente, Actual)
+      const dateRangePattern = /([A-Z][a-zà-úÀ-Ú]+)\s+(\d{4})\s*[-–]\s*(?:(Present|Current|Atual|Presente|Actual)|([A-Z][a-zà-úÀ-Ú]+)\s+(\d{4}))/gi;
       let dateMatch;
       
       while ((dateMatch = dateRangePattern.exec(fullText)) && workExperience.length < 10) {
@@ -672,16 +673,16 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] No work experience found');
       }
       
-      // Extract education - simplified approach
+      // Extract education - simplified approach (EN/PT-BR/ES)
       // Look for year ranges like "2006 - 2009" that are NOT part of work experience
       const education: any[] = [];
-      const yearRangePattern = /(\d{4})\s*[-–]\s*(\d{4}|Present|Current|Atual)/gi;
+      const yearRangePattern = /(\d{4})\s*[-–]\s*(\d{4}|Present|Current|Atual|Presente|Actual)/gi;
       let eduMatch;
       
       while ((eduMatch = yearRangePattern.exec(fullText)) && education.length < 5) {
         const startYear = eduMatch[1];
         const endYear = eduMatch[2].match(/\d{4}/) ? eduMatch[2] : undefined;
-        const isCurrent = eduMatch[2].match(/Present|Current|Atual/i);
+        const isCurrent = eduMatch[2].match(/Present|Current|Atual|Presente|Actual/i);
         
         // Look backwards for course and institution
         const textBefore = fullText.substring(Math.max(0, eduMatch.index - 200), eduMatch.index);
@@ -722,10 +723,10 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] No education found');
       }
       
-      // Extract certifications - simplified approach
+      // Extract certifications - simplified approach (EN/PT-BR/ES)
       // Look for the certifications section and extract lines
       const certifications: any[] = [];
-      const certSectionMatch = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)[\s\S]{0,1000}/i);
+      const certSectionMatch = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|CERTIFICADOS|LICENCIAS)[\s\S]{0,1000}/i);
       
       if (certSectionMatch) {
         console.log('[Resume Upload] Certifications section found');
@@ -737,13 +738,13 @@ export function registerRoutes(app: Express): Server {
         for (let i = 1; i < lines.length && certifications.length < 10; i++) {
           const line = lines[i].trim();
           
-          // Skip empty lines, section headers, and very short lines
-          if (!line || line.length < 10 || line.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|LANGUAGES?|EDUCATION|SKILLS?)$/i)) {
+          // Skip empty lines, section headers, and very short lines (EN/PT-BR/ES)
+          if (!line || line.length < 10 || line.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|CERTIFICADOS|LICENCIAS|LANGUAGES?|IDIOMAS|EDUCATION|EDUCAÇÃO|EDUCACIÓN|FORMACIÓN|SKILLS?|HABILIDADES)$/i)) {
             continue;
           }
           
-          // Stop if we hit another section
-          if (line.match(/^(?:LANGUAGES?|EDUCATION|SKILLS?|EXPERIENCE)/i)) {
+          // Stop if we hit another section (EN/PT-BR/ES)
+          if (line.match(/^(?:LANGUAGES?|IDIOMAS|EDUCATION|EDUCAÇÃO|EDUCACIÓN|FORMACIÓN|SKILLS?|HABILIDADES|EXPERIENCE|EXPERIÊNCIA|EXPERIENCIA)/i)) {
             break;
           }
           
