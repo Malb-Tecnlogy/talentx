@@ -1,0 +1,179 @@
+index-DwYNx_tI.js:348  GET https://magenx.tech/api/professionals/me/job-recommendations 404 (Not Found)
+(anonymous) @ index-DwYNx_tI.js:348
+i @ index-DwYNx_tI.js:48
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+setOptions @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+(anonymous) @ index-DwYNx_tI.js:40
+setTimeout
+s @ index-DwYNx_tI.js:48
+a @ index-DwYNx_tI.js:48
+batch @ index-DwYNx_tI.js:48
+Pr @ index-DwYNx_tI.js:48
+setData @ index-DwYNx_tI.js:48
+onSuccess @ index-DwYNx_tI.js:48
+m @ index-DwYNx_tI.js:48
+Promise.then
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+onSubscribe @ index-DwYNx_tI.js:48
+subscribe @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+J1 @ index-DwYNx_tI.js:38
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+(anonymous) @ index-DwYNx_tI.js:40
+setTimeout
+s @ index-DwYNx_tI.js:48
+a @ index-DwYNx_tI.js:48
+batch @ index-DwYNx_tI.js:48
+Pr @ index-DwYNx_tI.js:48
+setData @ index-DwYNx_tI.js:48
+onSuccess @ index-DwYNx_tI.js:48
+m @ index-DwYNx_tI.js:48
+Promise.then
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+onSubscribe @ index-DwYNx_tI.js:48
+subscribe @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+J1 @ index-DwYNx_tI.js:38
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+AN @ index-DwYNx_tI.js:40
+N @ index-DwYNx_tI.js:25
+T @ index-DwYNx_tI.js:25
+index-DwYNx_tI.js:348  GET https://magenx.tech/api/contracts/my 404 (Not Found)
+(anonymous) @ index-DwYNx_tI.js:348
+i @ index-DwYNx_tI.js:48
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+setOptions @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+(anonymous) @ index-DwYNx_tI.js:40
+setTimeout
+s @ index-DwYNx_tI.js:48
+a @ index-DwYNx_tI.js:48
+batch @ index-DwYNx_tI.js:48
+Pr @ index-DwYNx_tI.js:48
+setData @ index-DwYNx_tI.js:48
+onSuccess @ index-DwYNx_tI.js:48
+m @ index-DwYNx_tI.js:48
+Promise.then
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+onSubscribe @ index-DwYNx_tI.js:48
+subscribe @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+J1 @ index-DwYNx_tI.js:38
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+(anonymous) @ index-DwYNx_tI.js:40
+setTimeout
+s @ index-DwYNx_tI.js:48
+a @ index-DwYNx_tI.js:48
+batch @ index-DwYNx_tI.js:48
+Pr @ index-DwYNx_tI.js:48
+setData @ index-DwYNx_tI.js:48
+onSuccess @ index-DwYNx_tI.js:48
+m @ index-DwYNx_tI.js:48
+Promise.then
+j @ index-DwYNx_tI.js:48
+start @ index-DwYNx_tI.js:48
+fetch @ index-DwYNx_tI.js:48
+Pa @ index-DwYNx_tI.js:48
+onSubscribe @ index-DwYNx_tI.js:48
+subscribe @ index-DwYNx_tI.js:48
+(anonymous) @ index-DwYNx_tI.js:48
+J1 @ index-DwYNx_tI.js:38
+ld @ index-DwYNx_tI.js:40
+gi @ index-DwYNx_tI.js:40
+sv @ index-DwYNx_tI.js:40
+Zs @ index-DwYNx_tI.js:38
+OR @ index-DwYNx_tI.js:40
+oo @ index-DwYNx_tI.js:40
+AN @ index-DwYNx_tI.js:40
+N @ index-DwYNx_tI.js:25
+T @ index-DwYNx_tI.js:25
+index-DwYNx_tI.js:397 [Resume Upload] File selected: Profile-Anderson-Alves.pdf 101659 bytes
+index-DwYNx_tI.js:397 [Resume Upload] Sending request to server...
+index-DwYNx_tI.js:397  POST https://magenx.tech/api/professionals/upload-resume 500 (Internal Server Error)
+X @ index-DwYNx_tI.js:397
+eA @ index-DwYNx_tI.js:37
+nA @ index-DwYNx_tI.js:37
+rA @ index-DwYNx_tI.js:37
+Ex @ index-DwYNx_tI.js:37
+F1 @ index-DwYNx_tI.js:37
+(anonymous) @ index-DwYNx_tI.js:37
+_h @ index-DwYNx_tI.js:40
+a1 @ index-DwYNx_tI.js:37
+df @ index-DwYNx_tI.js:37
+eh @ index-DwYNx_tI.js:37
+yA @ index-DwYNx_tI.js:37
+index-DwYNx_tI.js:397 [Resume Upload] Server response: 500 
+index-DwYNx_tI.js:397 [Resume Upload] Error response: {message: 'Failed to process resume', error: 'pdfParse is not a function'}
+overrideMethod @ hook.js:608
+X @ index-DwYNx_tI.js:397
+await in X
+eA @ index-DwYNx_tI.js:37
+nA @ index-DwYNx_tI.js:37
+rA @ index-DwYNx_tI.js:37
+Ex @ index-DwYNx_tI.js:37
+F1 @ index-DwYNx_tI.js:37
+(anonymous) @ index-DwYNx_tI.js:37
+_h @ index-DwYNx_tI.js:40
+a1 @ index-DwYNx_tI.js:37
+df @ index-DwYNx_tI.js:37
+eh @ index-DwYNx_tI.js:37
+yA @ index-DwYNx_tI.js:37
+index-DwYNx_tI.js:397 Resume upload error: Error: Failed to process resume
+    at X (index-DwYNx_tI.js:397:177692)
+overrideMethod @ hook.js:608
+X @ index-DwYNx_tI.js:397
+await in X
+eA @ index-DwYNx_tI.js:37
+nA @ index-DwYNx_tI.js:37
+rA @ index-DwYNx_tI.js:37
+Ex @ index-DwYNx_tI.js:37
+F1 @ index-DwYNx_tI.js:37
+(anonymous) @ index-DwYNx_tI.js:37
+_h @ index-DwYNx_tI.js:40
+a1 @ index-DwYNx_tI.js:37
+df @ index-DwYNx_tI.js:37
+eh @ index-DwYNx_tI.js:37
+yA @ index-DwYNx_tI.js:37

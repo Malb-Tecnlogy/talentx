@@ -41,10 +41,6 @@ import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-// Import pdf-parse using CommonJS require
-const pdfParse = require('pdf-parse');
 
 // Configure multer for in-memory file upload
 const upload = multer({ 
@@ -453,59 +449,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log('[Resume Upload] Starting resume processing...');
       console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
-
-      // Extract text from PDF using pdf-parse
-      console.log('[Resume Upload] Extracting text from PDF...');
-      const pdfData = await pdfParse(req.file.buffer);
-      const resumeText = pdfData.text;
-      
-      console.log('[Resume Upload] PDF extracted, text length:', resumeText.length);
-
-      // Simple text parsing - extract basic information without AI
-      console.log('[Resume Upload] Parsing resume text...');
-      
-      // Extract email if present
-      const emailMatch = resumeText.match(/[\w\.-]+@[\w\.-]+\.\w+/);
-      
-      // Extract LinkedIn URL if present
-      const linkedinMatch = resumeText.match(/linkedin\.com\/in\/[\w-]+/i);
-      
-      // Try to extract location (common patterns)
-      const locationMatch = resumeText.match(/(?:Located in|Location:|Based in|Address:)\s*([^\n]+)/i);
-      
-      // Extract phone number if present (simple pattern)
-      const phoneMatch = resumeText.match(/(?:\+?[\d\s\-\(\)]{10,})/);
-      
-      // Try to find skills section
-      let skills: string[] = [];
-      const skillsSection = resumeText.match(/(?:Skills?|Technologies|Technical Skills?)[\s:]*([^\n]+(?:\n[^\n]+)*)/i);
-      if (skillsSection && skillsSection[1]) {
-        // Split by common separators and clean up
-        skills = skillsSection[1]
-          .split(/[,;•\n]/)
-          .map(s => s.trim())
-          .filter(s => s.length > 0 && s.length < 50)
-          .slice(0, 30);
-      }
-      
-      const parsedData = {
-        resumeText,
-        email: emailMatch ? emailMatch[0] : undefined,
-        linkedinUrl: linkedinMatch ? `https://${linkedinMatch[0]}` : undefined,
-        location: locationMatch ? locationMatch[1].trim() : undefined,
-        phone: phoneMatch ? phoneMatch[0].trim() : undefined,
-        skills: skills.length > 0 ? skills : undefined,
-      };
-      
-      console.log('[Resume Upload] Basic parsing completed');
-      console.log('[Resume Upload] Found:', {
-        hasEmail: !!parsedData.email,
-        hasLinkedIn: !!parsedData.linkedinUrl,
-        hasLocation: !!parsedData.location,
-        skillsCount: parsedData.skills?.length || 0
-      });
 
       // Save resume file to Object Storage
       const objectStorageService = new ObjectStorageService();
@@ -531,11 +475,9 @@ export function registerRoutes(app: Express): Server {
 
       res.json({
         success: true,
+        message: "Resume uploaded successfully",
         resumeUrl,
-        parsedData: {
-          ...parsedData,
-          resumeUrl
-        }
+        fileName: req.file.originalname
       });
     } catch (error) {
       console.error("Resume upload error:", error);

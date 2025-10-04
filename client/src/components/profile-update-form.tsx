@@ -246,35 +246,11 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
       }
 
       const result = await response.json();
-      console.log('[Resume Upload] Success! Parsed data received:', result);
-      const { parsedData } = result;
-
-      // Auto-fill form fields with parsed data
-      let filledFields = 0;
-      
-      if (parsedData.location) {
-        form.setValue('location', parsedData.location);
-        filledFields++;
-      }
-      if (parsedData.skills && parsedData.skills.length > 0) {
-        form.setValue('skills', parsedData.skills.slice(0, 30));
-        filledFields++;
-      }
-      if (parsedData.linkedinUrl) {
-        form.setValue('linkedinUrl', parsedData.linkedinUrl);
-        filledFields++;
-      }
-
-      // Show the resume text in bio if bio is empty
-      if (parsedData.resumeText && !form.getValues('bio')) {
-        const preview = parsedData.resumeText.substring(0, 500);
-        form.setValue('bio', preview + (parsedData.resumeText.length > 500 ? '...' : ''));
-        filledFields++;
-      }
+      console.log('[Resume Upload] Success! File uploaded:', result);
 
       toast({
         title: "Currículo Carregado!",
-        description: `Encontramos ${filledFields} informações no seu currículo. Revise e complete os campos abaixo.`,
+        description: `${result.fileName} foi salvo com sucesso. Agora preencha os campos do seu perfil abaixo.`,
       });
     } catch (error) {
       console.error('Resume upload error:', error);
