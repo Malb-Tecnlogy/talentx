@@ -465,65 +465,49 @@ export function registerRoutes(app: Express): Server {
       
       console.log('[Resume Upload] PDF extracted, text length:', resumeText.length);
 
-      // Check if OpenAI API key is configured
-      if (!process.env.OPENAI_API_KEY) {
-        console.error('[Resume Upload] OPENAI_API_KEY not configured');
-        return res.status(500).json({ 
-          message: "OpenAI API key not configured. Please contact support." 
-        });
+      // Simple text parsing - extract basic information without AI
+      console.log('[Resume Upload] Parsing resume text...');
+      
+      // Extract email if present
+      const emailMatch = resumeText.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+      
+      // Extract LinkedIn URL if present
+      const linkedinMatch = resumeText.match(/linkedin\.com\/in\/[\w-]+/i);
+      
+      // Try to extract location (common patterns)
+      const locationMatch = resumeText.match(/(?:Located in|Location:|Based in|Address:)\s*([^\n]+)/i);
+      
+      // Extract phone number if present (simple pattern)
+      const phoneMatch = resumeText.match(/(?:\+?[\d\s\-\(\)]{10,})/);
+      
+      // Try to find skills section
+      let skills: string[] = [];
+      const skillsSection = resumeText.match(/(?:Skills?|Technologies|Technical Skills?)[\s:]*([^\n]+(?:\n[^\n]+)*)/i);
+      if (skillsSection && skillsSection[1]) {
+        // Split by common separators and clean up
+        skills = skillsSection[1]
+          .split(/[,;•\n]/)
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && s.length < 50)
+          .slice(0, 30);
       }
-
-      console.log('[Resume Upload] Calling OpenAI API...');
-      // Use OpenAI to parse resume and extract structured data
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert HR assistant that extracts structured information from resumes. 
-Extract the following information from the resume text and return it as JSON:
-{
-  "title": "Professional title/role",
-  "bio": "Professional summary or about section",
-  "skills": ["skill1", "skill2", ...], // max 30 skills
-  "experience": number, // years of experience
-  "location": "City, State or Country",
-  "education": [{
-    "degree": "Degree name",
-    "course": "Field of study",
-    "institution": "University/School name",
-    "status": "Completo or Cursando",
-    "startMonth": "MM",
-    "startYear": "YYYY",
-    "endMonth": "MM",
-    "endYear": "YYYY"
-  }],
-  "workExperience": [{
-    "company": "Company name",
-    "position": "Job title",
-    "description": "Job description",
-    "isCurrent": boolean,
-    "startMonth": "MM",
-    "startYear": "YYYY",
-    "endMonth": "MM",
-    "endYear": "YYYY"
-  }],
-  "linkedinUrl": "LinkedIn URL if found"
-}
-
-Return ONLY valid JSON without any markdown formatting or additional text.`
-          },
-          {
-            role: "user",
-            content: `Extract information from this resume:\n\n${resumeText}`
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 4096
+      
+      const parsedData = {
+        resumeText,
+        email: emailMatch ? emailMatch[0] : undefined,
+        linkedinUrl: linkedinMatch ? `https://${linkedinMatch[0]}` : undefined,
+        location: locationMatch ? locationMatch[1].trim() : undefined,
+        phone: phoneMatch ? phoneMatch[0].trim() : undefined,
+        skills: skills.length > 0 ? skills : undefined,
+      };
+      
+      console.log('[Resume Upload] Basic parsing completed');
+      console.log('[Resume Upload] Found:', {
+        hasEmail: !!parsedData.email,
+        hasLinkedIn: !!parsedData.linkedinUrl,
+        hasLocation: !!parsedData.location,
+        skillsCount: parsedData.skills?.length || 0
       });
-
-      const parsedData = JSON.parse(response.choices[0].message.content || '{}');
-      console.log('[Resume Upload] AI parsing completed successfully');
 
       // Save resume file to Object Storage
       const objectStorageService = new ObjectStorageService();

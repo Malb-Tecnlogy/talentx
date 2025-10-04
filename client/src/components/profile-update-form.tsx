@@ -250,18 +250,31 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
       const { parsedData } = result;
 
       // Auto-fill form fields with parsed data
-      if (parsedData.title) form.setValue('title', parsedData.title);
-      if (parsedData.bio) form.setValue('bio', parsedData.bio);
-      if (parsedData.location) form.setValue('location', parsedData.location);
-      if (parsedData.experience) form.setValue('experience', parsedData.experience);
-      if (parsedData.skills) form.setValue('skills', parsedData.skills.slice(0, 30));
-      if (parsedData.education) form.setValue('education', parsedData.education);
-      if (parsedData.workExperience) form.setValue('workExperience', parsedData.workExperience);
-      if (parsedData.linkedinUrl) form.setValue('linkedinUrl', parsedData.linkedinUrl);
+      let filledFields = 0;
+      
+      if (parsedData.location) {
+        form.setValue('location', parsedData.location);
+        filledFields++;
+      }
+      if (parsedData.skills && parsedData.skills.length > 0) {
+        form.setValue('skills', parsedData.skills.slice(0, 30));
+        filledFields++;
+      }
+      if (parsedData.linkedinUrl) {
+        form.setValue('linkedinUrl', parsedData.linkedinUrl);
+        filledFields++;
+      }
+
+      // Show the resume text in bio if bio is empty
+      if (parsedData.resumeText && !form.getValues('bio')) {
+        const preview = parsedData.resumeText.substring(0, 500);
+        form.setValue('bio', preview + (parsedData.resumeText.length > 500 ? '...' : ''));
+        filledFields++;
+      }
 
       toast({
-        title: "Sucesso!",
-        description: "Currículo processado com sucesso! Os campos foram preenchidos automaticamente.",
+        title: "Currículo Carregado!",
+        description: `Encontramos ${filledFields} informações no seu currículo. Revise e complete os campos abaixo.`,
       });
     } catch (error) {
       console.error('Resume upload error:', error);
