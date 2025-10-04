@@ -620,138 +620,159 @@ export function registerRoutes(app: Express): Server {
         console.log('[Resume Upload] Bio found, length:', parsedData.bio.length);
       }
       
-      // Extract work experience
-      const experienceSection = fullText.match(/(?:EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE|EXPERIÊNCIA|EXPERIENCIA)[\s\S]*?(?=(?:EDUCATION|CERTIFICATIONS|LANGUAGES|SKILLS|EDUCAÇÃO|FORMAÇÃO|$))/i);
-      if (experienceSection) {
-        console.log('[Resume Upload] Experience section found, length:', experienceSection[0].length);
-        const workExperience: any[] = [];
-        const expText = experienceSection[0];
+      // Extract work experience - simplified approach
+      // Look for date ranges with job patterns near them
+      const workExperience: any[] = [];
+      
+      // Pattern: Find all date ranges in format "Month YYYY - Month YYYY" or "Month YYYY - Present"
+      const dateRangePattern = /([A-Z][a-z]+)\s+(\d{4})\s*[-–]\s*(?:(Present|Current|Atual)|([A-Z][a-z]+)\s+(\d{4}))/gi;
+      let dateMatch;
+      
+      while ((dateMatch = dateRangePattern.exec(fullText)) && workExperience.length < 10) {
+        const startMonth = dateMatch[1];
+        const startYear = dateMatch[2];
+        const isCurrent = !!dateMatch[3];
+        const endMonth = dateMatch[4] || undefined;
+        const endYear = dateMatch[5] || undefined;
         
-        // Match patterns like: "Senior Software Engineer | Company Name | Location"
-        // followed by date range like "November 2023 - Present" or "June 2023 - October 2023"
-        // Also match "*Month Year - Month Year*" pattern
-        const jobPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\|\s*[^\n]+?)?\s*\n\s*\*?([A-Z][a-z]+\s+\d{4}\s*-\s*(?:Present|Current|Atual|[A-Z][a-z]+\s+\d{4}))\*?/gi;
+        // Look backwards for position and company (usually within 200 chars before the date)
+        const textBefore = fullText.substring(Math.max(0, dateMatch.index - 200), dateMatch.index);
+        const lines = textBefore.split('\n').filter(l => l.trim());
         
-        let match;
-        while ((match = jobPattern.exec(expText)) && workExperience.length < 10) {
-          const position = match[1].trim();
-          const company = match[2].trim();
-          const dateRange = match[3].trim();
+        if (lines.length >= 1) {
+          const lastLine = lines[lines.length - 1].trim();
           
-          // Parse dates
-          const dateMatch = dateRange.match(/([A-Z][a-z]+)\s+(\d{4})\s*-\s*(?:Present|Current|Atual|([A-Z][a-z]+)\s+(\d{4}))/i);
-          if (dateMatch) {
-            const isCurrent = dateRange.toLowerCase().match(/present|current|atual/i);
-            workExperience.push({
-              position,
-              company,
-              isCurrent: !!isCurrent,
-              startMonth: dateMatch[1],
-              startYear: dateMatch[2],
-              endMonth: dateMatch[3] || undefined,
-              endYear: dateMatch[4] || undefined,
-              description: '' // Will be filled by user
-            });
+          // Try to extract position | company pattern
+          const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\|.*)?$/);
+          if (pipeMatch) {
+            const position = pipeMatch[1].trim();
+            const company = pipeMatch[2].trim();
+            
+            // Validate it looks like a job (not a section header)
+            if (position.length > 5 && position.length < 100 && company.length > 2) {
+              workExperience.push({
+                position,
+                company,
+                isCurrent,
+                startMonth,
+                startYear,
+                endMonth,
+                endYear,
+                description: ''
+              });
+            }
           }
         }
-        
-        if (workExperience.length > 0) {
-          parsedData.workExperience = workExperience;
-          console.log('[Resume Upload] Work experience found:', workExperience.length, 'positions');
-        } else {
-          console.log('[Resume Upload] No work experience matched the pattern');
-        }
-      } else {
-        console.log('[Resume Upload] Experience section not found');
       }
       
-      // Extract education
-      const educationSection = fullText.match(/(?:EDUCATION|ACADEMIC BACKGROUND|FORMAÇÃO ACADÊMICA|EDUCAÇÃO)[\s\S]*?(?=(?:EXPERIENCE|CERTIFICATIONS|LANGUAGES|SKILLS|CERTIFICAÇÕES|$))/i);
-      if (educationSection) {
-        console.log('[Resume Upload] Education section found, length:', educationSection[0].length);
-        const education: any[] = [];
-        const eduText = educationSection[0];
-        
-        // Match patterns like: "Software Engineering | Universidade Paulista (UNIP) | 2006 - 2009"
-        const eduPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\([^)]+\))?\s*\|\s*(\d{4})\s*-\s*(\d{4}|Present|Current|Atual)/gi;
-        
-        let match;
-        while ((match = eduPattern.exec(eduText)) && education.length < 5) {
-          const course = match[1].trim();
-          const institution = match[2].trim();
-          const startYear = match[3].trim();
-          const endYear = match[4].trim();
-          
-          const isCurrent = endYear.toLowerCase().match(/present|current|atual/i);
-          
-          education.push({
-            formation: 'Superior', // Default, user can change
-            degree: 'Graduação', // Default, user can change
-            status: isCurrent ? 'Cursando' : 'Completo',
-            course,
-            institution,
-            startMonth: 'Janeiro', // Default
-            startYear,
-            endMonth: isCurrent ? undefined : 'Dezembro',
-            endYear: isCurrent ? undefined : endYear
-          });
-        }
-        
-        if (education.length > 0) {
-          parsedData.education = education;
-          console.log('[Resume Upload] Education found:', education.length, 'entries');
-        } else {
-          console.log('[Resume Upload] No education matched the pattern');
-        }
+      if (workExperience.length > 0) {
+        parsedData.workExperience = workExperience;
+        console.log('[Resume Upload] Work experience found:', workExperience.length, 'positions');
       } else {
-        console.log('[Resume Upload] Education section not found');
+        console.log('[Resume Upload] No work experience found');
       }
       
-      // Extract certifications
-      const certSection = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)[\s\S]*?(?=(?:EDUCATION|LANGUAGES|SKILLS|EDUCAÇÃO|$))/i);
-      if (certSection) {
-        console.log('[Resume Upload] Certifications section found, length:', certSection[0].length);
-        const certifications: any[] = [];
-        const certText = certSection[0];
+      // Extract education - simplified approach
+      // Look for year ranges like "2006 - 2009" that are NOT part of work experience
+      const education: any[] = [];
+      const yearRangePattern = /(\d{4})\s*[-–]\s*(\d{4}|Present|Current|Atual)/gi;
+      let eduMatch;
+      
+      while ((eduMatch = yearRangePattern.exec(fullText)) && education.length < 5) {
+        const startYear = eduMatch[1];
+        const endYear = eduMatch[2].match(/\d{4}/) ? eduMatch[2] : undefined;
+        const isCurrent = eduMatch[2].match(/Present|Current|Atual/i);
         
-        // Match lines that look like certifications
-        const certLines = certText.split('\n').filter(line => {
-          const trimmed = line.trim();
-          // Skip the header and empty lines
-          if (!trimmed || trimmed.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)$/i)) return false;
-          // Must have some length and not be too long
-          return trimmed.length > 10 && trimmed.length < 200;
-        });
+        // Look backwards for course and institution
+        const textBefore = fullText.substring(Math.max(0, eduMatch.index - 200), eduMatch.index);
+        const lines = textBefore.split('\n').filter(l => l.trim());
         
-        console.log('[Resume Upload] Certification lines found:', certLines.length);
+        if (lines.length >= 1) {
+          const lastLine = lines[lines.length - 1].trim();
+          
+          // Try to extract course | institution pattern
+          const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\(.*?\))?(?:\s*\|.*)?$/);
+          if (pipeMatch) {
+            const course = pipeMatch[1].trim();
+            const institution = pipeMatch[2].trim();
+            
+            // Validate it looks like education (avoid work experience duplicates)
+            // Education courses usually have keywords like "Engineering", "Science", "Arts", etc.
+            if (course.length > 3 && institution.length > 3) {
+              education.push({
+                formation: 'Superior',
+                degree: 'Graduação',
+                status: isCurrent ? 'Cursando' : 'Completo',
+                course,
+                institution,
+                startMonth: 'Janeiro',
+                startYear,
+                endMonth: isCurrent ? undefined : 'Dezembro',
+                endYear: isCurrent ? undefined : endYear
+              });
+            }
+          }
+        }
+      }
+      
+      if (education.length > 0) {
+        parsedData.education = education;
+        console.log('[Resume Upload] Education found:', education.length, 'entries');
+      } else {
+        console.log('[Resume Upload] No education found');
+      }
+      
+      // Extract certifications - simplified approach
+      // Look for the certifications section and extract lines
+      const certifications: any[] = [];
+      const certSectionMatch = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)[\s\S]{0,1000}/i);
+      
+      if (certSectionMatch) {
+        console.log('[Resume Upload] Certifications section found');
+        const certText = certSectionMatch[0];
         
-        certLines.forEach(line => {
-          const trimmed = line.trim();
-          // Try to extract year if present
-          const yearMatch = trimmed.match(/\b(20\d{2})\b/);
+        // Split into lines and process each line
+        const lines = certText.split('\n');
+        
+        for (let i = 1; i < lines.length && certifications.length < 10; i++) {
+          const line = lines[i].trim();
+          
+          // Skip empty lines, section headers, and very short lines
+          if (!line || line.length < 10 || line.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|LANGUAGES?|EDUCATION|SKILLS?)$/i)) {
+            continue;
+          }
+          
+          // Stop if we hit another section
+          if (line.match(/^(?:LANGUAGES?|EDUCATION|SKILLS?|EXPERIENCE)/i)) {
+            break;
+          }
+          
+          // Extract year if present
+          const yearMatch = line.match(/\b(20\d{2})\b/);
           const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
           
-          // Clean the certification name (remove year, bullets, etc)
-          const name = trimmed
+          // Clean the certification name
+          let name = line
             .replace(/^[-•*]\s*/, '') // Remove bullets
             .replace(/\b20\d{2}\b/, '') // Remove year
             .replace(/\s+/g, ' ')
             .trim();
           
-          if (name.length > 5) {
+          // Validate it looks like a certification
+          if (name.length > 5 && name.length < 150) {
             certifications.push({
               name,
-              issuer: '', // Will be filled by user
+              issuer: '',
               year
             });
           }
-        });
+        }
         
         if (certifications.length > 0) {
-          parsedData.certifications = certifications.slice(0, 10);
+          parsedData.certifications = certifications;
           console.log('[Resume Upload] Certifications found:', certifications.length, 'entries');
         } else {
-          console.log('[Resume Upload] No certifications matched the pattern');
+          console.log('[Resume Upload] No certifications extracted');
         }
       } else {
         console.log('[Resume Upload] Certifications section not found');
