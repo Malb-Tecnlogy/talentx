@@ -456,10 +456,15 @@ export function registerRoutes(app: Express): Server {
 
       // Lazy load pdf-parse (CommonJS module)
       if (!pdfParse) {
-        pdfParse = (await import('pdf-parse')).default;
+        console.log('[Resume Upload] Loading pdf-parse module...');
+        const pdfModule = await import('pdf-parse');
+        console.log('[Resume Upload] Module loaded:', typeof pdfModule, Object.keys(pdfModule));
+        pdfParse = pdfModule.default || pdfModule;
+        console.log('[Resume Upload] pdfParse type:', typeof pdfParse);
       }
 
       // Extract text from PDF
+      console.log('[Resume Upload] Calling pdfParse...');
       const pdfData = await pdfParse(req.file.buffer);
       const resumeText = pdfData.text;
       
