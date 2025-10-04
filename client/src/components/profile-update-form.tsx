@@ -277,6 +277,27 @@ export function ProfileUpdateForm({ professional }: { professional: any }) {
           form.setValue('linkedinUrl', parsedData.linkedinUrl);
           filledFields++;
         }
+        
+        // Auto-fill work experience
+        if (parsedData.workExperience && parsedData.workExperience.length > 0) {
+          form.setValue('workExperience', parsedData.workExperience);
+          filledFields++;
+          console.log('[Resume Upload] Filled work experience:', parsedData.workExperience.length, 'positions');
+        }
+        
+        // Auto-fill education
+        if (parsedData.education && parsedData.education.length > 0) {
+          form.setValue('education', parsedData.education);
+          filledFields++;
+          console.log('[Resume Upload] Filled education:', parsedData.education.length, 'entries');
+        }
+        
+        // Auto-fill certifications
+        if (parsedData.certifications && parsedData.certifications.length > 0) {
+          form.setValue('certifications', parsedData.certifications);
+          filledFields++;
+          console.log('[Resume Upload] Filled certifications:', parsedData.certifications.length, 'certs');
+        }
       }
 
       toast({
