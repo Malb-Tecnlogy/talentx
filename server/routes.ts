@@ -41,8 +41,10 @@ import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
-// pdf-parse requires dynamic import for ESM compatibility
-let pdfParse: any;
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+// Import pdf-parse using CommonJS require
+const pdfParse = require('pdf-parse');
 
 // Configure multer for in-memory file upload
 const upload = multer({ 
@@ -454,17 +456,8 @@ export function registerRoutes(app: Express): Server {
       console.log('[Resume Upload] Starting resume processing...');
       console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
 
-      // Lazy load pdf-parse (CommonJS module)
-      if (!pdfParse) {
-        console.log('[Resume Upload] Loading pdf-parse module...');
-        const pdfModule = await import('pdf-parse');
-        console.log('[Resume Upload] Module loaded:', typeof pdfModule, Object.keys(pdfModule));
-        pdfParse = pdfModule.default || pdfModule;
-        console.log('[Resume Upload] pdfParse type:', typeof pdfParse);
-      }
-
-      // Extract text from PDF
-      console.log('[Resume Upload] Calling pdfParse...');
+      // Extract text from PDF using pdf-parse
+      console.log('[Resume Upload] Extracting text from PDF...');
       const pdfData = await pdfParse(req.file.buffer);
       const resumeText = pdfData.text;
       
