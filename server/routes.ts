@@ -42,6 +42,7 @@ import multer from "multer";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
 import { Readable } from "stream";
+import AdmZip from "adm-zip";
 import { 
   ServicePrincipalCredentials,
   PDFServices,
@@ -507,12 +508,23 @@ export function registerRoutes(app: Express): Server {
       
       const streamAsset = await pdfServices.getContent({ asset: resultAsset });
       
-      // Read the JSON result
+      // Read the ZIP result from Adobe
       const chunks: Buffer[] = [];
       for await (const chunk of streamAsset.readStream) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
-      const jsonResult = JSON.parse(Buffer.concat(chunks).toString());
+      const zipBuffer = Buffer.concat(chunks);
+      
+      // Extract the JSON from the ZIP
+      console.log('[Resume Upload] Extracting JSON from ZIP...');
+      const zip = new AdmZip(zipBuffer);
+      const jsonEntry = zip.getEntry('structuredData.json');
+      
+      if (!jsonEntry) {
+        throw new Error('structuredData.json not found in Adobe response ZIP');
+      }
+      
+      const jsonResult = JSON.parse(jsonEntry.getData().toString('utf8'));
       
       // Extract text from the structured JSON
       let fullText = '';
