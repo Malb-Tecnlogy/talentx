@@ -164,6 +164,10 @@ export const jobs = pgTable("jobs", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   requirements: text("requirements").notNull(),
+  // Multilingual support - JSONB fields for PT-BR/EN/ES
+  titleTranslations: jsonb("title_translations").$type<{ pt: string; en: string; es: string }>(),
+  descriptionTranslations: jsonb("description_translations").$type<{ pt: string; en: string; es: string }>(),
+  requirementsTranslations: jsonb("requirements_translations").$type<{ pt: string; en: string; es: string }>(),
   skills: jsonb("skills").$type<string[]>().notNull(),
   budget: decimal("budget", { precision: 10, scale: 2 }),
   duration: varchar("duration"), // weeks, months
