@@ -641,6 +641,42 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
+      // Extract education
+      const educationSection = fullText.match(/(?:EDUCATION|ACADEMIC BACKGROUND|FORMAÇÃO ACADÊMICA)[\s\S]*?(?=(?:EXPERIENCE|CERTIFICATIONS|LANGUAGES|SKILLS|$))/i);
+      if (educationSection) {
+        const education: any[] = [];
+        const eduText = educationSection[0];
+        
+        // Match patterns like: "Software Engineering | Universidade Paulista (UNIP) | 2006 - 2009"
+        const eduPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\([^)]+\))?\s*\|\s*(\d{4})\s*-\s*(\d{4}|Present|Current)/gi;
+        
+        let match;
+        while ((match = eduPattern.exec(eduText)) && education.length < 5) {
+          const course = match[1].trim();
+          const institution = match[2].trim();
+          const startYear = match[3].trim();
+          const endYear = match[4].trim();
+          
+          const isCurrent = endYear.toLowerCase().match(/present|current/i);
+          
+          education.push({
+            formation: 'Superior', // Default, user can change
+            degree: 'Graduação', // Default, user can change
+            status: isCurrent ? 'Cursando' : 'Completo',
+            course,
+            institution,
+            startMonth: 'Janeiro', // Default
+            startYear,
+            endMonth: isCurrent ? undefined : 'Dezembro',
+            endYear: isCurrent ? undefined : endYear
+          });
+        }
+        
+        if (education.length > 0) {
+          parsedData.education = education;
+        }
+      }
+      
       // Extract certifications
       const certSection = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?)[\s\S]*?(?=(?:EDUCATION|LANGUAGES|SKILLS|$))/i);
       if (certSection) {
