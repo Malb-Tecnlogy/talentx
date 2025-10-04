@@ -537,35 +537,68 @@ export function registerRoutes(app: Express): Server {
 
       console.log('[Resume Upload] Adobe extraction successful, text length:', fullText.length);
 
-      // Now use OpenAI to parse the extracted text into structured data
-      console.log('[Resume Upload] Using OpenAI to structure the data...');
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "user",
-            content: `Analyze this resume text and extract the following information in JSON format:
-{
-  "title": "Professional title/current role",
-  "bio": "Professional summary (max 500 chars)",
-  "skills": ["skill1", "skill2", ...], // max 30 skills
-  "experience": number, // estimated years of experience
-  "location": "City, State/Country",
-  "linkedinUrl": "LinkedIn URL if found",
-  "email": "Email address if found"
-}
-
-Resume text:
-${fullText.substring(0, 8000)}
-
-Extract only what you find. Return valid JSON only, no markdown.`
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 2000
-      });
-
-      const parsedData = JSON.parse(completion.choices[0].message.content || '{}');
+      // Parse the extracted text to find resume data
+      console.log('[Resume Upload] Parsing resume data...');
+      
+      const parsedData: any = {};
+      
+      // Extract email
+      const emailMatch = fullText.match(/[\w.-]+@[\w.-]+\.\w+/);
+      if (emailMatch) parsedData.email = emailMatch[0];
+      
+      // Extract LinkedIn URL
+      const linkedinMatch = fullText.match(/linkedin\.com\/in\/[\w-]+/i);
+      if (linkedinMatch) parsedData.linkedinUrl = 'https://' + linkedinMatch[0];
+      
+      // Extract location (common patterns)
+      const locationMatch = fullText.match(/(?:Location|Address|City):\s*([^,\n]+,\s*[^,\n]+)/i) ||
+                           fullText.match(/([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zà-ú]+))/);
+      if (locationMatch) parsedData.location = locationMatch[1];
+      
+      // Extract title (usually near the top, after name)
+      const lines = fullText.split('\n').filter(l => l.trim());
+      for (let i = 0; i < Math.min(lines.length, 10); i++) {
+        const line = lines[i].trim();
+        // Skip email, phone, location lines
+        if (line.match(/@|linkedin|github|phone|tel:|location:/i)) continue;
+        // Skip short lines
+        if (line.length < 10 || line.length > 100) continue;
+        // Check if it looks like a job title
+        if (line.match(/developer|engineer|designer|manager|analyst|specialist|consultant|architect/i)) {
+          parsedData.title = line;
+          break;
+        }
+      }
+      
+      // Extract skills (common tech keywords)
+      const commonSkills = [
+        'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
+        'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask', 'Spring',
+        'HTML', 'CSS', 'SASS', 'Tailwind', 'Bootstrap',
+        'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
+        'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Git', 'CI/CD',
+        'REST', 'GraphQL', 'API', 'Microservices', 'Agile', 'Scrum'
+      ];
+      
+      const foundSkills = commonSkills.filter(skill => 
+        fullText.match(new RegExp(`\\b${skill}\\b`, 'i'))
+      );
+      if (foundSkills.length > 0) {
+        parsedData.skills = foundSkills.slice(0, 30);
+      }
+      
+      // Extract years of experience (look for patterns like "5 years", "3+ years")
+      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?)\s*(?:of\s*)?(?:experience|experiência)/i);
+      if (expMatch) {
+        parsedData.experience = parseInt(expMatch[1]);
+      }
+      
+      // Extract bio/summary (look for summary section)
+      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills)/i);
+      if (summaryMatch) {
+        parsedData.bio = summaryMatch[1].trim().substring(0, 500);
+      }
+      
       console.log('[Resume Upload] Data extraction successful:', Object.keys(parsedData));
 
       // Save resume file to Object Storage
