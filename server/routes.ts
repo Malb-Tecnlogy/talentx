@@ -1,5 +1,5 @@
 // Server routes using blueprint:javascript_auth_all_persistance
-import type { Express } from "express";
+import type { Express, Request as ExpressRequest, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { Resend } from "resend";
 import { setupAuth } from "./auth";
@@ -28,6 +28,7 @@ import {
   applications, 
   contracts, 
   notifications,
+  users,
   contactFormSchema,
   type InsertJob,
   type InsertCompany,
@@ -1134,6 +1135,212 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Contact form error:", error);
       res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
+    }
+  });
+
+  // Admin middleware - check if user is admin
+  const requireAdmin = (req: ExpressRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  // Admin routes - Statistics dashboard
+  app.get("/api/admin/stats", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const [
+        totalUsers,
+        totalProfessionals,
+        totalCompanies,
+        totalJobs,
+        totalApplications,
+        activeJobs,
+        pendingApplications
+      ] = await Promise.all([
+        db.select().from(users),
+        db.select().from(professionals),
+        db.select().from(companies),
+        db.select().from(jobs),
+        db.select().from(applications),
+        db.select().from(jobs).where(eq(jobs.status, 'active')),
+        db.select().from(applications).where(eq(applications.status, 'pending'))
+      ]);
+
+      res.json({
+        users: {
+          total: totalUsers.length,
+          professionals: totalProfessionals.length,
+          companies: totalCompanies.length,
+        },
+        jobs: {
+          total: totalJobs.length,
+          active: activeJobs.length,
+        },
+        applications: {
+          total: totalApplications.length,
+          pending: pendingApplications.length,
+        },
+      });
+    } catch (error) {
+      console.error("Get admin stats error:", error);
+      res.status(500).json({ message: "Failed to fetch statistics" });
+    }
+  });
+
+  // Admin routes - Get all users
+  app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        role: users.role,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        emailVerified: users.emailVerified,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+      }).from(users).orderBy(desc(users.createdAt));
+
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Get admin users error:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin routes - Get all jobs
+  app.get("/api/admin/jobs", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allJobs = await db.select({
+        id: jobs.id,
+        title: jobs.title,
+        type: jobs.type,
+        status: jobs.status,
+        budget: jobs.budget,
+        companyId: jobs.companyId,
+        createdAt: jobs.createdAt,
+        approvedAt: jobs.approvedAt,
+      }).from(jobs).orderBy(desc(jobs.createdAt));
+
+      // Get company names
+      const jobsWithCompanies = await Promise.all(
+        allJobs.map(async (job: any) => {
+          const company = await db.select({
+            id: companies.id,
+            name: companies.name,
+          }).from(companies)
+            .where(eq(companies.id, job.companyId))
+            .limit(1);
+
+          return {
+            ...job,
+            company: company[0] || null,
+          };
+        })
+      );
+
+      res.json(jobsWithCompanies);
+    } catch (error) {
+      console.error("Get admin jobs error:", error);
+      res.status(500).json({ message: "Failed to fetch jobs" });
+    }
+  });
+
+  // Admin routes - Get all professionals
+  app.get("/api/admin/professionals", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allProfessionals = await db.select({
+        id: professionals.id,
+        userId: professionals.userId,
+        title: professionals.title,
+        location: professionals.location,
+        experience: professionals.experience,
+        availability: professionals.availability,
+        skills: professionals.skills,
+        resumeUrl: professionals.resumeUrl,
+        createdAt: professionals.createdAt,
+      }).from(professionals).orderBy(desc(professionals.createdAt));
+
+      // Get user info for each professional
+      const professionalsWithUsers = await Promise.all(
+        allProfessionals.map(async (prof: any) => {
+          const user = await db.select({
+            username: users.username,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
+          }).from(users)
+            .where(eq(users.id, prof.userId))
+            .limit(1);
+
+          return {
+            ...prof,
+            user: user[0] || null,
+          };
+        })
+      );
+
+      res.json(professionalsWithUsers);
+    } catch (error) {
+      console.error("Get admin professionals error:", error);
+      res.status(500).json({ message: "Failed to fetch professionals" });
+    }
+  });
+
+  // Admin routes - Get all applications
+  app.get("/api/admin/applications", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allApplications = await db.select().from(applications)
+        .orderBy(desc(applications.createdAt));
+
+      // Enrich with job and professional data
+      const applicationsWithDetails = await Promise.all(
+        allApplications.map(async (app: any) => {
+          const [job, professional] = await Promise.all([
+            db.select({
+              id: jobs.id,
+              title: jobs.title,
+              type: jobs.type,
+            }).from(jobs)
+              .where(eq(jobs.id, app.jobId))
+              .limit(1),
+            db.select({
+              id: professionals.id,
+              title: professionals.title,
+              userId: professionals.userId,
+            }).from(professionals)
+              .where(eq(professionals.id, app.professionalId))
+              .limit(1)
+          ]);
+
+          let professionalUser = null;
+          if (professional[0]) {
+            const user = await db.select({
+              username: users.username,
+              email: users.email,
+            }).from(users)
+              .where(eq(users.id, professional[0].userId))
+              .limit(1);
+            professionalUser = user[0] || null;
+          }
+
+          return {
+            ...app,
+            job: job[0] || null,
+            professional: professional[0] ? { ...professional[0], user: professionalUser } : null,
+          };
+        })
+      );
+
+      res.json(applicationsWithDetails);
+    } catch (error) {
+      console.error("Get admin applications error:", error);
+      res.status(500).json({ message: "Failed to fetch applications" });
     }
   });
 
