@@ -841,10 +841,44 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Job recommendations for professionals
+  app.get("/api/professionals/me/job-recommendations", requireAuth, async (req, res) => {
+    try {
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
+      if (!professional) {
+        return res.json([]); // Return empty array if no profile
+      }
+
+      // TODO: Implement AI-based job recommendations
+      // For now, return empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Get job recommendations error:", error);
+      res.status(500).json({ message: "Failed to fetch job recommendations" });
+    }
+  });
+
+  // Contracts for professionals
+  app.get("/api/contracts/my", requireAuth, async (req, res) => {
+    try {
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
+      if (!professional) {
+        return res.json([]); // Return empty array if no profile
+      }
+
+      // TODO: Implement contracts functionality
+      // For now, return empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Get contracts error:", error);
+      res.status(500).json({ message: "Failed to fetch contracts" });
+    }
+  });
+
   // Application routes
   app.get("/api/applications/my", requireAuth, async (req, res) => {
     try {
-      const professional = await storage.getProfessionalByUserId(req.user.id);
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
       if (!professional) {
         return res.status(404).json({ message: "Professional profile not found" });
       }
