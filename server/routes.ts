@@ -41,6 +41,7 @@ import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 import OpenAI from "openai";
 import { ObjectStorageService } from "./objectStorage";
+import { Readable } from "stream";
 import { 
   ServicePrincipalCredentials,
   PDFServices,
@@ -477,10 +478,13 @@ export function registerRoutes(app: Express): Server {
 
       const pdfServices = new PDFServices({ credentials });
       
+      // Convert Buffer to ReadableStream for Adobe SDK
+      const readableStream = Readable.from(req.file.buffer);
+      
       // Create ExtractPDF job
       console.log('[Resume Upload] Creating PDF extraction job...');
       const inputAsset = await pdfServices.upload({
-        readStream: req.file.buffer,
+        readStream: readableStream,
         mimeType: MimeType.PDF
       });
 
@@ -496,13 +500,17 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Download the result
-      const resultAsset = pdfServicesResponse.result.resource;
+      const resultAsset = pdfServicesResponse.result?.resource;
+      if (!resultAsset) {
+        throw new Error('No result asset from Adobe PDF Services');
+      }
+      
       const streamAsset = await pdfServices.getContent({ asset: resultAsset });
       
       // Read the JSON result
       const chunks: Buffer[] = [];
       for await (const chunk of streamAsset.readStream) {
-        chunks.push(chunk);
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
       const jsonResult = JSON.parse(Buffer.concat(chunks).toString());
       

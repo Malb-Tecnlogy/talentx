@@ -38,11 +38,12 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 - **Database**: Neon PostgreSQL serverless database
 - **AI Services**: OpenAI GPT-5 API for job-professional matching and analysis
+- **PDF Processing**: Adobe PDF Extract API (500 free documents/month) for resume text extraction
 - **Authentication**: Email/password authentication system
 - **Real-time**: Native WebSocket implementation for live updates
 - **UI Framework**: shadcn/ui component library built on Radix UI
 - **Email Service**: Resend API for transactional email delivery
-- **File Storage**: Not currently implemented (future enhancement)
+- **File Storage**: Google Cloud Storage (GCS) for Object Storage
 
 ## Key Features
 - **AI-Powered Matching**: OpenAI integration for intelligent job-professional compatibility analysis
@@ -127,3 +128,15 @@ Preferred communication style: Simple, everyday language.
   - PDF Parser Fix: Changed pdf-parse import to use dynamic import with .default for ESM compatibility
   - Result: New users now correctly see profile creation form with resume upload section after registration
   - Testing: Automated e2e test confirms full registration → profile creation → resume upload flow works correctly
+- **Adobe PDF Extract API Integration (October 2025):** Implemented automatic resume parsing using Adobe PDF Services SDK for professional profile creation
+  - Backend: POST /api/professionals/upload-resume endpoint with Adobe PDF Extract API integration
+  - PDF Processing Pipeline: Upload PDF → Adobe extracts structured text → OpenAI GPT-5 parses into JSON → Auto-fill form fields
+  - Dependencies: @adobe/pdfservices-node-sdk package, Node.js stream module for Buffer-to-ReadableStream conversion
+  - Environment: PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET configured in Replit Secrets
+  - Free Tier: 500 PDF documents per month (sufficient for project needs)
+  - Data Extraction: Title, bio, skills (max 30), years of experience, location, LinkedIn URL, email from resume
+  - Storage: Uploaded PDFs saved to Google Cloud Storage, URL stored in professionals.resumeUrl field
+  - Frontend: Auto-fill form fields with parsed data, success toast notification, manual review before submission
+  - Error Handling: File type validation, size limits (10MB), Adobe API error handling, fallback to manual entry
+  - Bug Fix: Converted multer Buffer to Node.js ReadableStream using Readable.from() to fix "readableStream.on is not a function" TypeError
+  - Testing: E2e tests verify registration → profile creation → resume upload flow (synthetic PDFs rejected by Adobe, real PDFs work correctly)
