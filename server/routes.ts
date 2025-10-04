@@ -636,14 +636,28 @@ export function registerRoutes(app: Express): Server {
         const endMonth = dateMatch[4] || undefined;
         const endYear = dateMatch[5] || undefined;
         
+        console.log('[Resume Upload] Found date:', dateMatch[0]);
+        
         // Look backwards for position and company (up to 300 chars before the date)
         const textBefore = fullText.substring(Math.max(0, dateMatch.index - 300), dateMatch.index);
         const lines = textBefore.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
+        console.log('[Resume Upload] Lines before date:', lines.slice(-3));
+        
         if (lines.length >= 1) {
-          // Get last 2-3 lines for context
-          const lastLine = lines[lines.length - 1];
-          const secondLastLine = lines.length >= 2 ? lines[lines.length - 2] : '';
+          // Get last 2-3 lines for context, filter out technical noise
+          // Skip lines with version numbers, bullets, or short technical fragments
+          const cleanLines = lines.filter(l => {
+            // Skip version numbers like "v.8", "(v.17)", "Java 8", etc.
+            if (l.match(/\(v\.|v\.\d|version\s*\d|java\s*\d|python\s*\d/i)) return false;
+            // Skip bullet points or very short fragments
+            if (l.match(/^[•\-*]\s*$/) || l.length < 5) return false;
+            return true;
+          });
+          
+          const lastLine = cleanLines.length > 0 ? cleanLines[cleanLines.length - 1] : '';
+          const secondLastLine = cleanLines.length >= 2 ? cleanLines[cleanLines.length - 2] : '';
+          const thirdLastLine = cleanLines.length >= 3 ? cleanLines[cleanLines.length - 3] : '';
           
           let position = '';
           let company = '';
@@ -690,6 +704,7 @@ export function registerRoutes(app: Express): Server {
           if (position && company && position.length > 2 && position.length < 150 && company.length > 2 && company.length < 150) {
             // Skip if it looks like a section header
             if (!position.match(/^(?:EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|EXPERIÊNCIA|EDUCAÇÃO|HABILIDADES|CERTIFICAÇÕES|EXPERIENCIA|EDUCACIÓN|FORMACIÓN)$/i)) {
+              console.log('[Resume Upload] Extracted job - Position:', position, 'Company:', company);
               workExperience.push({
                 position,
                 company,
@@ -701,6 +716,8 @@ export function registerRoutes(app: Express): Server {
                 description: ''
               });
             }
+          } else {
+            console.log('[Resume Upload] Skipped - Position:', position, 'Company:', company);
           }
         }
       }
