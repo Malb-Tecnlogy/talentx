@@ -536,6 +536,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log('[Resume Upload] Adobe extraction successful, text length:', fullText.length);
+      console.log('[Resume Upload] First 500 chars:', fullText.substring(0, 500));
 
       // Parse the extracted text to find resume data
       console.log('[Resume Upload] Parsing resume data...');
@@ -544,28 +545,41 @@ export function registerRoutes(app: Express): Server {
       
       // Extract email
       const emailMatch = fullText.match(/[\w.-]+@[\w.-]+\.\w+/);
-      if (emailMatch) parsedData.email = emailMatch[0];
+      if (emailMatch) {
+        parsedData.email = emailMatch[0];
+        console.log('[Resume Upload] Email found:', parsedData.email);
+      }
       
       // Extract LinkedIn URL
       const linkedinMatch = fullText.match(/linkedin\.com\/in\/[\w-]+/i);
-      if (linkedinMatch) parsedData.linkedinUrl = 'https://' + linkedinMatch[0];
+      if (linkedinMatch) {
+        parsedData.linkedinUrl = 'https://' + linkedinMatch[0];
+        console.log('[Resume Upload] LinkedIn found:', parsedData.linkedinUrl);
+      }
       
-      // Extract location (common patterns)
-      const locationMatch = fullText.match(/(?:Location|Address|City):\s*([^,\n]+,\s*[^,\n]+)/i) ||
+      // Extract location (common patterns - more flexible)
+      const locationMatch = fullText.match(/(?:Location|Address|City|Brasília|São Paulo|Rio de Janeiro)[\s:]*([^,\n]{2,50}[,]\s*[A-Z]{2})/i) ||
                            fullText.match(/([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zà-ú]+))/);
-      if (locationMatch) parsedData.location = locationMatch[1];
+      if (locationMatch) {
+        parsedData.location = locationMatch[1] || locationMatch[0];
+        console.log('[Resume Upload] Location found:', parsedData.location);
+      }
       
       // Extract title (usually near the top, after name)
       const lines = fullText.split('\n').filter(l => l.trim());
-      for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      console.log('[Resume Upload] Total lines found:', lines.length);
+      console.log('[Resume Upload] First 5 lines:', lines.slice(0, 5));
+      
+      for (let i = 0; i < Math.min(lines.length, 15); i++) {
         const line = lines[i].trim();
         // Skip email, phone, location lines
-        if (line.match(/@|linkedin|github|phone|tel:|location:/i)) continue;
+        if (line.match(/@|linkedin|github|phone|tel:|location:|http/i)) continue;
         // Skip short lines
-        if (line.length < 10 || line.length > 100) continue;
+        if (line.length < 10 || line.length > 120) continue;
         // Check if it looks like a job title
-        if (line.match(/developer|engineer|designer|manager|analyst|specialist|consultant|architect/i)) {
+        if (line.match(/developer|engineer|designer|manager|analyst|specialist|consultant|architect|engenheiro|desenvolvedor|analista/i)) {
           parsedData.title = line;
+          console.log('[Resume Upload] Title found:', parsedData.title);
           break;
         }
       }
@@ -589,29 +603,34 @@ export function registerRoutes(app: Express): Server {
       );
       if (foundSkills.length > 0) {
         parsedData.skills = foundSkills.slice(0, 30);
+        console.log('[Resume Upload] Skills found:', foundSkills.length, 'skills');
       }
       
-      // Extract years of experience (look for patterns like "5 years", "3+ years")
-      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?)\s*(?:of\s*)?(?:experience|experiência)/i);
+      // Extract years of experience (look for patterns like "5 years", "3+ years", "15+ years")
+      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?)\s*(?:of\s*)?(?:experience|experiência|experiencia)/i);
       if (expMatch) {
         parsedData.experience = parseInt(expMatch[1]);
+        console.log('[Resume Upload] Experience found:', parsedData.experience, 'years');
       }
       
-      // Extract bio/summary (look for summary section)
-      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills)/i);
+      // Extract bio/summary (look for summary section - more flexible patterns)
+      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective|Professional|Resumo|Perfil)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills|EXPERIENCE|EDUCATION)/i);
       if (summaryMatch) {
         parsedData.bio = summaryMatch[1].trim().substring(0, 500);
+        console.log('[Resume Upload] Bio found, length:', parsedData.bio.length);
       }
       
       // Extract work experience
-      const experienceSection = fullText.match(/(?:EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[\s\S]*?(?=(?:EDUCATION|CERTIFICATIONS|LANGUAGES|SKILLS|$))/i);
+      const experienceSection = fullText.match(/(?:EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE|EXPERIÊNCIA|EXPERIENCIA)[\s\S]*?(?=(?:EDUCATION|CERTIFICATIONS|LANGUAGES|SKILLS|EDUCAÇÃO|FORMAÇÃO|$))/i);
       if (experienceSection) {
+        console.log('[Resume Upload] Experience section found, length:', experienceSection[0].length);
         const workExperience: any[] = [];
         const expText = experienceSection[0];
         
         // Match patterns like: "Senior Software Engineer | Company Name | Location"
         // followed by date range like "November 2023 - Present" or "June 2023 - October 2023"
-        const jobPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\|\s*[^\n]+?)?\s*\n\s*([A-Z][a-z]+\s+\d{4}\s*-\s*(?:Present|[A-Z][a-z]+\s+\d{4}))/gi;
+        // Also match "*Month Year - Month Year*" pattern
+        const jobPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\|\s*[^\n]+?)?\s*\n\s*\*?([A-Z][a-z]+\s+\d{4}\s*-\s*(?:Present|Current|Atual|[A-Z][a-z]+\s+\d{4}))\*?/gi;
         
         let match;
         while ((match = jobPattern.exec(expText)) && workExperience.length < 10) {
@@ -620,13 +639,13 @@ export function registerRoutes(app: Express): Server {
           const dateRange = match[3].trim();
           
           // Parse dates
-          const dateMatch = dateRange.match(/([A-Z][a-z]+)\s+(\d{4})\s*-\s*(?:Present|([A-Z][a-z]+)\s+(\d{4}))/i);
+          const dateMatch = dateRange.match(/([A-Z][a-z]+)\s+(\d{4})\s*-\s*(?:Present|Current|Atual|([A-Z][a-z]+)\s+(\d{4}))/i);
           if (dateMatch) {
-            const isCurrent = dateRange.toLowerCase().includes('present');
+            const isCurrent = dateRange.toLowerCase().match(/present|current|atual/i);
             workExperience.push({
               position,
               company,
-              isCurrent,
+              isCurrent: !!isCurrent,
               startMonth: dateMatch[1],
               startYear: dateMatch[2],
               endMonth: dateMatch[3] || undefined,
@@ -638,17 +657,23 @@ export function registerRoutes(app: Express): Server {
         
         if (workExperience.length > 0) {
           parsedData.workExperience = workExperience;
+          console.log('[Resume Upload] Work experience found:', workExperience.length, 'positions');
+        } else {
+          console.log('[Resume Upload] No work experience matched the pattern');
         }
+      } else {
+        console.log('[Resume Upload] Experience section not found');
       }
       
       // Extract education
-      const educationSection = fullText.match(/(?:EDUCATION|ACADEMIC BACKGROUND|FORMAÇÃO ACADÊMICA)[\s\S]*?(?=(?:EXPERIENCE|CERTIFICATIONS|LANGUAGES|SKILLS|$))/i);
+      const educationSection = fullText.match(/(?:EDUCATION|ACADEMIC BACKGROUND|FORMAÇÃO ACADÊMICA|EDUCAÇÃO)[\s\S]*?(?=(?:EXPERIENCE|CERTIFICATIONS|LANGUAGES|SKILLS|CERTIFICAÇÕES|$))/i);
       if (educationSection) {
+        console.log('[Resume Upload] Education section found, length:', educationSection[0].length);
         const education: any[] = [];
         const eduText = educationSection[0];
         
         // Match patterns like: "Software Engineering | Universidade Paulista (UNIP) | 2006 - 2009"
-        const eduPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\([^)]+\))?\s*\|\s*(\d{4})\s*-\s*(\d{4}|Present|Current)/gi;
+        const eduPattern = /([^\n|]+?)\s*\|\s*([^\n|]+?)(?:\s*\([^)]+\))?\s*\|\s*(\d{4})\s*-\s*(\d{4}|Present|Current|Atual)/gi;
         
         let match;
         while ((match = eduPattern.exec(eduText)) && education.length < 5) {
@@ -657,7 +682,7 @@ export function registerRoutes(app: Express): Server {
           const startYear = match[3].trim();
           const endYear = match[4].trim();
           
-          const isCurrent = endYear.toLowerCase().match(/present|current/i);
+          const isCurrent = endYear.toLowerCase().match(/present|current|atual/i);
           
           education.push({
             formation: 'Superior', // Default, user can change
@@ -674,12 +699,18 @@ export function registerRoutes(app: Express): Server {
         
         if (education.length > 0) {
           parsedData.education = education;
+          console.log('[Resume Upload] Education found:', education.length, 'entries');
+        } else {
+          console.log('[Resume Upload] No education matched the pattern');
         }
+      } else {
+        console.log('[Resume Upload] Education section not found');
       }
       
       // Extract certifications
-      const certSection = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?)[\s\S]*?(?=(?:EDUCATION|LANGUAGES|SKILLS|$))/i);
+      const certSection = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)[\s\S]*?(?=(?:EDUCATION|LANGUAGES|SKILLS|EDUCAÇÃO|$))/i);
       if (certSection) {
+        console.log('[Resume Upload] Certifications section found, length:', certSection[0].length);
         const certifications: any[] = [];
         const certText = certSection[0];
         
@@ -687,10 +718,12 @@ export function registerRoutes(app: Express): Server {
         const certLines = certText.split('\n').filter(line => {
           const trimmed = line.trim();
           // Skip the header and empty lines
-          if (!trimmed || trimmed.match(/^(?:CERTIFICATIONS?|CERTIFICATES?)$/i)) return false;
+          if (!trimmed || trimmed.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES)$/i)) return false;
           // Must have some length and not be too long
           return trimmed.length > 10 && trimmed.length < 200;
         });
+        
+        console.log('[Resume Upload] Certification lines found:', certLines.length);
         
         certLines.forEach(line => {
           const trimmed = line.trim();
@@ -716,7 +749,12 @@ export function registerRoutes(app: Express): Server {
         
         if (certifications.length > 0) {
           parsedData.certifications = certifications.slice(0, 10);
+          console.log('[Resume Upload] Certifications found:', certifications.length, 'entries');
+        } else {
+          console.log('[Resume Upload] No certifications matched the pattern');
         }
+      } else {
+        console.log('[Resume Upload] Certifications section not found');
       }
       
       console.log('[Resume Upload] Data extraction successful:', Object.keys(parsedData));
