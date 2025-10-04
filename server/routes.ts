@@ -465,6 +465,15 @@ export function registerRoutes(app: Express): Server {
       
       console.log('[Resume Upload] PDF extracted, text length:', resumeText.length);
 
+      // Check if OpenAI API key is configured
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('[Resume Upload] OPENAI_API_KEY not configured');
+        return res.status(500).json({ 
+          message: "OpenAI API key not configured. Please contact support." 
+        });
+      }
+
+      console.log('[Resume Upload] Calling OpenAI API...');
       // Use OpenAI to parse resume and extract structured data
       const response = await openai.chat.completions.create({
         model: "gpt-5",
@@ -548,6 +557,8 @@ Return ONLY valid JSON without any markdown formatting or additional text.`
       });
     } catch (error) {
       console.error("Resume upload error:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ 
         message: "Failed to process resume", 
         error: error instanceof Error ? error.message : 'Unknown error' 
