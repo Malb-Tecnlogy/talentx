@@ -176,6 +176,13 @@ export default function AdminJobs() {
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-destructive font-medium mb-2">Failed to load jobs</p>
+                <p className="text-muted-foreground text-sm">
+                  {error instanceof Error ? error.message : "Authentication required. Please login as admin."}
+                </p>
+              </div>
             ) : jobs.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 No jobs found
