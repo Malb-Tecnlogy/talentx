@@ -78,7 +78,7 @@ export default function JobDetails() {
 
   const handleApply = () => {
     if (!user) {
-      setLocation('/auth');
+      setLocation(`/auth?redirect=/jobs/${id}`);
       return;
     }
     applyMutation.mutate();

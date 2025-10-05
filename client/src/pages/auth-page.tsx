@@ -34,8 +34,19 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   
-  // Get redirect parameter from URL
-  const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+  // Get redirect parameter from URL and validate it to prevent open redirects
+  const getValidRedirect = () => {
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    
+    // Only allow same-origin paths (must start with / and not //)
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return redirect;
+    }
+    
+    return '/';
+  };
+  
+  const redirectTo = getValidRedirect();
   
   // Login form state
   const [loginData, setLoginData] = useState({
