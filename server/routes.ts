@@ -1217,16 +1217,7 @@ export function registerRoutes(app: Express): Server {
   // Admin routes - Get all jobs
   app.get("/api/admin/jobs", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const allJobs = await db.select({
-        id: jobs.id,
-        title: jobs.title,
-        type: jobs.type,
-        status: jobs.status,
-        budget: jobs.budget,
-        companyId: jobs.companyId,
-        createdAt: jobs.createdAt,
-        approvedAt: jobs.approvedAt,
-      }).from(jobs).orderBy(desc(jobs.createdAt));
+      const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
 
       // Get company names
       const jobsWithCompanies = await Promise.all(
