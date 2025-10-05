@@ -921,12 +921,28 @@ export function registerRoutes(app: Express): Server {
 
   // Job routes
   app.get("/api/jobs", async (req, res) => {
+    console.log('[GET /api/jobs] Request received', {
+      query: req.query,
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
-      const jobs = await storage.searchJobs({
+      const searchParams = {
         skills: req.query.skills as string[],
         type: req.query.type as string,
         status: "active"
-      });
+      };
+      
+      console.log('[GET /api/jobs] Searching jobs with params:', searchParams);
+      
+      const jobs = await storage.searchJobs(searchParams);
+      
+      console.log('[GET /api/jobs] Jobs found:', jobs.length);
+      
+      if (jobs.length === 0) {
+        console.log('[GET /api/jobs] WARNING: No jobs found in database!');
+      }
 
       // Enrich jobs with company information
       const jobsWithCompanies = await Promise.all(
@@ -945,6 +961,8 @@ export function registerRoutes(app: Express): Server {
         })
       );
 
+      console.log('[GET /api/jobs] Jobs enriched with company info, returning', jobsWithCompanies.length, 'jobs');
+
       // Disable all caching to ensure fresh data
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       res.setHeader('Pragma', 'no-cache');
@@ -952,7 +970,8 @@ export function registerRoutes(app: Express): Server {
       
       res.json(jobsWithCompanies);
     } catch (error) {
-      console.error("Get jobs error:", error);
+      console.error("[GET /api/jobs] Error:", error);
+      console.error("[GET /api/jobs] Error stack:", error instanceof Error ? error.stack : 'No stack');
       res.status(500).json({ message: "Failed to fetch jobs" });
     }
   });

@@ -321,29 +321,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchJobs(query: { skills?: string[]; type?: string; status?: string }): Promise<Job[]> {
+    console.log('[searchJobs] Query parameters:', query);
+    
     let baseQuery = db.select().from(jobs);
     
     const conditions: any[] = [];
     
     if (query.type) {
+      console.log('[searchJobs] Filtering by type:', query.type);
       conditions.push(eq(jobs.type, query.type));
     }
     
     if (query.status) {
+      console.log('[searchJobs] Filtering by status:', query.status);
       conditions.push(eq(jobs.status, query.status as any));
     } else {
+      console.log('[searchJobs] No status provided, defaulting to "active"');
       conditions.push(eq(jobs.status, "active"));
     }
     
     if (query.skills && query.skills.length > 0) {
+      console.log('[searchJobs] Filtering by skills:', query.skills);
       conditions.push(sql`${jobs.skills} && ${JSON.stringify(query.skills)}`);
     }
+    
+    console.log('[searchJobs] Total conditions:', conditions.length);
     
     if (conditions.length > 0) {
       baseQuery = baseQuery.where(and(...conditions));
     }
     
-    return await baseQuery.orderBy(desc(jobs.createdAt));
+    const result = await baseQuery.orderBy(desc(jobs.createdAt));
+    console.log('[searchJobs] Query result count:', result.length);
+    
+    return result;
   }
 
   // Application operations
