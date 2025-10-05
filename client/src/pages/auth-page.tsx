@@ -34,6 +34,9 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   
+  // Get redirect parameter from URL
+  const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/';
+  
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
@@ -54,7 +57,7 @@ export default function AuthPage() {
 
   // Redirect if user is already logged in
   if (user) {
-    setLocation("/");
+    setLocation(redirectTo);
     return null;
   }
 
@@ -65,7 +68,7 @@ export default function AuthPage() {
     try {
       const validatedData = loginSchema.parse(loginData);
       await loginMutation.mutateAsync(validatedData);
-      setLocation("/");
+      setLocation(redirectTo);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: Record<string, string> = {};
@@ -87,7 +90,7 @@ export default function AuthPage() {
       const validatedData = registerSchema.parse(registerData);
       const { confirmPassword, ...userData } = validatedData;
       await registerMutation.mutateAsync(userData);
-      setLocation("/");
+      setLocation(redirectTo);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: Record<string, string> = {};
