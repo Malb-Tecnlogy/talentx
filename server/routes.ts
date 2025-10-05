@@ -30,6 +30,7 @@ import {
   notifications,
   users,
   contactFormSchema,
+  insertJobSchema,
   type InsertJob,
   type InsertCompany,
   type InsertProfessional,
