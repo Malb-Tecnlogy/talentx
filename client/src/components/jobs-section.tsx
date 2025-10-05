@@ -26,10 +26,12 @@ export default function JobsSection() {
       selectedSkills.forEach(skill => params.append("skills", skill));
       
       const url = `/api/jobs${params.toString() ? `?${params.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error("Failed to fetch jobs");
       return response.json();
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Filter jobs by search term
