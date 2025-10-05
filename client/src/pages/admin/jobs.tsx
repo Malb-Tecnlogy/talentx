@@ -29,14 +29,6 @@ export default function AdminJobs() {
     refetchOnMount: true,
   });
 
-  // Debug logging
-  if (error) {
-    console.error("Admin jobs query error:", error);
-  }
-  if (jobs && jobs.length > 0) {
-    console.log("Admin jobs loaded:", jobs.length, "jobs");
-  }
-
   const createForm = useForm<InsertJob>({
     resolver: zodResolver(insertJobSchema),
     defaultValues: {
