@@ -39,12 +39,13 @@ export default function JobDetails() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     
-    if (action === 'apply' && user && !isDialogOpen) {
+    // Only proceed if action=apply is present and user is authenticated
+    if (action === 'apply' && user) {
       setIsDialogOpen(true);
       // Clean up the URL parameter
       window.history.replaceState({}, '', `/jobs/${id}`);
     }
-  }, [user, id, isDialogOpen]);
+  }, [user, id]);
 
   const { data: job, isLoading } = useQuery<PublicJob>({
     queryKey: [`/api/jobs/${id}`],
@@ -90,7 +91,8 @@ export default function JobDetails() {
 
   const handleApply = () => {
     if (!user) {
-      setLocation(`/auth?redirect=/jobs/${id}&action=apply`);
+      const redirectUrl = encodeURIComponent(`/jobs/${id}?action=apply`);
+      setLocation(`/auth?redirect=${redirectUrl}`);
       return;
     }
     applyMutation.mutate();
