@@ -995,7 +995,6 @@ export function registerRoutes(app: Express): Server {
       const company = await db.select({
         id: companies.id,
         name: companies.name,
-        logo: companies.logo,
         website: companies.website,
       }).from(companies)
         .where(eq(companies.id, job[0].companyId))
