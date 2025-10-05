@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, Check, X, Edit, Trash2, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Briefcase, Check, X, Edit, Trash2, Plus, DollarSign, Clock, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -22,11 +23,17 @@ export default function AdminJobs() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: jobs = [], isLoading, error } = useQuery<Job[]>({
+  const { data: jobs = [], isLoading, error } = useQuery<any[]>({
     queryKey: ["/api/admin/jobs"],
     staleTime: 0,
     refetchOnMount: true,
+  });
+
+  const { data: companies = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/companies"],
+    staleTime: 0,
   });
 
   const createForm = useForm<InsertJob>({
@@ -50,6 +57,7 @@ export default function AdminJobs() {
     mutationFn: (data: InsertJob) => apiRequest("POST", "/api/admin/jobs", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({ title: "Success", description: "Job created successfully" });
       setIsCreateOpen(false);
       createForm.reset();
@@ -64,6 +72,7 @@ export default function AdminJobs() {
       apiRequest("PATCH", `/api/admin/jobs/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({ title: "Success", description: "Job updated successfully" });
       setEditingJob(null);
     },
@@ -76,6 +85,7 @@ export default function AdminJobs() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/jobs/${id}`, undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({ title: "Success", description: "Job deleted successfully" });
       setDeletingJobId(null);
     },
@@ -88,7 +98,8 @@ export default function AdminJobs() {
     mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/approve`, undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
-      toast({ title: "Success", description: "Job approved successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({ title: "Success", description: "Job approved and now visible to professionals" });
     },
   });
 
@@ -96,7 +107,8 @@ export default function AdminJobs() {
     mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/reject`, undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
-      toast({ title: "Success", description: "Job rejected successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({ title: "Success", description: "Job rejected and closed" });
     },
   });
 
@@ -110,7 +122,7 @@ export default function AdminJobs() {
     }
   };
 
-  const handleEdit = (job: Job) => {
+  const handleEdit = (job: any) => {
     setEditingJob(job);
     editForm.reset({
       companyId: job.companyId || "",
@@ -128,18 +140,32 @@ export default function AdminJobs() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge variant="default">Active</Badge>;
+        return <Badge className="bg-green-500">Active</Badge>;
       case "pending_approval":
-        return <Badge variant="outline">Pending</Badge>;
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Pending</Badge>;
       case "closed":
         return <Badge variant="secondary">Closed</Badge>;
+      case "paused":
+        return <Badge variant="outline">Paused</Badge>;
       case "draft":
-        return <Badge variant="outline">Draft</Badge>;
+        return <Badge variant="outline" className="border-gray-400">Draft</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
+  };
+
+  // Filter jobs by status
+  const filteredJobs = statusFilter === "all" 
+    ? jobs 
+    : jobs.filter((job: any) => job.status === statusFilter);
+
+  // Count jobs by status
+  const jobCounts = {
+    all: jobs.length,
+    active: jobs.filter((j: any) => j.status === "active").length,
+    pending_approval: jobs.filter((j: any) => j.status === "pending_approval").length,
+    draft: jobs.filter((j: any) => j.status === "draft").length,
+    closed: jobs.filter((j: any) => j.status === "closed").length,
   };
 
   return (
@@ -151,7 +177,7 @@ export default function AdminJobs() {
               <Briefcase className="h-8 w-8" />
               Jobs Management
             </h1>
-            <p className="text-muted-foreground">Manage and approve job postings</p>
+            <p className="text-muted-foreground mt-1">Manage and approve job postings</p>
           </div>
           <Button onClick={() => setIsCreateOpen(true)} data-testid="button-create-job">
             <Plus className="h-4 w-4 mr-2" />
@@ -159,9 +185,34 @@ export default function AdminJobs() {
           </Button>
         </div>
 
+        <Tabs defaultValue="all" value={statusFilter} onValueChange={setStatusFilter} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="all" data-testid="tab-all">
+              All ({jobCounts.all})
+            </TabsTrigger>
+            <TabsTrigger value="active" data-testid="tab-active">
+              Active ({jobCounts.active})
+            </TabsTrigger>
+            <TabsTrigger value="pending_approval" data-testid="tab-pending">
+              Pending ({jobCounts.pending_approval})
+            </TabsTrigger>
+            <TabsTrigger value="draft" data-testid="tab-draft">
+              Draft ({jobCounts.draft})
+            </TabsTrigger>
+            <TabsTrigger value="closed" data-testid="tab-closed">
+              Closed ({jobCounts.closed})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <Card>
           <CardHeader>
-            <CardTitle>All Jobs ({jobs.length})</CardTitle>
+            <CardTitle>
+              {statusFilter === "all" ? "All Jobs" : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace("_", " ")} Jobs`}
+            </CardTitle>
+            <CardDescription>
+              {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""} found
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -175,74 +226,118 @@ export default function AdminJobs() {
                   {error instanceof Error ? error.message : "Authentication required. Please login as admin."}
                 </p>
               </div>
-            ) : jobs.length === 0 ? (
+            ) : filteredJobs.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                No jobs found
+                No {statusFilter !== "all" && statusFilter} jobs found
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Budget</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {jobs.map((job: any) => (
-                    <TableRow key={job.id} data-testid={`job-row-${job.id}`}>
-                      <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell>{job.company?.name || job.companyId}</TableCell>
-                      <TableCell>{job.type}</TableCell>
-                      <TableCell>{job.budget ? `$${job.budget}` : "N/A"}</TableCell>
-                      <TableCell>{getStatusBadge(job.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {job.status === "pending_approval" && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() => approveMutation.mutate(job.id)}
-                                data-testid={`button-approve-${job.id}`}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => rejectMutation.mutate(job.id)}
-                                data-testid={`button-reject-${job.id}`}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(job)}
-                            data-testid={`button-edit-${job.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => setDeletingJobId(job.id)}
-                            data-testid={`button-delete-${job.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[250px]">Job Details</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Skills</TableHead>
+                      <TableHead>Budget</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredJobs.map((job: any) => (
+                      <TableRow key={job.id} data-testid={`job-row-${job.id}`}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{job.title}</div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {job.duration || "Not specified"}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{job.company?.name || job.companyId}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{job.type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            {job.skills.slice(0, 2).map((skill: string, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {job.skills.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{job.skills.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {job.budget ? (
+                            <div className="flex items-center gap-1 text-sm font-medium">
+                              <DollarSign className="h-3 w-3" />
+                              {job.budget}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(job.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {job.status === "pending_approval" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => approveMutation.mutate(job.id)}
+                                  data-testid={`button-approve-${job.id}`}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => rejectMutation.mutate(job.id)}
+                                  data-testid={`button-reject-${job.id}`}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(job)}
+                              data-testid={`button-edit-${job.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setDeletingJobId(job.id)}
+                              data-testid={`button-delete-${job.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -260,10 +355,21 @@ export default function AdminJobs() {
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company ID *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="company-magenx-001" data-testid="input-company-id" />
-                      </FormControl>
+                      <FormLabel>Company *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-company">
+                            <SelectValue placeholder="Select a company" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {companies.map((company: any) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -430,10 +536,21 @@ export default function AdminJobs() {
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company ID *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="company-magenx-001" data-testid="input-edit-company-id" />
-                      </FormControl>
+                      <FormLabel>Company *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-edit-company">
+                            <SelectValue placeholder="Select a company" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {companies.map((company: any) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -539,6 +656,7 @@ export default function AdminJobs() {
                             <SelectItem value="active">Active</SelectItem>
                             <SelectItem value="pending_approval">Pending Approval</SelectItem>
                             <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="paused">Paused</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -927,7 +927,25 @@ export function registerRoutes(app: Express): Server {
         type: req.query.type as string,
         status: "active"
       });
-      res.json(jobs);
+
+      // Enrich jobs with company information
+      const jobsWithCompanies = await Promise.all(
+        jobs.map(async (job: any) => {
+          const company = await db.select({
+            id: companies.id,
+            name: companies.name,
+          }).from(companies)
+            .where(eq(companies.id, job.companyId))
+            .limit(1);
+
+          return {
+            ...job,
+            company: company[0] || null,
+          };
+        })
+      );
+
+      res.json(jobsWithCompanies);
     } catch (error) {
       console.error("Get jobs error:", error);
       res.status(500).json({ message: "Failed to fetch jobs" });

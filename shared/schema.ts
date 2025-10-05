@@ -414,3 +414,11 @@ export const contactFormSchema = z.object({
 });
 
 export type ContactForm = z.infer<typeof contactFormSchema>;
+
+// Public job type with company information
+export type PublicJob = Job & {
+  company?: {
+    id: string;
+    name: string;
+  } | null;
+};
