@@ -140,3 +140,9 @@ Preferred communication style: Simple, everyday language.
   - Error Handling: File type validation, size limits (10MB), Adobe API error handling, fallback to manual entry
   - Bug Fix: Converted multer Buffer to Node.js ReadableStream using Readable.from() to fix "readableStream.on is not a function" TypeError
   - Testing: E2e tests verify registration → profile creation → resume upload flow (synthetic PDFs rejected by Adobe, real PDFs work correctly)
+- **Jobs Page Production Fix (October 2025):** Fixed jobs not listing in production by adding diagnostic logging and database seeding capability
+  - Diagnostic Logs: Added detailed logging to GET /api/jobs route and storage.searchJobs function for production debugging
+  - Admin Seeder: Created POST /api/admin/seed-jobs endpoint to populate production database with 6 sample jobs (Gen AI Specialist, Talent Pool, Golang/AWS, .NET Junior, Full Stack Java, Data Engineer)
+  - Safety: Seeder checks for existing jobs before inserting, creates MaGenX company if needed, requires admin authentication
+  - Usage: Admin users in production can call POST /api/admin/seed-jobs to populate empty database with sample jobs
+  - Logs show: request details, query parameters, job count, enrichment process, and error details for troubleshooting
