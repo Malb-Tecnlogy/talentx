@@ -9,6 +9,7 @@ import { Search, Clock, DollarSign, Briefcase, Filter, ArrowRight, Building2 } f
 import { PublicJob } from "@shared/schema";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/language-context";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function JobsSection() {
   const { t } = useLanguage();
@@ -26,6 +27,7 @@ export default function JobsSection() {
 
   const { data: jobs = [], isLoading } = useQuery<PublicJob[]>({
     queryKey: [buildJobsUrl()],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
