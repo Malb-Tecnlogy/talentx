@@ -979,11 +979,16 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/jobs/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      console.log('[GET /api/jobs/:id] Request received for job ID:', id);
+      
       const job = await db.select().from(jobs)
         .where(eq(jobs.id, id))
         .limit(1);
 
+      console.log('[GET /api/jobs/:id] Database query result:', job);
+
       if (!job || job.length === 0) {
+        console.log('[GET /api/jobs/:id] Job not found for ID:', id);
         return res.status(404).json({ message: "Job not found" });
       }
 
@@ -996,12 +1001,14 @@ export function registerRoutes(app: Express): Server {
         .where(eq(companies.id, job[0].companyId))
         .limit(1);
 
+      console.log('[GET /api/jobs/:id] Successfully found job and company, returning data');
+
       res.json({
         ...job[0],
         company: company[0] || null,
       });
     } catch (error) {
-      console.error("Get job by ID error:", error);
+      console.error("[GET /api/jobs/:id] Error:", error);
       res.status(500).json({ message: "Failed to fetch job" });
     }
   });
