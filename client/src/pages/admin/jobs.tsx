@@ -23,11 +23,19 @@ export default function AdminJobs() {
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
 
-  const { data: jobs = [], isLoading } = useQuery<Job[]>({
+  const { data: jobs = [], isLoading, error } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
     staleTime: 0,
     refetchOnMount: true,
   });
+
+  // Debug logging
+  if (error) {
+    console.error("Admin jobs query error:", error);
+  }
+  if (jobs && jobs.length > 0) {
+    console.log("Admin jobs loaded:", jobs.length, "jobs");
+  }
 
   const createForm = useForm<InsertJob>({
     resolver: zodResolver(insertJobSchema),
