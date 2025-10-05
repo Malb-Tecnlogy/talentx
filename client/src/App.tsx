@@ -21,6 +21,7 @@ import AdminContracts from "@/pages/admin/contracts";
 import AdminNotifications from "@/pages/admin/notifications";
 import About from "@/pages/about";
 import Jobs from "@/pages/jobs";
+import JobDetails from "@/pages/job-details";
 import FindTalent from "@/pages/find-talent";
 import FindWork from "@/pages/find-work";
 import Contact from "@/pages/contact";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/about" component={About} />
+      <Route path="/jobs/:id" component={JobDetails} />
       <Route path="/jobs" component={Jobs} />
       <Route path="/find-talent" component={FindTalent} />
       <Route path="/find-work" component={FindWork} />

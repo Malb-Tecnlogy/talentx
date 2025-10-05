@@ -222,10 +222,10 @@ export default function JobsSection() {
                     )}
                   </div>
 
-                  {/* Apply Button */}
-                  <Link href="/auth">
-                    <Button className="w-full" size="sm" data-testid={`button-apply-${job.id}`}>
-                      Apply Now
+                  {/* View Details Button */}
+                  <Link href={`/jobs/${job.id}`}>
+                    <Button className="w-full" size="sm" data-testid={`button-view-details-${job.id}`}>
+                      {t('jobs.viewDetails')}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </Link>
