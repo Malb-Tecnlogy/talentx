@@ -945,6 +945,11 @@ export function registerRoutes(app: Express): Server {
         })
       );
 
+      // Disable all caching to ensure fresh data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.json(jobsWithCompanies);
     } catch (error) {
       console.error("Get jobs error:", error);
