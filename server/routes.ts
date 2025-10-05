@@ -383,7 +383,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const company = await storage.createCompany({
         ...req.body,
-        userId: req.user.id
+        userId: req.user!.id
       });
       res.status(201).json(company);
     } catch (error) {
@@ -394,7 +394,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/companies/me", requireAuth, async (req, res) => {
     try {
-      const company = await storage.getCompanyByUserId(req.user.id);
+      const company = await storage.getCompanyByUserId(req.user!.id);
       res.json(company);
     } catch (error) {
       console.error("Get company error:", error);
@@ -407,7 +407,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const professional = await storage.createProfessional({
         ...req.body,
-        userId: req.user.id
+        userId: req.user!.id
       });
       res.status(201).json(professional);
     } catch (error) {
@@ -418,7 +418,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/professionals/me", requireAuth, async (req, res) => {
     try {
-      const professional = await storage.getProfessionalByUserId(req.user.id);
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
       // Return null explicitly if no professional found (for new users)
       res.json(professional || null);
     } catch (error) {
@@ -433,7 +433,7 @@ export function registerRoutes(app: Express): Server {
       
       // Verify ownership
       const professional = await storage.getProfessional(id);
-      if (!professional || professional.userId !== req.user.id) {
+      if (!professional || professional.userId !== req.user!.id) {
         return res.status(403).json({ message: "Not authorized to update this profile" });
       }
 
@@ -936,7 +936,7 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/jobs", requireAuth, async (req, res) => {
     try {
       // Get user's company
-      const company = await storage.getCompanyByUserId(req.user.id);
+      const company = await storage.getCompanyByUserId(req.user!.id);
       if (!company) {
         return res.status(400).json({ message: "Company profile required to post jobs" });
       }
@@ -1027,7 +1027,7 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/applications", requireAuth, async (req, res) => {
     try {
       // Get user's professional profile
-      const professional = await storage.getProfessionalByUserId(req.user.id);
+      const professional = await storage.getProfessionalByUserId(req.user!.id);
       if (!professional) {
         return res.status(400).json({ message: "Professional profile required to apply for jobs" });
       }
@@ -1046,7 +1046,7 @@ export function registerRoutes(app: Express): Server {
   // Notification routes
   app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
-      const notifications = await storage.getNotificationsByUser(req.user.id);
+      const notifications = await storage.getNotificationsByUser(req.user!.id);
       res.json(notifications);
     } catch (error) {
       console.error("Get notifications error:", error);
@@ -1341,6 +1341,324 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Get admin applications error:", error);
       res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  // Admin routes - Companies CRUD
+  app.get("/api/admin/companies", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allCompanies = await db.select().from(companies).orderBy(desc(companies.createdAt));
+      
+      const companiesWithUsers = await Promise.all(
+        allCompanies.map(async (company: any) => {
+          const user = await db.select({
+            username: users.username,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
+          }).from(users)
+            .where(eq(users.id, company.userId))
+            .limit(1);
+          return {
+            ...company,
+            user: user[0] || null,
+          };
+        })
+      );
+      
+      res.json(companiesWithUsers);
+    } catch (error) {
+      console.error("Get admin companies error:", error);
+      res.status(500).json({ message: "Failed to fetch companies" });
+    }
+  });
+
+  app.patch("/api/admin/companies/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateCompany(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update company error:", error);
+      res.status(500).json({ message: "Failed to update company" });
+    }
+  });
+
+  app.delete("/api/admin/companies/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCompany(id);
+      res.json({ message: "Company deleted successfully" });
+    } catch (error) {
+      console.error("Delete company error:", error);
+      res.status(500).json({ message: "Failed to delete company" });
+    }
+  });
+
+  // Admin routes - Professionals CRUD
+  app.patch("/api/admin/professionals/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateProfessional(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update professional error:", error);
+      res.status(500).json({ message: "Failed to update professional" });
+    }
+  });
+
+  app.delete("/api/admin/professionals/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProfessional(id);
+      res.json({ message: "Professional deleted successfully" });
+    } catch (error) {
+      console.error("Delete professional error:", error);
+      res.status(500).json({ message: "Failed to delete professional" });
+    }
+  });
+
+  // Admin routes - Jobs CRUD
+  app.patch("/api/admin/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateJob(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update job error:", error);
+      res.status(500).json({ message: "Failed to update job" });
+    }
+  });
+
+  app.delete("/api/admin/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteJob(id);
+      res.json({ message: "Job deleted successfully" });
+    } catch (error) {
+      console.error("Delete job error:", error);
+      res.status(500).json({ message: "Failed to delete job" });
+    }
+  });
+
+  // Admin routes - Job approval
+  app.post("/api/admin/jobs/:id/approve", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateJob(id, {
+        status: 'active',
+        approvedBy: req.user!.id,
+        approvedAt: new Date(),
+      } as any);
+      res.json(updated);
+    } catch (error) {
+      console.error("Approve job error:", error);
+      res.status(500).json({ message: "Failed to approve job" });
+    }
+  });
+
+  app.post("/api/admin/jobs/:id/reject", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateJob(id, {
+        status: 'closed',
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Reject job error:", error);
+      res.status(500).json({ message: "Failed to reject job" });
+    }
+  });
+
+  // Admin routes - Applications CRUD
+  app.patch("/api/admin/applications/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateApplication(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update application error:", error);
+      res.status(500).json({ message: "Failed to update application" });
+    }
+  });
+
+  app.delete("/api/admin/applications/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteApplication(id);
+      res.json({ message: "Application deleted successfully" });
+    } catch (error) {
+      console.error("Delete application error:", error);
+      res.status(500).json({ message: "Failed to delete application" });
+    }
+  });
+
+  // Admin routes - Contracts CRUD
+  app.get("/api/admin/contracts", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allContracts = await db.select().from(contracts).orderBy(desc(contracts.createdAt));
+      
+      const contractsWithDetails = await Promise.all(
+        allContracts.map(async (contract: any) => {
+          const [job, professional, company] = await Promise.all([
+            db.select({ id: jobs.id, title: jobs.title }).from(jobs)
+              .where(eq(jobs.id, contract.jobId)).limit(1),
+            db.select({ id: professionals.id, title: professionals.title }).from(professionals)
+              .where(eq(professionals.id, contract.professionalId)).limit(1),
+            db.select({ id: companies.id, name: companies.name }).from(companies)
+              .where(eq(companies.id, contract.companyId)).limit(1),
+          ]);
+          
+          return {
+            ...contract,
+            job: job[0] || null,
+            professional: professional[0] || null,
+            company: company[0] || null,
+          };
+        })
+      );
+      
+      res.json(contractsWithDetails);
+    } catch (error) {
+      console.error("Get admin contracts error:", error);
+      res.status(500).json({ message: "Failed to fetch contracts" });
+    }
+  });
+
+  app.post("/api/admin/contracts", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const contract = await storage.createContract(req.body);
+      res.status(201).json(contract);
+    } catch (error) {
+      console.error("Create contract error:", error);
+      res.status(500).json({ message: "Failed to create contract" });
+    }
+  });
+
+  app.patch("/api/admin/contracts/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateContract(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update contract error:", error);
+      res.status(500).json({ message: "Failed to update contract" });
+    }
+  });
+
+  app.delete("/api/admin/contracts/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteContract(id);
+      res.json({ message: "Contract deleted successfully" });
+    } catch (error) {
+      console.error("Delete contract error:", error);
+      res.status(500).json({ message: "Failed to delete contract" });
+    }
+  });
+
+  // Admin routes - Users CRUD
+  app.post("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const user = await storage.createUser(req.body);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Create user error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateUser(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      // Prevent deleting self
+      if (id === req.user!.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      await storage.deleteUser(id);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin routes - Notifications CRUD
+  app.get("/api/admin/notifications/all", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allNotifications = await db.select().from(notifications).orderBy(desc(notifications.createdAt));
+      res.json(allNotifications);
+    } catch (error) {
+      console.error("Get all notifications error:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/admin/notifications", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const notification = await storage.createNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Create notification error:", error);
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  app.post("/api/admin/notifications/broadcast", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, message, type } = req.body;
+      const allUsers = await db.select({ id: users.id }).from(users);
+      
+      const notifications = await Promise.all(
+        allUsers.map((user: any) => 
+          storage.createNotification({
+            userId: user.id,
+            type: type || 'system',
+            title,
+            message,
+          })
+        )
+      );
+      
+      res.json({ message: `Notification sent to ${notifications.length} users`, count: notifications.length });
+    } catch (error) {
+      console.error("Broadcast notification error:", error);
+      res.status(500).json({ message: "Failed to broadcast notification" });
+    }
+  });
+
+  app.delete("/api/admin/notifications/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteNotification(id);
+      res.json({ message: "Notification deleted successfully" });
+    } catch (error) {
+      console.error("Delete notification error:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Get pending jobs for admin approval
+  app.get("/api/jobs/pending", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const pendingJobs = await db.select().from(jobs)
+        .where(eq(jobs.status, 'pending_approval'))
+        .orderBy(desc(jobs.createdAt));
+      res.json(pendingJobs);
+    } catch (error) {
+      console.error("Get pending jobs error:", error);
+      res.status(500).json({ message: "Failed to fetch pending jobs" });
     }
   });
 

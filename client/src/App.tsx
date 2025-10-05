@@ -12,6 +12,13 @@ import AuthPage from "@/pages/auth-page";
 import CompanyDashboard from "@/pages/company-dashboard";
 import ProfessionalDashboard from "@/pages/professional-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminUsers from "@/pages/admin/users";
+import AdminCompanies from "@/pages/admin/companies";
+import AdminProfessionals from "@/pages/admin/professionals";
+import AdminJobs from "@/pages/admin/jobs";
+import AdminApplications from "@/pages/admin/applications";
+import AdminContracts from "@/pages/admin/contracts";
+import AdminNotifications from "@/pages/admin/notifications";
 import About from "@/pages/about";
 import Jobs from "@/pages/jobs";
 import FindTalent from "@/pages/find-talent";
@@ -39,6 +46,15 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={HomePage} />
       <ProtectedRoute path="/company" component={CompanyDashboard} />
       <ProtectedRoute path="/professional" component={ProfessionalDashboard} />
+      
+      {/* Admin routes */}
+      <ProtectedRoute path="/admin/users" component={AdminUsers} />
+      <ProtectedRoute path="/admin/companies" component={AdminCompanies} />
+      <ProtectedRoute path="/admin/professionals" component={AdminProfessionals} />
+      <ProtectedRoute path="/admin/jobs" component={AdminJobs} />
+      <ProtectedRoute path="/admin/applications" component={AdminApplications} />
+      <ProtectedRoute path="/admin/contracts" component={AdminContracts} />
+      <ProtectedRoute path="/admin/notifications" component={AdminNotifications} />
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       
       {/* Fallback */}

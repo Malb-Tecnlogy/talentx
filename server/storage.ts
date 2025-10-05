@@ -46,12 +46,15 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<SafeUser>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   
   // Company operations
   createCompany(company: InsertCompany): Promise<Company>;
   getCompany(id: string): Promise<Company | undefined>;
   getCompanyByUserId(userId: string): Promise<Company | undefined>;
   updateCompany(id: string, company: Partial<InsertCompany>): Promise<Company>;
+  deleteCompany(id: string): Promise<void>;
   
   // Professional operations
   createProfessional(professional: InsertProfessional): Promise<Professional>;
@@ -59,6 +62,7 @@ export interface IStorage {
   getProfessionalByUserId(userId: string): Promise<Professional | undefined>;
   updateProfessional(id: string, professional: Partial<InsertProfessional>): Promise<Professional>;
   searchProfessionals(query: { skills?: string[]; availability?: string }): Promise<Professional[]>;
+  deleteProfessional(id: string): Promise<void>;
   
   // Job operations
   createJob(job: InsertJob): Promise<Job>;
@@ -68,6 +72,7 @@ export interface IStorage {
   approveJob(id: string, approvedBy: string): Promise<Job>;
   updateJob(id: string, job: Partial<InsertJob>): Promise<Job>;
   searchJobs(query: { skills?: string[]; type?: string; status?: string }): Promise<Job[]>;
+  deleteJob(id: string): Promise<void>;
   
   // Application operations
   createApplication(application: InsertApplication): Promise<Application>;
@@ -75,6 +80,7 @@ export interface IStorage {
   getApplicationsByJob(jobId: string): Promise<Application[]>;
   getApplicationsByProfessional(professionalId: string): Promise<Application[]>;
   updateApplication(id: string, application: Partial<InsertApplication>): Promise<Application>;
+  deleteApplication(id: string): Promise<void>;
   
   // Contract operations
   createContract(contract: InsertContract): Promise<Contract>;
@@ -82,12 +88,14 @@ export interface IStorage {
   getContractsByCompany(companyId: string): Promise<Contract[]>;
   getContractsByProfessional(professionalId: string): Promise<Contract[]>;
   updateContract(id: string, contract: Partial<InsertContract>): Promise<Contract>;
+  deleteContract(id: string): Promise<void>;
   
   // Notification operations
   createNotification(notification: InsertNotification): Promise<Notification>;
   getNotificationsByUser(userId: string): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<Notification>;
   getUnreadNotificationsCount(userId: string): Promise<number>;
+  deleteNotification(id: string): Promise<void>;
   
   // OAuth operations
   createOAuthAccount(account: InsertOAuthAccount): Promise<OAuthAccount>;
@@ -476,6 +484,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.email, email.toLowerCase()))
       .limit(1);
     return user;
+  }
+
+  // Delete operations
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set(user)
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCompany(id: string): Promise<void> {
+    await db.delete(companies).where(eq(companies.id, id));
+  }
+
+  async deleteProfessional(id: string): Promise<void> {
+    await db.delete(professionals).where(eq(professionals.id, id));
+  }
+
+  async deleteJob(id: string): Promise<void> {
+    await db.delete(jobs).where(eq(jobs.id, id));
+  }
+
+  async deleteApplication(id: string): Promise<void> {
+    await db.delete(applications).where(eq(applications.id, id));
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    await db.delete(contracts).where(eq(contracts.id, id));
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
   }
 }
 
