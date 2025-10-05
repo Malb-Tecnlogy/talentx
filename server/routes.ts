@@ -1419,6 +1419,17 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Admin routes - Jobs CRUD
+  app.post("/api/admin/jobs", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertJobSchema.parse(req.body);
+      const newJob = await storage.createJob(validatedData);
+      res.json(newJob);
+    } catch (error) {
+      console.error("Create job error:", error);
+      res.status(500).json({ message: "Failed to create job" });
+    }
+  });
+
   app.patch("/api/admin/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
