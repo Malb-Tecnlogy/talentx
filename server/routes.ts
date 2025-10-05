@@ -1707,6 +1707,174 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Seed database with sample jobs (for production setup)
+  app.post("/api/admin/seed-jobs", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      console.log('[Seed Jobs] Starting job seeding process...');
+      
+      // Check if jobs already exist
+      const existingJobs = await db.select().from(jobs);
+      if (existingJobs.length > 0) {
+        console.log('[Seed Jobs] Jobs already exist, skipping seed');
+        return res.json({ 
+          message: `Database already has ${existingJobs.length} jobs. Seed skipped.`,
+          existingCount: existingJobs.length 
+        });
+      }
+
+      // Ensure company exists first
+      const [magenxCompany] = await db.select()
+        .from(companies)
+        .where(eq(companies.id, 'company-magenx-001'))
+        .limit(1);
+
+      if (!magenxCompany) {
+        console.log('[Seed Jobs] Creating MaGenX company...');
+        await db.insert(companies).values({
+          id: 'company-magenx-001',
+          userId: req.user!.id, // Associate with current admin
+          name: 'MaGenX',
+          description: 'Plataforma que conecta empresas globais com profissionais de tecnologia latino-americanos',
+          industry: 'Technology',
+          size: '1-10',
+          location: 'São Paulo, Brazil',
+          website: 'https://magenx.tech'
+        });
+      }
+
+      // Sample jobs to seed
+      const sampleJobs = [
+        {
+          id: 'job-gen-ai-specialist-001',
+          companyId: 'company-magenx-001',
+          title: 'Especialista em Generative AI',
+          description: `Buscamos uma pessoa especialista em Inteligência Artificial Generativa, que curta desafio e tenha visão estratégica, mas também goste de colocar a mão na massa. 
+
+Esta pessoa vai atuar num projeto de alto impacto dentro do cliente, liderando iniciativas de IA generativa voltadas para automação, eficiência e criação de novas soluções com foco real em negócio. É uma baita oportunidade para quem quer aplicar IA generativa no mundo real, com liberdade criativa e espaço para inovação de verdade.
+
+Responsabilidades:
+• Liderar tecnicamente o desenvolvimento de soluções com IA generativa dentro do cliente
+• Co-criar com times de produto, dados e tecnologia soluções práticas e inovadoras
+• Traduzir desafios de negócio em soluções viáveis com IA
+• Testar, prototipar e evoluir produtos com autonomia e espírito de dono
+• Trazer tendências, boas práticas e novas ideias para a mesa`,
+          requirements: 'Experiência com Python, AI, Machine Learning e LLMs. Conhecimento em OpenAI APIs, LangChain e Vector Databases.',
+          type: 'full-time' as const,
+          budget: '150000.00',
+          duration: '12 months',
+          skills: ["Python", "AI", "Machine Learning", "OpenAI", "GPT", "LLM", "NLP", "Prompt Engineering", "LangChain", "Vector Databases"] as string[],
+          status: 'active' as const
+        },
+        {
+          id: 'job-talent-pool-001',
+          companyId: 'company-magenx-001',
+          title: 'Cadastro no Banco de Talentos MaGenX',
+          description: `🌎 Faça parte do nosso Banco de Talentos!
+
+Conecte-se com empresas globais de tecnologia que estão em busca de profissionais talentosos da América Latina. Ao se cadastrar em nosso banco de talentos, você:
+
+✅ Fica visível para empresas de primeira linha
+✅ Recebe notificações sobre vagas compatíveis com seu perfil
+✅ Participa de processos seletivos exclusivos
+✅ Acessa oportunidades remotas e híbridas
+
+📋 Como funciona:
+1. Complete seu perfil profissional
+2. Faça upload do seu currículo
+3. Adicione suas skills e experiências
+4. Aguarde o match com empresas interessadas
+
+💼 Todas as áreas de TI são bem-vindas:
+• Desenvolvimento (Backend, Frontend, Full Stack, Mobile)
+• Dados (Data Engineer, Data Scientist, Data Analyst)
+• DevOps e Cloud
+• QA e Testes
+• Product e Design
+• E muito mais!`,
+          requirements: 'Profissionais de tecnologia de todas as áreas e níveis de experiência. Complete seu perfil e faça upload do currículo.',
+          type: 'project' as const,
+          budget: null,
+          duration: 'ongoing',
+          skills: ["JavaScript", "Python", "Java", "React", "Node.js", "AWS", "DevOps", "SQL", "Git"] as string[],
+          status: 'active' as const
+        },
+        {
+          id: 'job-golang-aws-001',
+          companyId: 'company-magenx-001',
+          title: 'Desenvolvedor(a) Golang | Cloud AWS',
+          description: `Estamos em busca de um(a) Desenvolvedor(a) Golang para atuar em sistemas de pagamentos eletrônicos em ambiente Cloud (AWS), com participação em projetos inovadores e de grande impacto.
+
+⚠️ Importante: Experiência em Golang e AWS (API Gateway, Load Balancer, S3, EKS, ECS, CloudWatch) é obrigatória (mínimo 4 anos).
+
+O profissional deve dominar integração via API Rest, testes unitários e de integração, monitoramento com AWS CloudWatch, além de traduzir demandas em soluções funcionais e não funcionais de forma eficaz.`,
+          requirements: 'Mínimo 4 anos de experiência com Golang e AWS. Domínio de API Gateway, S3, EKS, ECS, CloudWatch, Docker e APIs REST.',
+          type: 'full-time' as const,
+          budget: '95000.00',
+          duration: '12 months',
+          skills: ["Golang", "AWS", "API Gateway", "S3", "EKS", "ECS", "CloudWatch", "Docker", "Git", "REST", "PL/SQL"] as string[],
+          status: 'active' as const
+        },
+        {
+          id: 'job-dotnet-junior-001',
+          companyId: 'company-magenx-001',
+          title: 'Desenvolvedor(a) .NET Júnior',
+          description: `Oportunidade remota para desenvolvedor júnior com experiência prática em .NET (C#) e conhecimento em APIs RESTful. O profissional atuará no desenvolvimento de soluções corporativas com integração a banco de dados Oracle.
+
+🏠 Modelo: 100% Remoto`,
+          requirements: 'Experiência com .NET (C#), APIs RESTful e banco de dados Oracle. Conhecimento em Git e Azure é diferencial.',
+          type: 'full-time' as const,
+          budget: '45000.00',
+          duration: '12 months',
+          skills: ["C#", ".NET", "REST", "API", "Oracle", "Git", "Azure"] as string[],
+          status: 'active' as const
+        },
+        {
+          id: 'job-fullstack-java-001',
+          companyId: 'company-magenx-001',
+          title: 'Full Stack Java Engineer',
+          description: 'Buscamos um profissional experiente para atuar no desenvolvimento de sistemas corporativos utilizando stack Java/Spring no backend e React/Angular no frontend. O profissional participará de projetos de grande escala com foco em arquitetura de microserviços e integração de sistemas.',
+          requirements: 'Experiência sólida com Java, Spring Boot, React/Angular. Conhecimento em microserviços, Docker, Kubernetes e CI/CD.',
+          type: 'full-time' as const,
+          budget: '120000.00',
+          duration: '12 months',
+          skills: ["Java", "Spring", "Spring Boot", "JPA", "Hibernate", "JavaScript", "React", "Node.js", "Angular", "PostgreSQL", "MySQL", "Oracle", "Docker", "Kubernetes", "Jenkins", "GitLab", "Terraform", "Ansible", "REST", "Git"] as string[],
+          status: 'active' as const
+        },
+        {
+          id: 'job-data-engineer-001',
+          companyId: 'company-magenx-001',
+          title: 'Engenheiro de Dados | Analista PL/SR ou Tech Lead',
+          description: `Oportunidade para atuar em projetos de migração para cloud e otimização de pipelines de dados em ambiente híbrido (2-3x por semana na Vila Olímpia, São Paulo-SP). Desenvolvimento de workflows de ingestão, qualidade e transformação de dados, contribuindo para arquitetura medalhão do Data Lake.
+
+📍 Localização: Híbrido – 2 a 3x por semana na Vila Olímpia (São Paulo - SP)
+💡 Contratação: PJ ou CLT`,
+          requirements: 'Experiência com Python, Spark/PySpark, AWS e Databricks. Conhecimento em arquitetura de Data Lake e pipelines ETL.',
+          type: 'full-time' as const,
+          budget: '100000.00',
+          duration: '12 months',
+          skills: ["Python", "Spark", "PySpark", "AWS", "Databricks", "Jenkins", "Git", "ETL", "Data Lake", "SQL"] as string[],
+          status: 'active' as const
+        }
+      ];
+
+      console.log('[Seed Jobs] Inserting', sampleJobs.length, 'sample jobs...');
+      await db.insert(jobs).values(sampleJobs);
+
+      console.log('[Seed Jobs] Successfully seeded', sampleJobs.length, 'jobs');
+      res.json({ 
+        message: `Successfully seeded ${sampleJobs.length} sample jobs`,
+        count: sampleJobs.length 
+      });
+    } catch (error) {
+      console.error('[Seed Jobs] Error:', error);
+      console.error('[Seed Jobs] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      res.status(500).json({ 
+        message: "Failed to seed jobs",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
