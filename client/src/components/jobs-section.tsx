@@ -17,32 +17,30 @@ export default function JobsSection() {
   const [jobType, setJobType] = useState<string>("all");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
-  // Fetch jobs with search parameters
-  const { data: jobs, isLoading } = useQuery<Job[]>({
-    queryKey: ["/api/jobs", { type: jobType !== "all" ? jobType : undefined, skills: selectedSkills }],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (jobType !== "all") params.append("type", jobType);
-      selectedSkills.forEach(skill => params.append("skills", skill));
-      
-      const url = `/api/jobs${params.toString() ? `?${params.toString()}` : ""}`;
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw new Error("Failed to fetch jobs");
-      return response.json();
-    },
+  // Fetch jobs with search parameters - build query string manually
+  const buildJobsUrl = () => {
+    const params = new URLSearchParams();
+    if (jobType !== "all") params.append("type", jobType);
+    selectedSkills.forEach(skill => params.append("skills", skill));
+    return `/api/jobs${params.toString() ? `?${params.toString()}` : ""}`;
+  };
+
+  const { data: jobs = [], isLoading } = useQuery<Job[]>({
+    queryKey: [buildJobsUrl()],
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: true,
   });
 
   // Filter jobs by search term
-  const filteredJobs = jobs?.filter((job) =>
+  const filteredJobs = jobs.filter((job) =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  );
 
   // Get unique skills from all jobs
-  const allSkills = Array.from(new Set(jobs?.flatMap(job => job.skills) || []));
+  const allSkills = Array.from(new Set(jobs.flatMap(job => job.skills)));
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev => 
