@@ -32,20 +32,15 @@ export default function JobsSection() {
     refetchOnMount: true,
   });
 
-  // Filter jobs by search term (with null safety)
-  const filteredJobs = jobs.filter((job) => {
-    const title = job.title?.toLowerCase() || '';
-    const description = job.description?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
-    const skills = job.skills || [];
-    
-    return title.includes(search) ||
-           description.includes(search) ||
-           skills.some(skill => skill?.toLowerCase().includes(search));
-  });
+  // Filter jobs by search term
+  const filteredJobs = jobs.filter((job) =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-  // Get unique skills from all jobs (with null safety)
-  const allSkills = Array.from(new Set(jobs.flatMap(job => job.skills || [])));
+  // Get unique skills from all jobs
+  const allSkills = Array.from(new Set(jobs.flatMap(job => job.skills)));
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev => 
