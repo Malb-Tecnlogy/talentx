@@ -19,7 +19,7 @@ import { PublicJob } from "@shared/schema";
 import { useLanguage } from "@/contexts/language-context";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -33,6 +33,18 @@ export default function JobDetails() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [proposedRate, setProposedRate] = useState("");
+
+  // Auto-open apply dialog if user returned from login with action=apply
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    
+    if (action === 'apply' && user && !isDialogOpen) {
+      setIsDialogOpen(true);
+      // Clean up the URL parameter
+      window.history.replaceState({}, '', `/jobs/${id}`);
+    }
+  }, [user, id, isDialogOpen]);
 
   const { data: job, isLoading } = useQuery<PublicJob>({
     queryKey: [`/api/jobs/${id}`],
@@ -78,7 +90,7 @@ export default function JobDetails() {
 
   const handleApply = () => {
     if (!user) {
-      setLocation(`/auth?redirect=/jobs/${id}`);
+      setLocation(`/auth?redirect=/jobs/${id}&action=apply`);
       return;
     }
     applyMutation.mutate();
