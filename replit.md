@@ -47,7 +47,10 @@ Preferred communication style: Simple, everyday language.
 - **PDF Processing**: Adobe PDF Extract API for resume text extraction.
 - **Email Service**: Resend API for transactional email delivery.
 - **File Storage**: Google Cloud Storage (GCS) for resume storage.
-- **Secure OAuth Redirects**: Implemented for preserving context during authentication flows.
+- **Secure OAuth Redirects**: Implemented for preserving context during authentication flows with multi-layer security validation.
+- **New User Job Application Flow**: OAuth callbacks detect new users and preserve job application context through profile creation.
+- **Job Recommendations System**: Skill-based matching algorithm that calculates match scores and returns top 10 relevant opportunities.
+- **Dashboard Navigation**: Direct links to job listings from professional dashboard for improved job discovery.
 - **Optimized Favicon System**: Drastically reduced favicon size for performance.
 - **Professional Profile Update**: Secure backend endpoint with comprehensive validation.
 - **Applied Jobs Tracking**: Integrated into the professional dashboard.
