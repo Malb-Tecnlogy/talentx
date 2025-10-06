@@ -1210,9 +1210,70 @@ export function registerRoutes(app: Express): Server {
         return res.json([]); // Return empty array if no profile
       }
 
-      // TODO: Implement AI-based job recommendations
-      // For now, return empty array
-      res.json([]);
+      // Get professional's skills
+      const professionalSkills = professional.skills || [];
+      if (professionalSkills.length === 0) {
+        return res.json([]); // No skills to match against
+      }
+
+      // Get all active jobs
+      const jobs = await storage.searchJobs({ status: 'active' });
+      
+      // Enrich jobs with company information
+      const jobsWithCompanies = await Promise.all(
+        jobs.map(async (job: any) => {
+          const company = await db.select({
+            id: companies.id,
+            name: companies.name,
+          }).from(companies)
+            .where(eq(companies.id, job.companyId))
+            .limit(1);
+          
+          return {
+            ...job,
+            company: company[0] || null
+          };
+        })
+      );
+      
+      // Calculate match score for each job
+      const recommendations = jobsWithCompanies
+        .map(job => {
+          const jobSkills = job.skills || [];
+          if (jobSkills.length === 0) {
+            return null; // Skip jobs without skills
+          }
+
+          // Calculate skill overlap
+          const matchingSkills = jobSkills.filter((jobSkill: string) => 
+            professionalSkills.some((profSkill: string) => 
+              profSkill.toLowerCase() === jobSkill.toLowerCase()
+            )
+          );
+
+          const matchScore = Math.round((matchingSkills.length / jobSkills.length) * 100);
+
+          // Only include jobs with at least 20% match
+          if (matchScore < 20) {
+            return null;
+          }
+
+          return {
+            jobId: job.id,
+            jobTitle: job.title,
+            companyName: job.company?.name || 'Company',
+            matchScore,
+            matchingSkills,
+            reasoning: matchingSkills.length > 0
+              ? `Matches ${matchingSkills.length} of your skills: ${matchingSkills.slice(0, 3).join(', ')}${matchingSkills.length > 3 ? '...' : ''}`
+              : 'Good opportunity based on your profile'
+          };
+        })
+        .filter(rec => rec !== null) // Remove null entries
+        .sort((a, b) => b!.matchScore - a!.matchScore) // Sort by match score descending
+        .slice(0, 10); // Return top 10 recommendations
+
+      res.json(recommendations);
     } catch (error) {
       console.error("Get job recommendations error:", error);
       res.status(500).json({ message: "Failed to fetch job recommendations" });

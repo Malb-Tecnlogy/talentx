@@ -796,9 +796,12 @@ export default function ProfessionalDashboard() {
               {(recommendations as any[]).slice(0, 3).map((rec: any) => (
                 <div key={rec.jobId} className="p-4 bg-muted/50 rounded-lg" data-testid={`card-recommendation-${rec.jobId}`}>
                   <div className="flex items-start justify-between mb-3">
-                    <h5 className="font-medium text-card-foreground" data-testid={`text-job-title-${rec.jobId}`}>
-                      Job Opportunity
-                    </h5>
+                    <div className="flex-1">
+                      <h5 className="font-medium text-card-foreground mb-1" data-testid={`text-job-title-${rec.jobId}`}>
+                        {rec.jobTitle}
+                      </h5>
+                      <p className="text-xs text-muted-foreground">{rec.companyName}</p>
+                    </div>
                     <Badge className="bg-accent/10 text-accent" data-testid={`badge-match-${rec.jobId}`}>
                       {rec.matchScore}% Match
                     </Badge>
@@ -806,9 +809,11 @@ export default function ProfessionalDashboard() {
                   <p className="text-sm text-muted-foreground mb-3" data-testid={`text-reasoning-${rec.jobId}`}>
                     {rec.reasoning}
                   </p>
-                  <Button size="sm" data-testid={`button-apply-${rec.jobId}`}>
-                    Apply
-                  </Button>
+                  <Link href={`/jobs/${rec.jobId}`}>
+                    <Button size="sm" data-testid={`button-apply-${rec.jobId}`}>
+                      Ver Vaga
+                    </Button>
+                  </Link>
                 </div>
               ))}
               {(recommendations as any[]).length === 0 && (
