@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -783,7 +783,14 @@ export default function ProfessionalDashboard() {
           {/* Recommended Projects */}
           <Card>
             <CardHeader>
-              <CardTitle>Recommended Projects</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Recommended Projects</CardTitle>
+                <Link href="/jobs">
+                  <Button variant="outline" size="sm" data-testid="button-view-all-jobs">
+                    Ver Todas as Vagas
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {(recommendations as any[]).slice(0, 3).map((rec: any) => (
@@ -805,8 +812,15 @@ export default function ProfessionalDashboard() {
                 </div>
               ))}
               {(recommendations as any[]).length === 0 && (
-                <div className="text-center py-8 text-muted-foreground" data-testid="text-no-recommendations">
-                  No job recommendations available. Complete your profile to get matched with opportunities.
+                <div className="text-center py-8" data-testid="text-no-recommendations">
+                  <p className="text-muted-foreground mb-4">
+                    No job recommendations available. Complete your profile to get matched with opportunities.
+                  </p>
+                  <Link href="/jobs">
+                    <Button variant="default" data-testid="button-browse-jobs">
+                      Explorar Vagas Disponíveis
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>
@@ -877,8 +891,15 @@ export default function ProfessionalDashboard() {
           </CardHeader>
           <CardContent>
             {(applications as any[]).length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground" data-testid="text-no-applications">
-                Você ainda não se candidatou a nenhuma vaga. Navegue pelas vagas recomendadas abaixo e candidate-se!
+              <div className="text-center py-8" data-testid="text-no-applications">
+                <p className="text-muted-foreground mb-4">
+                  Você ainda não se candidatou a nenhuma vaga.
+                </p>
+                <Link href="/jobs">
+                  <Button variant="default" data-testid="button-browse-jobs-applications">
+                    Ver Vagas Disponíveis
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">
