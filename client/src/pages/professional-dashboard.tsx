@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ type ProfessionalProfileForm = z.infer<typeof professionalProfileSchema>;
 function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
@@ -76,7 +78,16 @@ function ProfessionalProfileForm({ onSuccess }: { onSuccess: () => void }) {
       // Invalidate both professional and user queries to update role
       queryClient.invalidateQueries({ queryKey: ["/api/professionals/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      onSuccess();
+      
+      // Check if there's a pending job application
+      const pendingJobId = sessionStorage.getItem('pendingJobApplication');
+      if (pendingJobId) {
+        sessionStorage.removeItem('pendingJobApplication');
+        // Redirect to the job page with action=apply to auto-open the dialog
+        setLocation(`/jobs/${pendingJobId}?action=apply`);
+      } else {
+        onSuccess();
+      }
     },
     onError: (error: any) => {
       toast({

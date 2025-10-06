@@ -38,6 +38,16 @@ export default function JobDetails() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
+    const welcome = params.get('welcome');
+    
+    // If welcome=true, it's a new user who needs to create profile first
+    if (welcome === 'true' && user) {
+      // Store the job ID they want to apply to
+      sessionStorage.setItem('pendingJobApplication', id!);
+      // Redirect to professional dashboard to create profile
+      setLocation('/professional');
+      return;
+    }
     
     // Only proceed if action=apply is present and user is authenticated
     if (action === 'apply' && user) {
@@ -45,7 +55,7 @@ export default function JobDetails() {
       // Clean up the URL parameter
       window.history.replaceState({}, '', `/jobs/${id}`);
     }
-  }, [user, id]);
+  }, [user, id, setLocation]);
 
   const { data: job, isLoading } = useQuery<PublicJob>({
     queryKey: [`/api/jobs/${id}`],

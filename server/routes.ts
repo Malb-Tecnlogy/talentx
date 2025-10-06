@@ -189,9 +189,22 @@ export function registerRoutes(app: Express): Server {
         const storedRedirect = req.session.oauthRedirect;
         delete req.session.oauthRedirect; // Clear after use
         
-        // Use stored redirect or default dashboard redirect
-        const redirectUrl = storedRedirect || getDashboardRedirect(user, isNewUser);
-        console.log('[Google OAuth] Redirecting to:', redirectUrl);
+        // Determine redirect URL
+        let redirectUrl: string;
+        if (storedRedirect) {
+          // If new user, add welcome=true to the stored redirect
+          if (isNewUser) {
+            const separator = storedRedirect.includes('?') ? '&' : '?';
+            redirectUrl = `${storedRedirect}${separator}welcome=true`;
+          } else {
+            redirectUrl = storedRedirect;
+          }
+        } else {
+          // No stored redirect, use default dashboard redirect
+          redirectUrl = getDashboardRedirect(user, isNewUser);
+        }
+        
+        console.log('[Google OAuth] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
         res.redirect(redirectUrl);
       });
     } catch (error) {
@@ -346,9 +359,22 @@ export function registerRoutes(app: Express): Server {
           const storedRedirect = req.session.oauthRedirect;
           delete req.session.oauthRedirect; // Clear after use
           
-          // Use stored redirect or default dashboard redirect
-          const redirectUrl = storedRedirect || getDashboardRedirect(dbUser, isNewUser);
-          console.log('[Apple OAuth] Redirecting to:', redirectUrl);
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (storedRedirect) {
+            // If new user, add welcome=true to the stored redirect
+            if (isNewUser) {
+              const separator = storedRedirect.includes('?') ? '&' : '?';
+              redirectUrl = `${storedRedirect}${separator}welcome=true`;
+            } else {
+              redirectUrl = storedRedirect;
+            }
+          } else {
+            // No stored redirect, use default dashboard redirect
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+          
+          console.log('[Apple OAuth] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
           res.redirect(redirectUrl);
         });
       });
@@ -401,9 +427,22 @@ export function registerRoutes(app: Express): Server {
         const storedRedirect = req.session.oauthRedirect;
         delete req.session.oauthRedirect; // Clear after use
         
-        // Use stored redirect or default dashboard redirect
-        const redirectUrl = storedRedirect || getDashboardRedirect(user, isNewUser);
-        console.log('[Google OAuth ALT] Redirecting to:', redirectUrl);
+        // Determine redirect URL
+        let redirectUrl: string;
+        if (storedRedirect) {
+          // If new user, add welcome=true to the stored redirect
+          if (isNewUser) {
+            const separator = storedRedirect.includes('?') ? '&' : '?';
+            redirectUrl = `${storedRedirect}${separator}welcome=true`;
+          } else {
+            redirectUrl = storedRedirect;
+          }
+        } else {
+          // No stored redirect, use default dashboard redirect
+          redirectUrl = getDashboardRedirect(user, isNewUser);
+        }
+        
+        console.log('[Google OAuth ALT] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
         res.redirect(redirectUrl);
       });
     } catch (error) {
@@ -478,9 +517,22 @@ export function registerRoutes(app: Express): Server {
           const storedRedirect = req.session.oauthRedirect;
           delete req.session.oauthRedirect; // Clear after use
           
-          // Use stored redirect or default dashboard redirect
-          const redirectUrl = storedRedirect || getDashboardRedirect(dbUser, isNewUser);
-          console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl);
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (storedRedirect) {
+            // If new user, add welcome=true to the stored redirect
+            if (isNewUser) {
+              const separator = storedRedirect.includes('?') ? '&' : '?';
+              redirectUrl = `${storedRedirect}${separator}welcome=true`;
+            } else {
+              redirectUrl = storedRedirect;
+            }
+          } else {
+            // No stored redirect, use default dashboard redirect
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+          
+          console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
           res.redirect(redirectUrl);
         });
       });
