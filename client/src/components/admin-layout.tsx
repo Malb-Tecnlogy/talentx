@@ -110,18 +110,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               const active = isActive(item.path, item.exact);
               
               return (
-                <Link key={item.path} href={item.path}>
-                  <Button
-                    variant={active ? "secondary" : "ghost"}
-                    className={`w-full justify-start ${
-                      active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
+                <Button
+                  key={item.path}
+                  variant={active ? "secondary" : "ghost"}
+                  className={`w-full justify-start ${
+                    active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  asChild
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <Link href={item.path}>
                     <Icon className="mr-3 h-4 w-4" />
                     {item.label}
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               );
             })}
           </nav>

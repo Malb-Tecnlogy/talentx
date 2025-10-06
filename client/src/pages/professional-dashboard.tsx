@@ -785,11 +785,11 @@ export default function ProfessionalDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recommended Projects</CardTitle>
-                <Link href="/jobs">
-                  <Button variant="outline" size="sm" data-testid="button-view-all-jobs">
+                <Button variant="outline" size="sm" asChild data-testid="button-view-all-jobs">
+                  <Link href="/jobs">
                     Ver Todas as Vagas
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -809,11 +809,11 @@ export default function ProfessionalDashboard() {
                   <p className="text-sm text-muted-foreground mb-3" data-testid={`text-reasoning-${rec.jobId}`}>
                     {rec.reasoning}
                   </p>
-                  <Link href={`/jobs/${rec.jobId}`}>
-                    <Button size="sm" data-testid={`button-apply-${rec.jobId}`}>
+                  <Button size="sm" asChild data-testid={`button-apply-${rec.jobId}`}>
+                    <Link href={`/jobs/${rec.jobId}`}>
                       Ver Vaga
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               ))}
               {(recommendations as any[]).length === 0 && (
@@ -821,11 +821,11 @@ export default function ProfessionalDashboard() {
                   <p className="text-muted-foreground mb-4">
                     No job recommendations available. Complete your profile to get matched with opportunities.
                   </p>
-                  <Link href="/jobs">
-                    <Button variant="default" data-testid="button-browse-jobs">
+                  <Button variant="default" asChild data-testid="button-browse-jobs">
+                    <Link href="/jobs">
                       Explorar Vagas Disponíveis
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -900,11 +900,11 @@ export default function ProfessionalDashboard() {
                 <p className="text-muted-foreground mb-4">
                   Você ainda não se candidatou a nenhuma vaga.
                 </p>
-                <Link href="/jobs">
-                  <Button variant="default" data-testid="button-browse-jobs-applications">
+                <Button variant="default" asChild data-testid="button-browse-jobs-applications">
+                  <Link href="/jobs">
                     Ver Vagas Disponíveis
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             ) : (
               <div className="space-y-4">

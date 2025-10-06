@@ -135,12 +135,12 @@ export default function JobDetails() {
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 The job you're looking for doesn't exist or has been removed.
               </p>
-              <Link href="/jobs">
-                <Button>
+              <Button asChild>
+                <Link href="/jobs">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   {t('jobs.details.backToJobs')}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -155,12 +155,12 @@ export default function JobDetails() {
       
       <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
         {/* Back Button */}
-        <Link href="/jobs">
-          <Button variant="ghost" className="mb-6" data-testid="button-back-to-jobs">
+        <Button variant="ghost" className="mb-6" asChild data-testid="button-back-to-jobs">
+          <Link href="/jobs">
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t('jobs.details.backToJobs')}
-          </Button>
-        </Link>
+          </Link>
+        </Button>
 
         {/* Job Header */}
         <Card className="mb-6">

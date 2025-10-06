@@ -223,12 +223,12 @@ export default function JobsSection() {
                   </div>
 
                   {/* View Details Button */}
-                  <Link href={`/jobs/${job.id}`}>
-                    <Button className="w-full" size="sm" data-testid={`button-view-details-${job.id}`}>
+                  <Button className="w-full" size="sm" asChild data-testid={`button-view-details-${job.id}`}>
+                    <Link href={`/jobs/${job.id}`}>
                       {t('jobs.viewDetails')}
                       <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -238,12 +238,12 @@ export default function JobsSection() {
         {/* Call to Action */}
         {filteredJobs.length > 0 && (
           <div className="text-center mt-10 sm:mt-12">
-            <Link href="/auth">
-              <Button size="lg" data-testid="button-view-all-jobs">
+            <Button size="lg" asChild data-testid="button-view-all-jobs">
+              <Link href="/auth">
                 Start Your Application
                 <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </div>
