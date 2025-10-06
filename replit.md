@@ -51,6 +51,7 @@ Preferred communication style: Simple, everyday language.
 - **New User Job Application Flow**: OAuth callbacks detect new users and preserve job application context through profile creation.
 - **Job Recommendations System**: Skill-based matching algorithm that calculates match scores and returns top 10 relevant opportunities.
 - **Dashboard Navigation**: Direct links to job listings from professional dashboard for improved job discovery.
+- **Navigation Button Fix (October 2025)**: Fixed critical logout bug caused by improper Link/Button nesting. Changed all instances from `<Link><Button>` to `<Button asChild><Link>` pattern (Radix UI best practice), affecting 15 buttons across 5 files.
 - **Optimized Favicon System**: Drastically reduced favicon size for performance.
 - **Professional Profile Update**: Secure backend endpoint with comprehensive validation.
 - **Applied Jobs Tracking**: Integrated into the professional dashboard.
