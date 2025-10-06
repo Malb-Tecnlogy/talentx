@@ -79,6 +79,56 @@ export function registerRoutes(app: Express): Server {
       const state = generateSecureState();
       storeOAuthState(req.session, state);
       
+      // Store redirect URL if provided (for returning to specific page after auth)
+      const redirect = req.query.redirect as string;
+      if (redirect) {
+        try {
+          // Decode and normalize to detect encoded tricks
+          let normalized = decodeURIComponent(redirect).trim();
+          // Replace backslashes with forward slashes to detect backslash tricks
+          normalized = normalized.replace(/\\/g, '/');
+          
+          // Reject any protocol-relative or absolute URLs
+          if (normalized.startsWith('//') || 
+              normalized.includes('://') || 
+              normalized.startsWith('http') ||
+              normalized.startsWith('javascript:') ||
+              normalized.startsWith('data:')) {
+            console.warn('[OAuth] Rejected unsafe redirect pattern:', redirect);
+            delete req.session.oauthRedirect; // Clear any previous value
+            return;
+          }
+          
+          // Must start with exactly one forward slash (relative path)
+          if (!normalized.startsWith('/') || normalized.startsWith('//')) {
+            console.warn('[OAuth] Rejected non-relative redirect:', redirect);
+            delete req.session.oauthRedirect;
+            return;
+          }
+          
+          // Get the actual protocol from request
+          const protocol = req.protocol || (req.secure ? 'https' : 'http');
+          const baseUrl = `${protocol}://${req.headers.host}`;
+          
+          // Parse as URL to verify it resolves to same origin
+          const redirectUrl = new URL(normalized, baseUrl);
+          
+          // Only allow paths on same origin (no external domains)
+          if (redirectUrl.origin === baseUrl) {
+            // Use only the pathname and search to prevent any protocol/host manipulation
+            const safeRedirect = redirectUrl.pathname + redirectUrl.search;
+            req.session.oauthRedirect = safeRedirect;
+            console.log('[OAuth] Storing safe redirect URL:', safeRedirect);
+          } else {
+            console.warn('[OAuth] Rejected redirect to different origin:', redirect, 'expected:', baseUrl, 'got:', redirectUrl.origin);
+            delete req.session.oauthRedirect;
+          }
+        } catch (err) {
+          console.warn('[OAuth] Invalid redirect URL:', redirect, err);
+          delete req.session.oauthRedirect;
+        }
+      }
+      
       // Save session explicitly before redirect (critical for OAuth flow)
       req.session.save(async (err) => {
         if (err) {
@@ -135,8 +185,13 @@ export function registerRoutes(app: Express): Server {
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(user, isNewUser);
+        // Check for stored redirect URL from session
+        const storedRedirect = req.session.oauthRedirect;
+        delete req.session.oauthRedirect; // Clear after use
+        
+        // Use stored redirect or default dashboard redirect
+        const redirectUrl = storedRedirect || getDashboardRedirect(user, isNewUser);
+        console.log('[Google OAuth] Redirecting to:', redirectUrl);
         res.redirect(redirectUrl);
       });
     } catch (error) {
@@ -155,6 +210,56 @@ export function registerRoutes(app: Express): Server {
         sessionID: req.sessionID,
         state: state.substring(0, 10) + '...'
       });
+      
+      // Store redirect URL if provided (for returning to specific page after auth)
+      const redirect = req.query.redirect as string;
+      if (redirect) {
+        try {
+          // Decode and normalize to detect encoded tricks
+          let normalized = decodeURIComponent(redirect).trim();
+          // Replace backslashes with forward slashes to detect backslash tricks
+          normalized = normalized.replace(/\\/g, '/');
+          
+          // Reject any protocol-relative or absolute URLs
+          if (normalized.startsWith('//') || 
+              normalized.includes('://') || 
+              normalized.startsWith('http') ||
+              normalized.startsWith('javascript:') ||
+              normalized.startsWith('data:')) {
+            console.warn('[Apple OAuth Init] Rejected unsafe redirect pattern:', redirect);
+            delete req.session.oauthRedirect; // Clear any previous value
+            return;
+          }
+          
+          // Must start with exactly one forward slash (relative path)
+          if (!normalized.startsWith('/') || normalized.startsWith('//')) {
+            console.warn('[Apple OAuth Init] Rejected non-relative redirect:', redirect);
+            delete req.session.oauthRedirect;
+            return;
+          }
+          
+          // Get the actual protocol from request
+          const protocol = req.protocol || (req.secure ? 'https' : 'http');
+          const baseUrl = `${protocol}://${req.headers.host}`;
+          
+          // Parse as URL to verify it resolves to same origin
+          const redirectUrl = new URL(normalized, baseUrl);
+          
+          // Only allow paths on same origin (no external domains)
+          if (redirectUrl.origin === baseUrl) {
+            // Use only the pathname and search to prevent any protocol/host manipulation
+            const safeRedirect = redirectUrl.pathname + redirectUrl.search;
+            req.session.oauthRedirect = safeRedirect;
+            console.log('[Apple OAuth Init] Storing safe redirect URL:', safeRedirect);
+          } else {
+            console.warn('[Apple OAuth Init] Rejected redirect to different origin:', redirect, 'expected:', baseUrl, 'got:', redirectUrl.origin);
+            delete req.session.oauthRedirect;
+          }
+        } catch (err) {
+          console.warn('[Apple OAuth Init] Invalid redirect URL:', redirect, err);
+          delete req.session.oauthRedirect;
+        }
+      }
       
       // Save session explicitly before redirect (critical for OAuth flow)
       req.session.save((err) => {
@@ -237,8 +342,12 @@ export function registerRoutes(app: Express): Server {
             return res.redirect('/auth?error=session_failed');
           }
           
-          // Redirect to appropriate dashboard
-          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          // Check for stored redirect URL from session
+          const storedRedirect = req.session.oauthRedirect;
+          delete req.session.oauthRedirect; // Clear after use
+          
+          // Use stored redirect or default dashboard redirect
+          const redirectUrl = storedRedirect || getDashboardRedirect(dbUser, isNewUser);
           console.log('[Apple OAuth] Redirecting to:', redirectUrl);
           res.redirect(redirectUrl);
         });
@@ -288,8 +397,13 @@ export function registerRoutes(app: Express): Server {
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(user, isNewUser);
+        // Check for stored redirect URL from session
+        const storedRedirect = req.session.oauthRedirect;
+        delete req.session.oauthRedirect; // Clear after use
+        
+        // Use stored redirect or default dashboard redirect
+        const redirectUrl = storedRedirect || getDashboardRedirect(user, isNewUser);
+        console.log('[Google OAuth ALT] Redirecting to:', redirectUrl);
         res.redirect(redirectUrl);
       });
     } catch (error) {
@@ -359,8 +473,13 @@ export function registerRoutes(app: Express): Server {
           }
           
           console.log('[Apple OAuth ALT] Session saved, redirecting...');
-          // Redirect to appropriate dashboard
-          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          
+          // Check for stored redirect URL from session
+          const storedRedirect = req.session.oauthRedirect;
+          delete req.session.oauthRedirect; // Clear after use
+          
+          // Use stored redirect or default dashboard redirect
+          const redirectUrl = storedRedirect || getDashboardRedirect(dbUser, isNewUser);
           console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl);
           res.redirect(redirectUrl);
         });

@@ -229,7 +229,11 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => window.location.href = '/api/auth/google'}
+                        onClick={() => {
+                          const redirect = new URLSearchParams(window.location.search).get('redirect');
+                          const url = redirect ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}` : '/api/auth/google';
+                          window.location.href = url;
+                        }}
                         data-testid="button-google-login"
                       >
                         <FcGoogle className="mr-2 h-4 w-4" />
@@ -239,7 +243,11 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => window.location.href = '/api/auth/apple'}
+                        onClick={() => {
+                          const redirect = new URLSearchParams(window.location.search).get('redirect');
+                          const url = redirect ? `/api/auth/apple?redirect=${encodeURIComponent(redirect)}` : '/api/auth/apple';
+                          window.location.href = url;
+                        }}
                         data-testid="button-apple-login"
                       >
                         <SiApple className="mr-2 h-4 w-4" />

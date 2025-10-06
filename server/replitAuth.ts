@@ -14,6 +14,7 @@ declare module 'express-session' {
     user?: any;
     oauthState?: string;
     oauthNonce?: string;
+    oauthRedirect?: string;
   }
 }
 
