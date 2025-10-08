@@ -79,6 +79,7 @@ export interface IStorage {
   getApplication(id: string): Promise<Application | undefined>;
   getApplicationsByJob(jobId: string): Promise<Application[]>;
   getApplicationsByProfessional(professionalId: string): Promise<Application[]>;
+  getApplicationByJobAndProfessional(jobId: string, professionalId: string): Promise<Application | undefined>;
   updateApplication(id: string, application: Partial<InsertApplication>): Promise<Application>;
   deleteApplication(id: string): Promise<void>;
   
@@ -382,6 +383,19 @@ export class DatabaseStorage implements IStorage {
       .from(applications)
       .where(eq(applications.professionalId, professionalId))
       .orderBy(desc(applications.createdAt));
+  }
+
+  async getApplicationByJobAndProfessional(jobId: string, professionalId: string): Promise<Application | undefined> {
+    const [application] = await db
+      .select()
+      .from(applications)
+      .where(
+        and(
+          eq(applications.jobId, jobId),
+          eq(applications.professionalId, professionalId)
+        )
+      );
+    return application;
   }
 
   async updateApplication(id: string, application: Partial<InsertApplication>): Promise<Application> {

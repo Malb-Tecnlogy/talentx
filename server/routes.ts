@@ -1,544 +1,472 @@
 // Server routes using blueprint:javascript_auth_all_persistance
-import type { Express, Request as ExpressRequest, Response, NextFunction } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Resend } from "resend";
 import { setupAuth } from "./auth";
-import { 
-  getGoogleOAuthURL, 
-  exchangeGoogleCode, 
-  getGoogleUserInfo, 
-  getAppleOAuthURL, 
-  exchangeAppleCode,
-  validateAppleIdToken, 
-  extractAppleUserInfo, 
-  createOrLinkOAuthUser, 
-  generateSecureState, 
-  generateSecureNonce, 
-  storeOAuthState, 
-  validateOAuthState, 
-  validateOAuthNonce, 
-  getDashboardRedirect 
+import {
+  getGoogleOAuthURL,
+  exchangeGoogleCode,
+  getGoogleUserInfo,
+  getAppleOAuthURL,
+  validateAppleIdToken,
+  extractAppleUserInfo,
+  createOrLinkOAuthUser,
+  generateSecureState,
+  generateSecureNonce,
+  storeOAuthState,
+  validateOAuthState,
+  validateOAuthNonce,
+  getDashboardRedirect,
+  processPendingJobApplication,
 } from "./replitAuth";
 import { storage } from "./storage";
 import { db } from "./db";
-import { 
-  jobs, 
-  companies, 
-  professionals, 
-  applications, 
-  contracts, 
+import {
+  jobs,
+  companies,
+  professionals,
+  applications,
+  contracts,
   notifications,
-  users,
   contactFormSchema,
-  insertJobSchema,
   type InsertJob,
   type InsertCompany,
   type InsertProfessional,
   type InsertApplication,
   type InsertContract,
   type InsertNotification,
-  type ContactForm
+  type ContactForm,
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
-import multer from "multer";
-import OpenAI from "openai";
-import { ObjectStorageService } from "./objectStorage";
-import { Readable } from "stream";
-import AdmZip from "adm-zip";
-import { 
-  ServicePrincipalCredentials,
-  PDFServices,
-  MimeType,
-  ExtractPDFParams,
-  ExtractElementType,
-  ExtractPDFJob,
-  ExtractPDFResult
-} from "@adobe/pdfservices-node-sdk";
-
-// Configure multer for in-memory file upload
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
-
-// Initialize OpenAI client
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
 
   // OAuth routes for Google authentication
-  app.get('/api/auth/google', async (req, res) => {
+  app.get("/api/auth/google", async (req, res) => {
     try {
-      console.log('[OAuth] Google OAuth initiation started');
-      console.log('[OAuth] GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
-      console.log('[OAuth] GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
-      
+      console.log("[OAuth] Google OAuth initiation started");
+      console.log(
+        "[OAuth] GOOGLE_CLIENT_ID:",
+        process.env.GOOGLE_CLIENT_ID ? "SET" : "NOT SET",
+      );
+      console.log(
+        "[OAuth] GOOGLE_REDIRECT_URI:",
+        process.env.GOOGLE_REDIRECT_URI,
+      );
+
       const state = generateSecureState();
       storeOAuthState(req.session, state);
-      
-      // Store redirect URL if provided (for returning to specific page after auth)
-      const redirect = req.query.redirect as string;
-      if (redirect) {
-        try {
-          // Decode and normalize to detect encoded tricks
-          let normalized = decodeURIComponent(redirect).trim();
-          // Replace backslashes with forward slashes to detect backslash tricks
-          normalized = normalized.replace(/\\/g, '/');
-          
-          // Reject any protocol-relative or absolute URLs
-          if (normalized.startsWith('//') || 
-              normalized.includes('://') || 
-              normalized.startsWith('http') ||
-              normalized.startsWith('javascript:') ||
-              normalized.startsWith('data:')) {
-            console.warn('[OAuth] Rejected unsafe redirect pattern:', redirect);
-            delete req.session.oauthRedirect; // Clear any previous value
-            return;
-          }
-          
-          // Must start with exactly one forward slash (relative path)
-          if (!normalized.startsWith('/') || normalized.startsWith('//')) {
-            console.warn('[OAuth] Rejected non-relative redirect:', redirect);
-            delete req.session.oauthRedirect;
-            return;
-          }
-          
-          // Get the actual protocol from request
-          const protocol = req.protocol || (req.secure ? 'https' : 'http');
-          const baseUrl = `${protocol}://${req.headers.host}`;
-          
-          // Parse as URL to verify it resolves to same origin
-          const redirectUrl = new URL(normalized, baseUrl);
-          
-          // Only allow paths on same origin (no external domains)
-          if (redirectUrl.origin === baseUrl) {
-            // Use only the pathname and search to prevent any protocol/host manipulation
-            const safeRedirect = redirectUrl.pathname + redirectUrl.search;
-            req.session.oauthRedirect = safeRedirect;
-            console.log('[OAuth] Storing safe redirect URL:', safeRedirect);
-          } else {
-            console.warn('[OAuth] Rejected redirect to different origin:', redirect, 'expected:', baseUrl, 'got:', redirectUrl.origin);
-            delete req.session.oauthRedirect;
-          }
-        } catch (err) {
-          console.warn('[OAuth] Invalid redirect URL:', redirect, err);
-          delete req.session.oauthRedirect;
-        }
+
+      // Store pending job ID and return URL if provided
+      const jobId = req.query.jobId as string;
+      const returnUrl = req.query.returnUrl as string;
+      if (jobId) {
+        req.session.pendingJobId = jobId;
+        console.log("[OAuth] Storing pending job ID:", jobId);
       }
-      
+      if (returnUrl) {
+        req.session.returnUrl = returnUrl;
+        console.log("[OAuth] Storing return URL:", returnUrl);
+      }
+
       // Save session explicitly before redirect (critical for OAuth flow)
       req.session.save(async (err) => {
         if (err) {
-          console.error('[Google OAuth Init] Session save error:', err);
-          return res.redirect('/auth?error=session_failed');
+          console.error("[Google OAuth Init] Session save error:", err);
+          return res.redirect("/auth?error=session_failed");
         }
-        
+
         try {
           const authUrl = await getGoogleOAuthURL(state);
-          console.log('[OAuth] Generated Google auth URL:', authUrl);
-          console.log('[OAuth] Redirecting to Google OAuth...');
+          console.log("[OAuth] Generated Google auth URL:", authUrl);
+          console.log("[OAuth] Redirecting to Google OAuth...");
           res.redirect(authUrl);
         } catch (error) {
-          console.error('Google OAuth URL generation error:', error);
-          res.redirect('/auth?error=oauth_failed');
+          console.error("Google OAuth URL generation error:", error);
+          res.redirect("/auth?error=oauth_failed");
         }
       });
     } catch (error) {
-      console.error('Google OAuth initiation error:', error);
-      res.redirect('/auth?error=oauth_failed');
+      console.error("Google OAuth initiation error:", error);
+      res.redirect("/auth?error=oauth_failed");
     }
   });
 
-  app.get('/api/auth/google/callback', async (req, res) => {
+  app.get("/api/auth/google/callback", async (req, res) => {
     try {
       const { code, state } = req.query;
-      
+
       if (!code || !state) {
-        return res.redirect('/auth?error=invalid_oauth_response');
+        return res.redirect("/auth?error=invalid_oauth_response");
       }
-      
+
       // Validate state to prevent CSRF
       if (!validateOAuthState(req.session, state as string)) {
-        return res.redirect('/auth?error=invalid_state');
+        return res.redirect("/auth?error=invalid_state");
       }
-      
+
       // Exchange code for tokens
       const tokens = await exchangeGoogleCode(code as string);
       const userInfo = await getGoogleUserInfo(tokens.access_token);
-      
+
       // Create or link OAuth user
-      const { user, isNewUser } = await createOrLinkOAuthUser('google', {
+      const { user, isNewUser } = await createOrLinkOAuthUser("google", {
         providerUserId: userInfo.id,
         email: userInfo.email,
         firstName: userInfo.given_name,
         lastName: userInfo.family_name,
-        profileImageUrl: userInfo.picture
+        profileImageUrl: userInfo.picture,
       });
-      
-      // Login user with Passport
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Passport login error:', err);
-          return res.redirect('/auth?error=login_failed');
-        }
-        
-        // Check for stored redirect URL from session
-        const storedRedirect = req.session.oauthRedirect;
-        delete req.session.oauthRedirect; // Clear after use
-        
-        // Determine redirect URL
-        let redirectUrl: string;
-        if (storedRedirect) {
-          // If new user, add welcome=true to the stored redirect
-          if (isNewUser) {
-            const separator = storedRedirect.includes('?') ? '&' : '?';
-            redirectUrl = `${storedRedirect}${separator}welcome=true`;
-          } else {
-            redirectUrl = storedRedirect;
-          }
-        } else {
-          // No stored redirect, use default dashboard redirect
-          redirectUrl = getDashboardRedirect(user, isNewUser);
-        }
-        
-        console.log('[Google OAuth] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
-        res.redirect(redirectUrl);
-      });
-    } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      res.redirect('/auth?error=oauth_failed');
-    }
-  });
 
-  // OAuth routes for Apple authentication (alugae strategy: code flow)
-  app.get('/api/auth/apple', async (req, res) => {
-    try {
-      const state = generateSecureState();
-      storeOAuthState(req.session, state);
-      
-      console.log('[Apple OAuth Init] Storing state in session:', {
-        sessionID: req.sessionID,
-        state: state.substring(0, 10) + '...'
-      });
-      
-      // Store redirect URL if provided (for returning to specific page after auth)
-      const redirect = req.query.redirect as string;
-      if (redirect) {
-        try {
-          // Decode and normalize to detect encoded tricks
-          let normalized = decodeURIComponent(redirect).trim();
-          // Replace backslashes with forward slashes to detect backslash tricks
-          normalized = normalized.replace(/\\/g, '/');
-          
-          // Reject any protocol-relative or absolute URLs
-          if (normalized.startsWith('//') || 
-              normalized.includes('://') || 
-              normalized.startsWith('http') ||
-              normalized.startsWith('javascript:') ||
-              normalized.startsWith('data:')) {
-            console.warn('[Apple OAuth Init] Rejected unsafe redirect pattern:', redirect);
-            delete req.session.oauthRedirect; // Clear any previous value
-            return;
-          }
-          
-          // Must start with exactly one forward slash (relative path)
-          if (!normalized.startsWith('/') || normalized.startsWith('//')) {
-            console.warn('[Apple OAuth Init] Rejected non-relative redirect:', redirect);
-            delete req.session.oauthRedirect;
-            return;
-          }
-          
-          // Get the actual protocol from request
-          const protocol = req.protocol || (req.secure ? 'https' : 'http');
-          const baseUrl = `${protocol}://${req.headers.host}`;
-          
-          // Parse as URL to verify it resolves to same origin
-          const redirectUrl = new URL(normalized, baseUrl);
-          
-          // Only allow paths on same origin (no external domains)
-          if (redirectUrl.origin === baseUrl) {
-            // Use only the pathname and search to prevent any protocol/host manipulation
-            const safeRedirect = redirectUrl.pathname + redirectUrl.search;
-            req.session.oauthRedirect = safeRedirect;
-            console.log('[Apple OAuth Init] Storing safe redirect URL:', safeRedirect);
-          } else {
-            console.warn('[Apple OAuth Init] Rejected redirect to different origin:', redirect, 'expected:', baseUrl, 'got:', redirectUrl.origin);
-            delete req.session.oauthRedirect;
-          }
-        } catch (err) {
-          console.warn('[Apple OAuth Init] Invalid redirect URL:', redirect, err);
-          delete req.session.oauthRedirect;
-        }
-      }
-      
-      // Save session explicitly before redirect (critical for OAuth flow)
-      req.session.save((err) => {
-        if (err) {
-          console.error('[Apple OAuth Init] Session save error:', err);
-          return res.redirect('/auth?error=session_failed');
-        }
-        
-        console.log('[Apple OAuth Init] Session saved, redirecting to Apple');
-        getAppleOAuthURL(state).then(authUrl => {
-          res.redirect(authUrl);
-        }).catch(error => {
-          console.error('[Apple OAuth Init] URL generation error:', error);
-          res.redirect('/auth?error=oauth_failed');
-        });
-      });
-    } catch (error) {
-      console.error('Apple OAuth initiation error:', error);
-      res.redirect('/auth?error=oauth_failed');
-    }
-  });
-
-  app.post('/api/auth/apple/callback', async (req, res) => {
-    console.log('[Apple OAuth] Callback received');
-    console.log('[Apple OAuth] Body:', JSON.stringify(req.body).substring(0, 200));
-    console.log('[Apple OAuth] Session ID:', req.sessionID);
-    console.log('[Apple OAuth] Session state:', req.session?.oauthState);
-    
-    try {
-      const { code, state, user } = req.body;
-      
-      if (!code || !state) {
-        console.error('[Apple OAuth] Missing code or state');
-        return res.redirect('/auth?error=invalid_oauth_response');
-      }
-      
-      // Extract state from "apple:BASE64" format (alugae pattern)
-      let actualState = state;
-      if (state.startsWith('apple:')) {
-        actualState = state.substring(6); // Remove "apple:" prefix
-      }
-      
-      console.log('[Apple OAuth] Validating state...');
-      // Validate state to prevent CSRF
-      if (!validateOAuthState(req.session, actualState)) {
-        console.error('[Apple OAuth] State validation failed');
-        return res.redirect('/auth?error=invalid_state');
-      }
-      
-      console.log('[Apple OAuth] State validated, exchanging code for token...');
-      // Exchange code for id_token
-      const tokens = await exchangeAppleCode(code);
-      
-      console.log('[Apple OAuth] Token received, validating...');
-      // Validate Apple ID token
-      const payload = await validateAppleIdToken(tokens.id_token);
-      
-      console.log('[Apple OAuth] Token validated, extracting user info...');
-      // Extract user info
-      const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
-      console.log('[Apple OAuth] User info:', userInfo.email);
-      
-      console.log('[Apple OAuth] Creating/linking user...');
-      // Create or link OAuth user
-      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
-      console.log('[Apple OAuth] User created/linked, role:', dbUser.role);
-      
       // Login user with Passport
-      req.login(dbUser, (err) => {
+      req.login(user, async (err) => {
         if (err) {
-          console.error('[Apple OAuth] Passport login error:', err);
-          return res.redirect('/auth?error=login_failed');
+          console.error("Passport login error:", err);
+          return res.redirect("/auth?error=login_failed");
         }
-        
-        console.log('[Apple OAuth] User logged in successfully');
-        // Save session explicitly before redirect (important for mobile OAuth)
+
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(
+          req.session,
+          user.id,
+        );
+
+        // Save session after processing
         req.session.save((saveErr) => {
           if (saveErr) {
-            console.error('[Apple OAuth] Session save error:', saveErr);
-            return res.redirect('/auth?error=session_failed');
+            console.error("[Google OAuth] Session save error:", saveErr);
           }
-          
-          // Check for stored redirect URL from session
-          const storedRedirect = req.session.oauthRedirect;
-          delete req.session.oauthRedirect; // Clear after use
-          
+
           // Determine redirect URL
           let redirectUrl: string;
-          if (storedRedirect) {
-            // If new user, add welcome=true to the stored redirect
-            if (isNewUser) {
-              const separator = storedRedirect.includes('?') ? '&' : '?';
-              redirectUrl = `${storedRedirect}${separator}welcome=true`;
-            } else {
-              redirectUrl = storedRedirect;
-            }
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+            console.log("[Google OAuth] Using stored return URL:", redirectUrl);
           } else {
-            // No stored redirect, use default dashboard redirect
-            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+            redirectUrl = getDashboardRedirect(user, isNewUser);
           }
-          
-          console.log('[Apple OAuth] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
+
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes("?") ? "&" : "?";
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+
           res.redirect(redirectUrl);
         });
       });
     } catch (error) {
-      console.error('[Apple OAuth] Callback error:', error);
-      console.error('[Apple OAuth] Error details:', {
+      console.error("Google OAuth callback error:", error);
+      res.redirect("/auth?error=oauth_failed");
+    }
+  });
+
+  // OAuth routes for Apple authentication
+  app.get("/api/auth/apple", async (req, res) => {
+    try {
+      const state = generateSecureState();
+      const nonce = generateSecureNonce();
+      storeOAuthState(req.session, state, nonce);
+
+      // Store pending job ID and return URL if provided
+      const jobId = req.query.jobId as string;
+      const returnUrl = req.query.returnUrl as string;
+      if (jobId) {
+        req.session.pendingJobId = jobId;
+        console.log("[Apple OAuth Init] Storing pending job ID:", jobId);
+      }
+      if (returnUrl) {
+        req.session.returnUrl = returnUrl;
+        console.log("[Apple OAuth Init] Storing return URL:", returnUrl);
+      }
+
+      console.log("[Apple OAuth Init] Storing state and nonce in session:", {
+        sessionID: req.sessionID,
+        state: state.substring(0, 10) + "...",
+        nonce: nonce.substring(0, 10) + "...",
+      });
+
+      // Save session explicitly before redirect (critical for OAuth flow)
+      req.session.save((err) => {
+        if (err) {
+          console.error("[Apple OAuth Init] Session save error:", err);
+          return res.redirect("/auth?error=session_failed");
+        }
+
+        console.log("[Apple OAuth Init] Session saved, redirecting to Apple");
+        getAppleOAuthURL(state, nonce)
+          .then((authUrl) => {
+            res.redirect(authUrl);
+          })
+          .catch((error) => {
+            console.error("[Apple OAuth Init] URL generation error:", error);
+            res.redirect("/auth?error=oauth_failed");
+          });
+      });
+    } catch (error) {
+      console.error("Apple OAuth initiation error:", error);
+      res.redirect("/auth?error=oauth_failed");
+    }
+  });
+
+  app.post("/api/auth/apple/callback", async (req, res) => {
+    console.log("[Apple OAuth] Callback received");
+    console.log(
+      "[Apple OAuth] Body:",
+      JSON.stringify(req.body).substring(0, 200),
+    );
+    console.log("[Apple OAuth] Session ID:", req.sessionID);
+    console.log("[Apple OAuth] Session state:", req.session?.oauthState);
+
+    try {
+      const { id_token, state, user } = req.body;
+
+      if (!id_token || !state) {
+        console.error("[Apple OAuth] Missing id_token or state");
+        return res.redirect("/auth?error=invalid_oauth_response");
+      }
+
+      console.log("[Apple OAuth] Validating state...");
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state)) {
+        console.error("[Apple OAuth] State validation failed");
+        return res.redirect("/auth?error=invalid_state");
+      }
+
+      console.log("[Apple OAuth] State validated, validating token...");
+      // Validate Apple ID token
+      const nonce = req.session.oauthNonce;
+      const payload = await validateAppleIdToken(id_token, nonce);
+
+      console.log("[Apple OAuth] Token validated, extracting user info...");
+      // Extract user info
+      const userInfo = extractAppleUserInfo(
+        payload,
+        user ? JSON.parse(user) : undefined,
+      );
+      console.log("[Apple OAuth] User info:", userInfo.email);
+
+      console.log("[Apple OAuth] Creating/linking user...");
+      // Create or link OAuth user
+      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser(
+        "apple",
+        userInfo,
+      );
+      console.log("[Apple OAuth] User created/linked, role:", dbUser.role);
+
+      // Login user with Passport
+      req.login(dbUser, async (err) => {
+        if (err) {
+          console.error("[Apple OAuth] Passport login error:", err);
+          return res.redirect("/auth?error=login_failed");
+        }
+
+        console.log("[Apple OAuth] User logged in successfully");
+
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(
+          req.session,
+          dbUser.id,
+        );
+
+        // Save session explicitly before redirect (important for mobile OAuth)
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[Apple OAuth] Session save error:", saveErr);
+            return res.redirect("/auth?error=session_failed");
+          }
+
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+            console.log("[Apple OAuth] Using stored return URL:", redirectUrl);
+          } else {
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes("?") ? "&" : "?";
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+
+          console.log("[Apple OAuth] Redirecting to:", redirectUrl);
+          res.redirect(redirectUrl);
+        });
+      });
+    } catch (error) {
+      console.error("[Apple OAuth] Callback error:", error);
+      console.error("[Apple OAuth] Error details:", {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined
+        name: error instanceof Error ? error.name : undefined,
       });
-      res.redirect('/auth?error=oauth_failed');
+      res.redirect("/auth?error=oauth_failed");
     }
   });
 
   // Alternative OAuth callback routes without /api prefix (for provider redirect URIs)
-  app.get('/auth/google/callback', async (req, res) => {
+  app.get("/auth/google/callback", async (req, res) => {
     try {
       const { code, state } = req.query;
-      
+
       if (!code || !state) {
-        return res.redirect('/auth?error=invalid_oauth_response');
+        return res.redirect("/auth?error=invalid_oauth_response");
       }
-      
+
       // Validate state to prevent CSRF
       if (!validateOAuthState(req.session, state as string)) {
-        return res.redirect('/auth?error=invalid_state');
+        return res.redirect("/auth?error=invalid_state");
       }
-      
+
       // Exchange code for tokens
       const tokens = await exchangeGoogleCode(code as string);
       const userInfo = await getGoogleUserInfo(tokens.access_token);
-      
+
       // Create or link OAuth user
-      const { user, isNewUser } = await createOrLinkOAuthUser('google', {
+      const { user, isNewUser } = await createOrLinkOAuthUser("google", {
         providerUserId: userInfo.id,
         email: userInfo.email,
         firstName: userInfo.given_name,
         lastName: userInfo.family_name,
-        profileImageUrl: userInfo.picture
+        profileImageUrl: userInfo.picture,
       });
-      
-      // Login user with Passport
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Passport login error:', err);
-          return res.redirect('/auth?error=login_failed');
-        }
-        
-        // Check for stored redirect URL from session
-        const storedRedirect = req.session.oauthRedirect;
-        delete req.session.oauthRedirect; // Clear after use
-        
-        // Determine redirect URL
-        let redirectUrl: string;
-        if (storedRedirect) {
-          // If new user, add welcome=true to the stored redirect
-          if (isNewUser) {
-            const separator = storedRedirect.includes('?') ? '&' : '?';
-            redirectUrl = `${storedRedirect}${separator}welcome=true`;
-          } else {
-            redirectUrl = storedRedirect;
-          }
-        } else {
-          // No stored redirect, use default dashboard redirect
-          redirectUrl = getDashboardRedirect(user, isNewUser);
-        }
-        
-        console.log('[Google OAuth ALT] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
-        res.redirect(redirectUrl);
-      });
-    } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      res.redirect('/auth?error=oauth_failed');
-    }
-  });
 
-  app.post('/auth/apple/callback', async (req, res) => {
-    console.log('[Apple OAuth ALT] Callback received (no /api prefix)');
-    console.log('[Apple OAuth ALT] Body:', JSON.stringify(req.body).substring(0, 200));
-    console.log('[Apple OAuth ALT] Session ID:', req.sessionID);
-    console.log('[Apple OAuth ALT] Session state:', req.session?.oauthState);
-    
-    try {
-      const { code, state, user } = req.body;
-      
-      if (!code || !state) {
-        console.error('[Apple OAuth ALT] Missing code or state');
-        return res.redirect('/auth?error=invalid_oauth_response');
-      }
-      
-      // Extract state from "apple:BASE64" format (alugae pattern)
-      let actualState = state;
-      if (state.startsWith('apple:')) {
-        actualState = state.substring(6); // Remove "apple:" prefix
-      }
-      
-      console.log('[Apple OAuth ALT] Validating state...');
-      // Validate state to prevent CSRF
-      if (!validateOAuthState(req.session, actualState)) {
-        console.error('[Apple OAuth ALT] State validation failed');
-        return res.redirect('/auth?error=invalid_state');
-      }
-      
-      console.log('[Apple OAuth ALT] State validated, exchanging code for token...');
-      // Exchange code for id_token
-      const tokens = await exchangeAppleCode(code);
-      
-      console.log('[Apple OAuth ALT] Token received, validating...');
-      // Validate Apple ID token
-      const payload = await validateAppleIdToken(tokens.id_token);
-      
-      console.log('[Apple OAuth ALT] Token validated, extracting user info...');
-      // Extract user info
-      const userInfo = extractAppleUserInfo(payload, user ? JSON.parse(user) : undefined);
-      console.log('[Apple OAuth ALT] User info:', userInfo.email);
-      
-      console.log('[Apple OAuth ALT] Creating/linking user...');
-      // Create or link OAuth user
-      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser('apple', userInfo);
-      console.log('[Apple OAuth ALT] User created/linked, role:', dbUser.role);
-      
       // Login user with Passport
-      req.login(dbUser, (err) => {
+      req.login(user, async (err) => {
         if (err) {
-          console.error('[Apple OAuth ALT] Passport login error:', err);
-          return res.redirect('/auth?error=login_failed');
+          console.error("Passport login error:", err);
+          return res.redirect("/auth?error=login_failed");
         }
-        
-        console.log('[Apple OAuth ALT] User logged in successfully');
-        // Save session explicitly before redirect (important for mobile OAuth)
+
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(
+          req.session,
+          user.id,
+        );
+
+        // Save session after processing
         req.session.save((saveErr) => {
           if (saveErr) {
-            console.error('[Apple OAuth ALT] Session save error:', saveErr);
-            return res.redirect('/auth?error=session_failed');
+            console.error("[Google OAuth ALT] Session save error:", saveErr);
           }
-          
-          console.log('[Apple OAuth ALT] Session saved, redirecting...');
-          
-          // Check for stored redirect URL from session
-          const storedRedirect = req.session.oauthRedirect;
-          delete req.session.oauthRedirect; // Clear after use
-          
+
           // Determine redirect URL
           let redirectUrl: string;
-          if (storedRedirect) {
-            // If new user, add welcome=true to the stored redirect
-            if (isNewUser) {
-              const separator = storedRedirect.includes('?') ? '&' : '?';
-              redirectUrl = `${storedRedirect}${separator}welcome=true`;
-            } else {
-              redirectUrl = storedRedirect;
-            }
+          if (returnUrl) {
+            redirectUrl = returnUrl;
           } else {
-            // No stored redirect, use default dashboard redirect
-            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+            redirectUrl = getDashboardRedirect(user, isNewUser);
           }
-          
-          console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl, isNewUser ? '(new user)' : '(existing user)');
+
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes("?") ? "&" : "?";
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+
           res.redirect(redirectUrl);
         });
       });
     } catch (error) {
-      console.error('Apple OAuth callback error:', error);
-      res.redirect('/auth?error=oauth_failed');
+      console.error("Google OAuth callback error:", error);
+      res.redirect("/auth?error=oauth_failed");
+    }
+  });
+
+  app.post("/auth/apple/callback", async (req, res) => {
+    console.log("[Apple OAuth ALT] Callback received (no /api prefix)");
+    console.log(
+      "[Apple OAuth ALT] Body:",
+      JSON.stringify(req.body).substring(0, 200),
+    );
+    console.log("[Apple OAuth ALT] Session ID:", req.sessionID);
+    console.log("[Apple OAuth ALT] Session state:", req.session?.oauthState);
+
+    try {
+      const { id_token, state, user } = req.body;
+
+      if (!id_token || !state) {
+        console.error("[Apple OAuth ALT] Missing id_token or state");
+        return res.redirect("/auth?error=invalid_oauth_response");
+      }
+
+      console.log("[Apple OAuth ALT] Validating state...");
+      // Validate state to prevent CSRF
+      if (!validateOAuthState(req.session, state)) {
+        console.error("[Apple OAuth ALT] State validation failed");
+        return res.redirect("/auth?error=invalid_state");
+      }
+
+      console.log("[Apple OAuth ALT] State validated, validating token...");
+      // Validate Apple ID token
+      const nonce = req.session.oauthNonce;
+      const payload = await validateAppleIdToken(id_token, nonce);
+
+      console.log("[Apple OAuth ALT] Token validated, extracting user info...");
+      // Extract user info
+      const userInfo = extractAppleUserInfo(
+        payload,
+        user ? JSON.parse(user) : undefined,
+      );
+      console.log("[Apple OAuth ALT] User info:", userInfo.email);
+
+      console.log("[Apple OAuth ALT] Creating/linking user...");
+      // Create or link OAuth user
+      const { user: dbUser, isNewUser } = await createOrLinkOAuthUser(
+        "apple",
+        userInfo,
+      );
+      console.log("[Apple OAuth ALT] User created/linked, role:", dbUser.role);
+
+      // Login user with Passport
+      req.login(dbUser, async (err) => {
+        if (err) {
+          console.error("[Apple OAuth ALT] Passport login error:", err);
+          return res.redirect("/auth?error=login_failed");
+        }
+
+        console.log("[Apple OAuth ALT] User logged in successfully");
+
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(
+          req.session,
+          dbUser.id,
+        );
+
+        // Save session explicitly before redirect (important for mobile OAuth)
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[Apple OAuth ALT] Session save error:", saveErr);
+            return res.redirect("/auth?error=session_failed");
+          }
+
+          console.log("[Apple OAuth ALT] Session saved, redirecting...");
+
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+          } else {
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes("?") ? "&" : "?";
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+
+          console.log("[Apple OAuth ALT] Redirecting to:", redirectUrl);
+          res.redirect(redirectUrl);
+        });
+      });
+    } catch (error) {
+      console.error("Apple OAuth callback error:", error);
+      res.redirect("/auth?error=oauth_failed");
     }
   });
 
@@ -555,7 +483,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const company = await storage.createCompany({
         ...req.body,
-        userId: req.user!.id
+        userId: req.user.id,
       });
       res.status(201).json(company);
     } catch (error) {
@@ -566,7 +494,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/companies/me", requireAuth, async (req, res) => {
     try {
-      const company = await storage.getCompanyByUserId(req.user!.id);
+      const company = await storage.getCompanyByUserId(req.user.id);
       res.json(company);
     } catch (error) {
       console.error("Get company error:", error);
@@ -579,20 +507,21 @@ export function registerRoutes(app: Express): Server {
     try {
       const professional = await storage.createProfessional({
         ...req.body,
-        userId: req.user!.id
+        userId: req.user.id,
       });
       res.status(201).json(professional);
     } catch (error) {
       console.error("Create professional error:", error);
-      res.status(500).json({ message: "Failed to create professional profile" });
+      res
+        .status(500)
+        .json({ message: "Failed to create professional profile" });
     }
   });
 
   app.get("/api/professionals/me", requireAuth, async (req, res) => {
     try {
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
-      // Return null explicitly if no professional found (for new users)
-      res.json(professional || null);
+      const professional = await storage.getProfessionalByUserId(req.user.id);
+      res.json(professional);
     } catch (error) {
       console.error("Get professional error:", error);
       res.status(500).json({ message: "Failed to fetch professional profile" });
@@ -602,11 +531,13 @@ export function registerRoutes(app: Express): Server {
   app.patch("/api/professionals/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       // Verify ownership
       const professional = await storage.getProfessional(id);
-      if (!professional || professional.userId !== req.user!.id) {
-        return res.status(403).json({ message: "Not authorized to update this profile" });
+      if (!professional || professional.userId !== req.user.id) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update this profile" });
       }
 
       // Validate request body - only allow specific fields
@@ -617,583 +548,45 @@ export function registerRoutes(app: Express): Server {
       res.json(updated);
     } catch (error) {
       console.error("Update professional error:", error);
-      if (error instanceof Error && error.name === 'ZodError') {
-        return res.status(400).json({ message: "Invalid request data", errors: error });
+      if (error instanceof Error && error.name === "ZodError") {
+        return res
+          .status(400)
+          .json({ message: "Invalid request data", errors: error });
       }
-      res.status(500).json({ message: "Failed to update professional profile" });
-    }
-  });
-
-  // Resume upload and parsing endpoint
-  app.post("/api/professionals/upload-resume", requireAuth, upload.single('resume'), async (req, res) => {
-    console.log('[Resume Upload] Endpoint hit!', { hasFile: !!req.file, user: req.user?.id });
-    try {
-      if (!req.file) {
-        console.log('[Resume Upload] No file in request');
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      console.log('[Resume Upload] File:', req.file.originalname, 'Size:', req.file.size, 'bytes');
-
-      // Check if Adobe credentials are configured
-      if (!process.env.PDF_SERVICES_CLIENT_ID || !process.env.PDF_SERVICES_CLIENT_SECRET) {
-        console.error('[Resume Upload] Adobe PDF Services credentials not configured');
-        return res.status(500).json({ 
-          message: "PDF extraction service not configured. Please contact support." 
-        });
-      }
-
-      // Use Adobe PDF Extract API to extract resume data
-      console.log('[Resume Upload] Initializing Adobe PDF Services...');
-      const credentials = new ServicePrincipalCredentials({
-        clientId: process.env.PDF_SERVICES_CLIENT_ID!,
-        clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET!
-      });
-
-      const pdfServices = new PDFServices({ credentials });
-      
-      // Convert Buffer to ReadableStream for Adobe SDK
-      const readableStream = Readable.from(req.file.buffer);
-      
-      // Create ExtractPDF job
-      console.log('[Resume Upload] Creating PDF extraction job...');
-      const inputAsset = await pdfServices.upload({
-        readStream: readableStream,
-        mimeType: MimeType.PDF
-      });
-
-      const params = new ExtractPDFParams({
-        elementsToExtract: [ExtractElementType.TEXT]
-      });
-
-      const job = new ExtractPDFJob({ inputAsset, params });
-      const pollingURL = await pdfServices.submit({ job });
-      const pdfServicesResponse = await pdfServices.getJobResult({
-        pollingURL,
-        resultType: ExtractPDFResult
-      });
-
-      // Download the result
-      const resultAsset = pdfServicesResponse.result?.resource;
-      if (!resultAsset) {
-        throw new Error('No result asset from Adobe PDF Services');
-      }
-      
-      const streamAsset = await pdfServices.getContent({ asset: resultAsset });
-      
-      // Read the ZIP result from Adobe
-      const chunks: Buffer[] = [];
-      for await (const chunk of streamAsset.readStream) {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-      }
-      const zipBuffer = Buffer.concat(chunks);
-      
-      // Extract the JSON from the ZIP
-      console.log('[Resume Upload] Extracting JSON from ZIP...');
-      const zip = new AdmZip(zipBuffer);
-      const jsonEntry = zip.getEntry('structuredData.json');
-      
-      if (!jsonEntry) {
-        throw new Error('structuredData.json not found in Adobe response ZIP');
-      }
-      
-      const jsonResult = JSON.parse(jsonEntry.getData().toString('utf8'));
-      
-      // Extract text from the structured JSON
-      let fullText = '';
-      if (jsonResult.elements) {
-        fullText = jsonResult.elements
-          .filter((el: any) => el.Text)
-          .map((el: any) => el.Text)
-          .join(' ');
-      }
-
-      console.log('[Resume Upload] Adobe extraction successful, text length:', fullText.length);
-      console.log('[Resume Upload] First 500 chars:', fullText.substring(0, 500));
-
-      // Parse the extracted text to find resume data
-      console.log('[Resume Upload] Parsing resume data...');
-      
-      const parsedData: any = {};
-      
-      // Extract email
-      const emailMatch = fullText.match(/[\w.-]+@[\w.-]+\.\w+/);
-      if (emailMatch) {
-        parsedData.email = emailMatch[0];
-        console.log('[Resume Upload] Email found:', parsedData.email);
-      }
-      
-      // Extract LinkedIn URL
-      const linkedinMatch = fullText.match(/linkedin\.com\/in\/[\w-]+/i);
-      if (linkedinMatch) {
-        parsedData.linkedinUrl = 'https://' + linkedinMatch[0];
-        console.log('[Resume Upload] LinkedIn found:', parsedData.linkedinUrl);
-      }
-      
-      // Extract location (common patterns - more flexible)
-      const locationMatch = fullText.match(/(?:Location|Address|City|Brasília|São Paulo|Rio de Janeiro)[\s:]*([^,\n]{2,50}[,]\s*[A-Z]{2})/i) ||
-                           fullText.match(/([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zà-ú]+))/);
-      if (locationMatch) {
-        parsedData.location = locationMatch[1] || locationMatch[0];
-        console.log('[Resume Upload] Location found:', parsedData.location);
-      }
-      
-      // Extract title (usually near the top, after name)
-      const lines = fullText.split('\n').filter(l => l.trim());
-      console.log('[Resume Upload] Total lines found:', lines.length);
-      console.log('[Resume Upload] First 5 lines:', lines.slice(0, 5));
-      
-      for (let i = 0; i < Math.min(lines.length, 15); i++) {
-        const line = lines[i].trim();
-        // Skip email, phone, location lines
-        if (line.match(/@|linkedin|github|phone|tel:|location:|http/i)) continue;
-        // Skip short lines
-        if (line.length < 10 || line.length > 120) continue;
-        // Check if it looks like a job title
-        if (line.match(/developer|engineer|designer|manager|analyst|specialist|consultant|architect|engenheiro|desenvolvedor|analista/i)) {
-          parsedData.title = line;
-          console.log('[Resume Upload] Title found:', parsedData.title);
-          break;
-        }
-      }
-      
-      // Extract skills (common tech keywords)
-      const commonSkills = [
-        'JavaScript', 'TypeScript', 'Python', 'Java', 'Kotlin', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
-        'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask', 'Spring', 'Spring Boot',
-        'HTML', 'CSS', 'SASS', 'Tailwind', 'Bootstrap',
-        'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'Oracle',
-        'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Git', 'CI/CD', 'Jenkins', 'GitLab',
-        'REST', 'GraphQL', 'API', 'Microservices', 'Agile', 'Scrum', 'TDD', 'BDD',
-        'Hibernate', 'JPA', 'Kafka', 'RabbitMQ', 'Terraform', 'Ansible'
-      ];
-      
-      // Escape special regex characters in skill names
-      const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      const foundSkills = commonSkills.filter(skill => 
-        fullText.match(new RegExp(`\\b${escapeRegex(skill)}\\b`, 'i'))
-      );
-      if (foundSkills.length > 0) {
-        parsedData.skills = foundSkills.slice(0, 30);
-        console.log('[Resume Upload] Skills found:', foundSkills.length, 'skills');
-      }
-      
-      // Extract years of experience (EN: years, PT-BR: anos, ES: años)
-      const expMatch = fullText.match(/(\d+)\+?\s*(?:years?|anos?|años?)\s*(?:of\s*|de\s*)?(?:experience|experiência|experiencia)/i);
-      if (expMatch) {
-        parsedData.experience = parseInt(expMatch[1]);
-        console.log('[Resume Upload] Experience found:', parsedData.experience, 'years');
-      }
-      
-      // Extract bio/summary (EN/PT-BR/ES)
-      const summaryMatch = fullText.match(/(?:Summary|About|Profile|Objective|Professional|Resumo|Perfil|Sobre|Resumen|Perfil Profesional)[\s:]*\n([\s\S]{50,500}?)(?:\n\n|Experience|Education|Skills|EXPERIENCE|EDUCATION|EXPERIENCIA|FORMACIÓN)/i);
-      if (summaryMatch) {
-        parsedData.bio = summaryMatch[1].trim().substring(0, 500);
-        console.log('[Resume Upload] Bio found, length:', parsedData.bio.length);
-      }
-      
-      // Extract work experience - FLEXIBLE approach supporting multiple formats
-      // Supports: "Position | Company", "Company - JobType", "Position at Company", stacked lines
-      const workExperience: any[] = [];
-      
-      // Pattern: Find all date ranges in format "Month YYYY - Month YYYY" or "Month YYYY - Present"
-      // Supports: English (January, Present), Portuguese (Janeiro, Atual), Spanish (Enero, Presente, Actual)
-      const dateRangePattern = /([A-Z][a-zà-úÀ-Ú]+)\s+(\d{4})\s*[-–]\s*(?:(Present|Current|Atual|Presente|Actual)|([A-Z][a-zà-úÀ-Ú]+)\s+(\d{4}))/gi;
-      let dateMatch;
-      
-      while ((dateMatch = dateRangePattern.exec(fullText)) && workExperience.length < 10) {
-        const startMonth = dateMatch[1];
-        const startYear = dateMatch[2];
-        const isCurrent = !!dateMatch[3];
-        const endMonth = dateMatch[4] || undefined;
-        const endYear = dateMatch[5] || undefined;
-        
-        console.log('[Resume Upload] Found date:', dateMatch[0]);
-        
-        // Look backwards for position and company (up to 300 chars before the date)
-        const textBefore = fullText.substring(Math.max(0, dateMatch.index - 300), dateMatch.index);
-        const lines = textBefore.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        
-        console.log('[Resume Upload] Lines before date:', lines.slice(-3));
-        
-        if (lines.length >= 1) {
-          // Get last 2-3 lines for context, filter out technical noise
-          // Skip lines with version numbers, bullets, or short technical fragments
-          const cleanLines = lines.filter(l => {
-            // Skip version numbers like "v.8", "(v.17)", "Java 8", etc.
-            if (l.match(/\(v\.|v\.\d|version\s*\d|java\s*\d|python\s*\d/i)) return false;
-            // Skip bullet points or very short fragments
-            if (l.match(/^[•\-*]\s*$/) || l.length < 5) return false;
-            return true;
-          });
-          
-          const lastLine = cleanLines.length > 0 ? cleanLines[cleanLines.length - 1] : '';
-          const secondLastLine = cleanLines.length >= 2 ? cleanLines[cleanLines.length - 2] : '';
-          const thirdLastLine = cleanLines.length >= 3 ? cleanLines[cleanLines.length - 3] : '';
-          
-          let position = '';
-          let company = '';
-          
-          // Format 1: "Position | Company" (pipe separator)
-          const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\|.*)?$/);
-          if (pipeMatch) {
-            position = pipeMatch[1].trim();
-            company = pipeMatch[2].trim();
-          }
-          
-          // Format 2: "Company - JobType" or "Company – Full-Time" (hyphen/en-dash separator)
-          if (!position && lastLine.match(/[-–]/)) {
-            const parts = lastLine.split(/\s*[-–]\s*/);
-            if (parts.length >= 2) {
-              // First part is company, second is job type (Full-Time, Part-Time, Contract, etc.)
-              company = parts[0].trim();
-              // If we have a second line, it might be the position
-              if (secondLastLine && secondLastLine.length > 5 && secondLastLine.length < 100) {
-                position = secondLastLine;
-              } else {
-                // Use job type as position if no second line
-                position = parts[1].trim();
-              }
-            }
-          }
-          
-          // Format 3: "Position at Company"
-          if (!position) {
-            const atMatch = lastLine.match(/(.+?)\s+(?:at|em|en)\s+(.+)/i);
-            if (atMatch) {
-              position = atMatch[1].trim();
-              company = atMatch[2].trim();
-            }
-          }
-          
-          // Format 4: Stacked lines - position on one line, company on next
-          if (!position && secondLastLine) {
-            position = secondLastLine;
-            company = lastLine;
-          }
-          
-          // Validate it looks like a job (not a section header)
-          if (position && company && position.length > 2 && position.length < 150 && company.length > 2 && company.length < 150) {
-            // Skip if it looks like a section header
-            if (!position.match(/^(?:EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|EXPERIÊNCIA|EDUCAÇÃO|HABILIDADES|CERTIFICAÇÕES|EXPERIENCIA|EDUCACIÓN|FORMACIÓN)$/i)) {
-              console.log('[Resume Upload] Extracted job - Position:', position, 'Company:', company);
-              workExperience.push({
-                position,
-                company,
-                isCurrent,
-                startMonth,
-                startYear,
-                endMonth,
-                endYear,
-                description: ''
-              });
-            }
-          } else {
-            console.log('[Resume Upload] Skipped - Position:', position, 'Company:', company);
-          }
-        }
-      }
-      
-      if (workExperience.length > 0) {
-        parsedData.workExperience = workExperience;
-        console.log('[Resume Upload] Work experience found:', workExperience.length, 'positions');
-      } else {
-        console.log('[Resume Upload] No work experience found');
-      }
-      
-      // Extract education - FLEXIBLE approach (EN/PT-BR/ES)
-      // Supports: "Course | Institution", "Institution - Degree", stacked lines
-      const education: any[] = [];
-      const yearRangePattern = /(\d{4})\s*[-–]\s*(\d{4}|Present|Current|Atual|Presente|Actual)/gi;
-      let eduMatch;
-      
-      while ((eduMatch = yearRangePattern.exec(fullText)) && education.length < 5) {
-        const startYear = eduMatch[1];
-        const endYear = eduMatch[2].match(/\d{4}/) ? eduMatch[2] : undefined;
-        const isCurrent = eduMatch[2].match(/Present|Current|Atual|Presente|Actual/i);
-        
-        // Look backwards for course and institution (up to 300 chars)
-        const textBefore = fullText.substring(Math.max(0, eduMatch.index - 300), eduMatch.index);
-        const lines = textBefore.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        
-        if (lines.length >= 1) {
-          const lastLine = lines[lines.length - 1];
-          const secondLastLine = lines.length >= 2 ? lines[lines.length - 2] : '';
-          
-          let course = '';
-          let institution = '';
-          
-          // Format 1: "Course | Institution" (pipe separator)
-          const pipeMatch = lastLine.match(/([^|]+)\s*\|\s*([^|]+?)(?:\s*\(.*?\))?(?:\s*\|.*)?$/);
-          if (pipeMatch) {
-            course = pipeMatch[1].trim();
-            institution = pipeMatch[2].trim();
-          }
-          
-          // Format 2: "Institution - Degree" or "University – Bachelor's"
-          if (!course && lastLine.match(/[-–]/)) {
-            const parts = lastLine.split(/\s*[-–]\s*/);
-            if (parts.length >= 2) {
-              institution = parts[0].trim();
-              course = parts[1].trim();
-              // Check if previous line has more context
-              if (secondLastLine && secondLastLine.length > 5) {
-                course = secondLastLine;
-              }
-            }
-          }
-          
-          // Format 3: Stacked lines - course on one line, institution on next
-          if (!course && secondLastLine) {
-            course = secondLastLine;
-            institution = lastLine;
-          }
-          
-          // Validate it looks like education (not work experience)
-          // Education keywords: degree, engineering, bachelor, master, university, college, etc.
-          const eduKeywords = /bachelor|master|phd|degree|engineering|science|arts|university|college|licenciatura|bacharelado|mestrado|doutorado|engenharia|ciências|universidade|faculdade|universidad|ingeniería|maestría|doctorado/i;
-          const hasEduKeyword = eduKeywords.test(course) || eduKeywords.test(institution);
-          
-          if (course && institution && course.length > 3 && institution.length > 3) {
-            // Skip if looks like work experience (has company/job keywords)
-            const workKeywords = /inc\.|ltd\.|llc|corporation|company|consulting|solutions|full-time|part-time|contract/i;
-            const hasWorkKeyword = workKeywords.test(course) || workKeywords.test(institution);
-            
-            if (!hasWorkKeyword || hasEduKeyword) {
-              education.push({
-                formation: 'Superior',
-                degree: 'Graduação',
-                status: isCurrent ? 'Cursando' : 'Completo',
-                course,
-                institution,
-                startMonth: 'Janeiro',
-                startYear,
-                endMonth: isCurrent ? undefined : 'Dezembro',
-                endYear: isCurrent ? undefined : endYear
-              });
-            }
-          }
-        }
-      }
-      
-      if (education.length > 0) {
-        parsedData.education = education;
-        console.log('[Resume Upload] Education found:', education.length, 'entries');
-      } else {
-        console.log('[Resume Upload] No education found');
-      }
-      
-      // Extract certifications - simplified approach (EN/PT-BR/ES)
-      // Look for the certifications section and extract lines
-      const certifications: any[] = [];
-      const certSectionMatch = fullText.match(/(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|CERTIFICADOS|LICENCIAS)[\s\S]{0,1000}/i);
-      
-      if (certSectionMatch) {
-        console.log('[Resume Upload] Certifications section found');
-        const certText = certSectionMatch[0];
-        
-        // Split into lines and process each line
-        const lines = certText.split('\n');
-        
-        for (let i = 1; i < lines.length && certifications.length < 10; i++) {
-          const line = lines[i].trim();
-          
-          // Skip empty lines, section headers, and very short lines (EN/PT-BR/ES)
-          if (!line || line.length < 10 || line.match(/^(?:CERTIFICATIONS?|CERTIFICATES?|CERTIFICAÇÕES|CERTIFICADOS|LICENCIAS|LANGUAGES?|IDIOMAS|EDUCATION|EDUCAÇÃO|EDUCACIÓN|FORMACIÓN|SKILLS?|HABILIDADES)$/i)) {
-            continue;
-          }
-          
-          // Stop if we hit another section (EN/PT-BR/ES)
-          if (line.match(/^(?:LANGUAGES?|IDIOMAS|EDUCATION|EDUCAÇÃO|EDUCACIÓN|FORMACIÓN|SKILLS?|HABILIDADES|EXPERIENCE|EXPERIÊNCIA|EXPERIENCIA)/i)) {
-            break;
-          }
-          
-          // Extract year if present
-          const yearMatch = line.match(/\b(20\d{2})\b/);
-          const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
-          
-          // Clean the certification name
-          let name = line
-            .replace(/^[-•*]\s*/, '') // Remove bullets
-            .replace(/\b20\d{2}\b/, '') // Remove year
-            .replace(/\s+/g, ' ')
-            .trim();
-          
-          // Validate it looks like a certification
-          if (name.length > 5 && name.length < 150) {
-            certifications.push({
-              name,
-              issuer: '',
-              year
-            });
-          }
-        }
-        
-        if (certifications.length > 0) {
-          parsedData.certifications = certifications;
-          console.log('[Resume Upload] Certifications found:', certifications.length, 'entries');
-        } else {
-          console.log('[Resume Upload] No certifications extracted');
-        }
-      } else {
-        console.log('[Resume Upload] Certifications section not found');
-      }
-      
-      console.log('[Resume Upload] Data extraction successful:', Object.keys(parsedData));
-
-      // Save resume file to Object Storage
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      
-      // Upload file to presigned URL
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: req.file.buffer,
-        headers: {
-          'Content-Type': 'application/pdf'
-        }
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to storage');
-      }
-
-      console.log('[Resume Upload] File uploaded to Object Storage');
-
-      // Normalize the path
-      const resumeUrl = objectStorageService.normalizeObjectEntityPath(uploadURL);
-
-      // Update professional profile with resume URL
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
-      if (professional) {
-        console.log('[Resume Upload] Updating professional profile with resume URL...');
-        await storage.updateProfessional(professional.id, { resumeUrl });
-        console.log('[Resume Upload] Professional profile updated successfully');
-      }
-
-      res.json({
-        success: true,
-        message: "Resume uploaded and analyzed successfully",
-        resumeUrl,
-        fileName: req.file.originalname,
-        parsedData
-      });
-    } catch (error) {
-      console.error("Resume upload error:", error);
-      console.error("Error details:", error instanceof Error ? error.message : String(error));
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
-      res.status(500).json({ 
-        message: "Failed to process resume", 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      });
+      res
+        .status(500)
+        .json({ message: "Failed to update professional profile" });
     }
   });
 
   // Job routes
   app.get("/api/jobs", async (req, res) => {
-    console.log('[GET /api/jobs] Request received', {
-      query: req.query,
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString()
-    });
-    
     try {
-      const searchParams = {
+      const jobs = await storage.searchJobs({
         skills: req.query.skills as string[],
         type: req.query.type as string,
-        status: "active"
-      };
-      
-      console.log('[GET /api/jobs] Searching jobs with params:', searchParams);
-      
-      const jobs = await storage.searchJobs(searchParams);
-      
-      console.log('[GET /api/jobs] Jobs found:', jobs.length);
-      
-      if (jobs.length === 0) {
-        console.log('[GET /api/jobs] WARNING: No jobs found in database!');
-      }
-
-      // Enrich jobs with company information
-      const jobsWithCompanies = await Promise.all(
-        jobs.map(async (job: any) => {
-          const company = await db.select({
-            id: companies.id,
-            name: companies.name,
-          }).from(companies)
-            .where(eq(companies.id, job.companyId))
-            .limit(1);
-
-          return {
-            ...job,
-            company: company[0] || null,
-          };
-        })
-      );
-
-      console.log('[GET /api/jobs] Jobs enriched with company info, returning', jobsWithCompanies.length, 'jobs');
-
-      // Disable all caching to ensure fresh data
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      res.json(jobsWithCompanies);
-    } catch (error) {
-      console.error("[GET /api/jobs] Error:", error);
-      console.error("[GET /api/jobs] Error stack:", error instanceof Error ? error.stack : 'No stack');
-      res.status(500).json({ message: "Failed to fetch jobs" });
-    }
-  });
-
-  app.get("/api/jobs/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      console.log('[GET /api/jobs/:id] Request received for job ID:', id);
-      
-      const job = await db.select().from(jobs)
-        .where(eq(jobs.id, id))
-        .limit(1);
-
-      console.log('[GET /api/jobs/:id] Database query result:', job);
-
-      if (!job || job.length === 0) {
-        console.log('[GET /api/jobs/:id] Job not found for ID:', id);
-        return res.status(404).json({ message: "Job not found" });
-      }
-
-      const company = await db.select({
-        id: companies.id,
-        name: companies.name,
-        website: companies.website,
-      }).from(companies)
-        .where(eq(companies.id, job[0].companyId))
-        .limit(1);
-
-      console.log('[GET /api/jobs/:id] Successfully found job and company, returning data');
-
-      res.json({
-        ...job[0],
-        company: company[0] || null,
+        status: "active",
       });
+      res.json(jobs);
     } catch (error) {
-      console.error("[GET /api/jobs/:id] Error:", error);
-      res.status(500).json({ message: "Failed to fetch job" });
+      console.error("Get jobs error:", error);
+      res.status(500).json({ message: "Failed to fetch jobs" });
     }
   });
 
   app.post("/api/jobs", requireAuth, async (req, res) => {
     try {
       // Get user's company
-      const company = await storage.getCompanyByUserId(req.user!.id);
+      const company = await storage.getCompanyByUserId(req.user.id);
       if (!company) {
-        return res.status(400).json({ message: "Company profile required to post jobs" });
+        return res
+          .status(400)
+          .json({ message: "Company profile required to post jobs" });
       }
 
       const job = await storage.createJob({
         ...req.body,
-        companyId: company.id
+        companyId: company.id,
       });
       res.status(201).json(job);
     } catch (error) {
@@ -1202,130 +595,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Job recommendations for professionals
-  app.get("/api/professionals/me/job-recommendations", requireAuth, async (req, res) => {
-    try {
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
-      if (!professional) {
-        return res.json([]); // Return empty array if no profile
-      }
-
-      // Get professional's skills
-      const professionalSkills = professional.skills || [];
-      if (professionalSkills.length === 0) {
-        return res.json([]); // No skills to match against
-      }
-
-      // Get all active jobs
-      const jobs = await storage.searchJobs({ status: 'active' });
-      
-      // Enrich jobs with company information
-      const jobsWithCompanies = await Promise.all(
-        jobs.map(async (job: any) => {
-          const company = await db.select({
-            id: companies.id,
-            name: companies.name,
-          }).from(companies)
-            .where(eq(companies.id, job.companyId))
-            .limit(1);
-          
-          return {
-            ...job,
-            company: company[0] || null
-          };
-        })
-      );
-      
-      // Calculate match score for each job
-      const recommendations = jobsWithCompanies
-        .map(job => {
-          const jobSkills = job.skills || [];
-          if (jobSkills.length === 0) {
-            return null; // Skip jobs without skills
-          }
-
-          // Calculate skill overlap
-          const matchingSkills = jobSkills.filter((jobSkill: string) => 
-            professionalSkills.some((profSkill: string) => 
-              profSkill.toLowerCase() === jobSkill.toLowerCase()
-            )
-          );
-
-          const matchScore = Math.round((matchingSkills.length / jobSkills.length) * 100);
-
-          // Only include jobs with at least 20% match
-          if (matchScore < 20) {
-            return null;
-          }
-
-          return {
-            jobId: job.id,
-            jobTitle: job.title,
-            companyName: job.company?.name || 'Company',
-            matchScore,
-            matchingSkills,
-            reasoning: matchingSkills.length > 0
-              ? `Matches ${matchingSkills.length} of your skills: ${matchingSkills.slice(0, 3).join(', ')}${matchingSkills.length > 3 ? '...' : ''}`
-              : 'Good opportunity based on your profile'
-          };
-        })
-        .filter(rec => rec !== null) // Remove null entries
-        .sort((a, b) => b!.matchScore - a!.matchScore) // Sort by match score descending
-        .slice(0, 10); // Return top 10 recommendations
-
-      res.json(recommendations);
-    } catch (error) {
-      console.error("Get job recommendations error:", error);
-      res.status(500).json({ message: "Failed to fetch job recommendations" });
-    }
-  });
-
-  // Contracts for professionals
-  app.get("/api/contracts/my", requireAuth, async (req, res) => {
-    try {
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
-      if (!professional) {
-        return res.json([]); // Return empty array if no profile
-      }
-
-      // TODO: Implement contracts functionality
-      // For now, return empty array
-      res.json([]);
-    } catch (error) {
-      console.error("Get contracts error:", error);
-      res.status(500).json({ message: "Failed to fetch contracts" });
-    }
-  });
-
   // Application routes
   app.get("/api/applications/my", requireAuth, async (req, res) => {
     try {
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
+      const professional = await storage.getProfessionalByUserId(req.user.id);
       if (!professional) {
-        return res.status(404).json({ message: "Professional profile not found" });
+        return res
+          .status(404)
+          .json({ message: "Professional profile not found" });
       }
 
-      const applications = await storage.getApplicationsByProfessional(professional.id);
-      
+      const applications = await storage.getApplicationsByProfessional(
+        professional.id,
+      );
+
       const applicationsWithJobs = await Promise.all(
         applications.map(async (app) => {
           const job = await storage.getJob(app.jobId);
           const company = job ? await storage.getCompany(job.companyId) : null;
           return {
             ...app,
-            job: job ? {
-              id: job.id,
-              title: job.title,
-              description: job.description,
-              type: job.type,
-              budget: job.budget,
-              company: company ? {
-                id: company.id,
-                name: company.name,
-              } : null
-            } : null
+            job: job
+              ? {
+                  id: job.id,
+                  title: job.title,
+                  description: job.description,
+                  type: job.type,
+                  budget: job.budget,
+                  company: company
+                    ? {
+                        id: company.id,
+                        name: company.name,
+                      }
+                    : null,
+                }
+              : null,
           };
-        })
+        }),
       );
 
       res.json(applicationsWithJobs);
@@ -1338,14 +644,16 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/applications", requireAuth, async (req, res) => {
     try {
       // Get user's professional profile
-      const professional = await storage.getProfessionalByUserId(req.user!.id);
+      const professional = await storage.getProfessionalByUserId(req.user.id);
       if (!professional) {
-        return res.status(400).json({ message: "Professional profile required to apply for jobs" });
+        return res
+          .status(400)
+          .json({ message: "Professional profile required to apply for jobs" });
       }
 
       const application = await storage.createApplication({
         ...req.body,
-        professionalId: professional.id
+        professionalId: professional.id,
       });
       res.status(201).json(application);
     } catch (error) {
@@ -1354,10 +662,83 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Apply for a job - handles both authenticated and unauthenticated users
+  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+
+      // Check if user is authenticated
+      if (!req.isAuthenticated() || !req.user) {
+        // Store job ID in session and redirect to OAuth
+        console.log(
+          "[Apply Job] User not authenticated, storing job ID and redirecting to auth",
+        );
+        req.session.pendingJobId = jobId;
+        req.session.returnUrl = "/professional";
+
+        // Save session before responding
+        req.session.save((err) => {
+          if (err) {
+            console.error("[Apply Job] Session save error:", err);
+            return res.status(500).json({
+              message: "Session error",
+              requiresAuth: true,
+              redirectUrl: "/auth",
+            });
+          }
+
+          return res.status(401).json({
+            message: "Authentication required",
+            requiresAuth: true,
+            redirectUrl: "/auth",
+          });
+        });
+        return;
+      }
+
+      // User is authenticated, check for professional profile
+      const professional = await storage.getProfessionalByUserId(req.user.id);
+      if (!professional) {
+        return res.status(400).json({
+          message: "Professional profile required to apply for jobs",
+          requiresProfile: true,
+        });
+      }
+
+      // Check if already applied
+      const existingApp = await storage.getApplicationByJobAndProfessional(
+        jobId,
+        professional.id,
+      );
+      if (existingApp) {
+        return res.status(400).json({
+          message: "You have already applied to this job",
+          alreadyApplied: true,
+        });
+      }
+
+      // Create application
+      const application = await storage.createApplication({
+        jobId,
+        professionalId: professional.id,
+        status: "pending",
+      });
+
+      console.log(
+        "[Apply Job] Application created successfully:",
+        application.id,
+      );
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("[Apply Job] Error:", error);
+      res.status(500).json({ message: "Failed to create application" });
+    }
+  });
+
   // Notification routes
   app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
-      const notifications = await storage.getNotificationsByUser(req.user!.id);
+      const notifications = await storage.getNotificationsByUser(req.user.id);
       res.json(notifications);
     } catch (error) {
       console.error("Get notifications error:", error);
@@ -1380,11 +761,11 @@ export function registerRoutes(app: Express): Server {
     try {
       // Validate request body using shared schema
       const validationResult = contactFormSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: "Dados inválidos", 
-          errors: validationResult.error.errors 
+        return res.status(400).json({
+          message: "Dados inválidos",
+          errors: validationResult.error.errors,
         });
       }
 
@@ -1395,15 +776,15 @@ export function registerRoutes(app: Express): Server {
       console.log(`Contact form submission from IP: ${clientIp}`);
 
       // Input sanitization - remove potentially dangerous characters
-      const sanitizedName = name.replace(/[<>]/g, '');
-      const sanitizedCompany = company ? company.replace(/[<>]/g, '') : '';
-      const sanitizedMessage = message.replace(/[<>]/g, '');
+      const sanitizedName = name.replace(/[<>]/g, "");
+      const sanitizedCompany = company ? company.replace(/[<>]/g, "") : "";
+      const sanitizedMessage = message.replace(/[<>]/g, "");
 
       // Validate Resend API key
       if (!process.env.RESEND_API_KEY) {
-        console.error('RESEND_API_KEY not configured');
-        return res.status(500).json({ 
-          message: "Configuração de email não disponível" 
+        console.error("RESEND_API_KEY not configured");
+        return res.status(500).json({
+          message: "Configuração de email não disponível",
         });
       }
 
@@ -1412,13 +793,14 @@ export function registerRoutes(app: Express): Server {
 
       // In development/testing, Resend only allows sending to the account owner's email
       // In production, use a verified domain to send to any email
-      const recipientEmail = process.env.NODE_ENV === 'production' 
-        ? 'contact@magenx.tech' 
-        : 'asouzamax@gmail.com';
+      const recipientEmail =
+        process.env.NODE_ENV === "production"
+          ? "contact@magenx.tech"
+          : "asouzamax@gmail.com";
 
       // Send email using Resend API
       const { data, error } = await resend.emails.send({
-        from: 'MaGenX Contact <onboarding@resend.dev>',
+        from: "MaGenX Contact <onboarding@resend.dev>",
         to: recipientEmail,
         replyTo: email,
         subject: `Nova mensagem de contato - ${sanitizedCompany || sanitizedName}`,
@@ -1426,720 +808,28 @@ export function registerRoutes(app: Express): Server {
           <h2>Nova mensagem de contato</h2>
           <p><strong>Nome:</strong> ${sanitizedName}</p>
           <p><strong>Email:</strong> ${email}</p>
-          ${sanitizedCompany ? `<p><strong>Empresa:</strong> ${sanitizedCompany}</p>` : ''}
+          ${sanitizedCompany ? `<p><strong>Empresa:</strong> ${sanitizedCompany}</p>` : ""}
           <p><strong>Mensagem:</strong></p>
-          <p>${sanitizedMessage.replace(/\n/g, '<br>')}</p>
+          <p>${sanitizedMessage.replace(/\n/g, "<br>")}</p>
           <hr>
           <p><small>Enviado via formulário de contato MaGenX</small></p>
-        `
+        `,
       });
 
       if (error) {
-        console.error('Resend API error:', error);
-        return res.status(500).json({ 
-          message: "Erro ao enviar mensagem. Tente novamente." 
+        console.error("Resend API error:", error);
+        return res.status(500).json({
+          message: "Erro ao enviar mensagem. Tente novamente.",
         });
       }
 
-      console.log('Email sent successfully via Resend:', data?.id);
+      console.log("Email sent successfully via Resend:", data?.id);
       res.json({ message: "Mensagem enviada com sucesso!" });
     } catch (error) {
       console.error("Contact form error:", error);
-      res.status(500).json({ message: "Erro ao enviar mensagem. Tente novamente." });
-    }
-  });
-
-  // Admin middleware - check if user is admin
-  const requireAdmin = (req: ExpressRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-    next();
-  };
-
-  // Admin routes - Statistics dashboard
-  app.get("/api/admin/stats", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const [
-        totalUsers,
-        totalProfessionals,
-        totalCompanies,
-        totalJobs,
-        totalApplications,
-        activeJobs,
-        pendingApplications
-      ] = await Promise.all([
-        db.select().from(users),
-        db.select().from(professionals),
-        db.select().from(companies),
-        db.select().from(jobs),
-        db.select().from(applications),
-        db.select().from(jobs).where(eq(jobs.status, 'active')),
-        db.select().from(applications).where(eq(applications.status, 'pending'))
-      ]);
-
-      res.json({
-        users: {
-          total: totalUsers.length,
-          professionals: totalProfessionals.length,
-          companies: totalCompanies.length,
-        },
-        jobs: {
-          total: totalJobs.length,
-          active: activeJobs.length,
-        },
-        applications: {
-          total: totalApplications.length,
-          pending: pendingApplications.length,
-        },
-      });
-    } catch (error) {
-      console.error("Get admin stats error:", error);
-      res.status(500).json({ message: "Failed to fetch statistics" });
-    }
-  });
-
-  // Admin routes - Get all users
-  app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allUsers = await db.select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        role: users.role,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        emailVerified: users.emailVerified,
-        lastLoginAt: users.lastLoginAt,
-        createdAt: users.createdAt,
-      }).from(users).orderBy(desc(users.createdAt));
-
-      res.json(allUsers);
-    } catch (error) {
-      console.error("Get admin users error:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-
-  // Admin routes - Get all jobs
-  app.get("/api/admin/jobs", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
-
-      // Get company names
-      const jobsWithCompanies = await Promise.all(
-        allJobs.map(async (job: any) => {
-          const company = await db.select({
-            id: companies.id,
-            name: companies.name,
-          }).from(companies)
-            .where(eq(companies.id, job.companyId))
-            .limit(1);
-
-          return {
-            ...job,
-            company: company[0] || null,
-          };
-        })
-      );
-
-      res.json(jobsWithCompanies);
-    } catch (error) {
-      console.error("Get admin jobs error:", error);
-      res.status(500).json({ message: "Failed to fetch jobs" });
-    }
-  });
-
-  // Admin routes - Get all professionals
-  app.get("/api/admin/professionals", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allProfessionals = await db.select({
-        id: professionals.id,
-        userId: professionals.userId,
-        title: professionals.title,
-        location: professionals.location,
-        experience: professionals.experience,
-        availability: professionals.availability,
-        skills: professionals.skills,
-        resumeUrl: professionals.resumeUrl,
-        createdAt: professionals.createdAt,
-      }).from(professionals).orderBy(desc(professionals.createdAt));
-
-      // Get user info for each professional
-      const professionalsWithUsers = await Promise.all(
-        allProfessionals.map(async (prof: any) => {
-          const user = await db.select({
-            username: users.username,
-            email: users.email,
-            firstName: users.firstName,
-            lastName: users.lastName,
-          }).from(users)
-            .where(eq(users.id, prof.userId))
-            .limit(1);
-
-          return {
-            ...prof,
-            user: user[0] || null,
-          };
-        })
-      );
-
-      res.json(professionalsWithUsers);
-    } catch (error) {
-      console.error("Get admin professionals error:", error);
-      res.status(500).json({ message: "Failed to fetch professionals" });
-    }
-  });
-
-  // Admin routes - Get all applications
-  app.get("/api/admin/applications", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allApplications = await db.select().from(applications)
-        .orderBy(desc(applications.createdAt));
-
-      // Enrich with job and professional data
-      const applicationsWithDetails = await Promise.all(
-        allApplications.map(async (app: any) => {
-          const [job, professional] = await Promise.all([
-            db.select({
-              id: jobs.id,
-              title: jobs.title,
-              type: jobs.type,
-            }).from(jobs)
-              .where(eq(jobs.id, app.jobId))
-              .limit(1),
-            db.select({
-              id: professionals.id,
-              title: professionals.title,
-              userId: professionals.userId,
-            }).from(professionals)
-              .where(eq(professionals.id, app.professionalId))
-              .limit(1)
-          ]);
-
-          let professionalUser = null;
-          if (professional[0]) {
-            const user = await db.select({
-              username: users.username,
-              email: users.email,
-            }).from(users)
-              .where(eq(users.id, professional[0].userId))
-              .limit(1);
-            professionalUser = user[0] || null;
-          }
-
-          return {
-            ...app,
-            job: job[0] || null,
-            professional: professional[0] ? { ...professional[0], user: professionalUser } : null,
-          };
-        })
-      );
-
-      res.json(applicationsWithDetails);
-    } catch (error) {
-      console.error("Get admin applications error:", error);
-      res.status(500).json({ message: "Failed to fetch applications" });
-    }
-  });
-
-  // Admin routes - Companies CRUD
-  app.get("/api/admin/companies", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allCompanies = await db.select().from(companies).orderBy(desc(companies.createdAt));
-      
-      const companiesWithUsers = await Promise.all(
-        allCompanies.map(async (company: any) => {
-          const user = await db.select({
-            username: users.username,
-            email: users.email,
-            firstName: users.firstName,
-            lastName: users.lastName,
-          }).from(users)
-            .where(eq(users.id, company.userId))
-            .limit(1);
-          return {
-            ...company,
-            user: user[0] || null,
-          };
-        })
-      );
-      
-      res.json(companiesWithUsers);
-    } catch (error) {
-      console.error("Get admin companies error:", error);
-      res.status(500).json({ message: "Failed to fetch companies" });
-    }
-  });
-
-  app.patch("/api/admin/companies/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateCompany(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update company error:", error);
-      res.status(500).json({ message: "Failed to update company" });
-    }
-  });
-
-  app.delete("/api/admin/companies/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteCompany(id);
-      res.json({ message: "Company deleted successfully" });
-    } catch (error) {
-      console.error("Delete company error:", error);
-      res.status(500).json({ message: "Failed to delete company" });
-    }
-  });
-
-  // Admin routes - Professionals CRUD
-  app.patch("/api/admin/professionals/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateProfessional(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update professional error:", error);
-      res.status(500).json({ message: "Failed to update professional" });
-    }
-  });
-
-  app.delete("/api/admin/professionals/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteProfessional(id);
-      res.json({ message: "Professional deleted successfully" });
-    } catch (error) {
-      console.error("Delete professional error:", error);
-      res.status(500).json({ message: "Failed to delete professional" });
-    }
-  });
-
-  // Admin routes - Jobs CRUD
-  app.post("/api/admin/jobs", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertJobSchema.parse(req.body);
-      const newJob = await storage.createJob(validatedData);
-      res.json(newJob);
-    } catch (error) {
-      console.error("Create job error:", error);
-      res.status(500).json({ message: "Failed to create job" });
-    }
-  });
-
-  app.patch("/api/admin/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateJob(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update job error:", error);
-      res.status(500).json({ message: "Failed to update job" });
-    }
-  });
-
-  app.delete("/api/admin/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteJob(id);
-      res.json({ message: "Job deleted successfully" });
-    } catch (error) {
-      console.error("Delete job error:", error);
-      res.status(500).json({ message: "Failed to delete job" });
-    }
-  });
-
-  // Admin routes - Job approval
-  app.post("/api/admin/jobs/:id/approve", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateJob(id, {
-        status: 'active',
-        approvedBy: req.user!.id,
-        approvedAt: new Date(),
-      } as any);
-      res.json(updated);
-    } catch (error) {
-      console.error("Approve job error:", error);
-      res.status(500).json({ message: "Failed to approve job" });
-    }
-  });
-
-  app.post("/api/admin/jobs/:id/reject", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateJob(id, {
-        status: 'closed',
-      });
-      res.json(updated);
-    } catch (error) {
-      console.error("Reject job error:", error);
-      res.status(500).json({ message: "Failed to reject job" });
-    }
-  });
-
-  // Admin routes - Applications CRUD
-  app.patch("/api/admin/applications/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateApplication(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update application error:", error);
-      res.status(500).json({ message: "Failed to update application" });
-    }
-  });
-
-  app.delete("/api/admin/applications/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteApplication(id);
-      res.json({ message: "Application deleted successfully" });
-    } catch (error) {
-      console.error("Delete application error:", error);
-      res.status(500).json({ message: "Failed to delete application" });
-    }
-  });
-
-  // Admin routes - Contracts CRUD
-  app.get("/api/admin/contracts", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allContracts = await db.select().from(contracts).orderBy(desc(contracts.createdAt));
-      
-      const contractsWithDetails = await Promise.all(
-        allContracts.map(async (contract: any) => {
-          const [job, professional, company] = await Promise.all([
-            db.select({ id: jobs.id, title: jobs.title }).from(jobs)
-              .where(eq(jobs.id, contract.jobId)).limit(1),
-            db.select({ id: professionals.id, title: professionals.title }).from(professionals)
-              .where(eq(professionals.id, contract.professionalId)).limit(1),
-            db.select({ id: companies.id, name: companies.name }).from(companies)
-              .where(eq(companies.id, contract.companyId)).limit(1),
-          ]);
-          
-          return {
-            ...contract,
-            job: job[0] || null,
-            professional: professional[0] || null,
-            company: company[0] || null,
-          };
-        })
-      );
-      
-      res.json(contractsWithDetails);
-    } catch (error) {
-      console.error("Get admin contracts error:", error);
-      res.status(500).json({ message: "Failed to fetch contracts" });
-    }
-  });
-
-  app.post("/api/admin/contracts", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const contract = await storage.createContract(req.body);
-      res.status(201).json(contract);
-    } catch (error) {
-      console.error("Create contract error:", error);
-      res.status(500).json({ message: "Failed to create contract" });
-    }
-  });
-
-  app.patch("/api/admin/contracts/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateContract(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update contract error:", error);
-      res.status(500).json({ message: "Failed to update contract" });
-    }
-  });
-
-  app.delete("/api/admin/contracts/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteContract(id);
-      res.json({ message: "Contract deleted successfully" });
-    } catch (error) {
-      console.error("Delete contract error:", error);
-      res.status(500).json({ message: "Failed to delete contract" });
-    }
-  });
-
-  // Admin routes - Users CRUD
-  app.post("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const user = await storage.createUser(req.body);
-      res.status(201).json(user);
-    } catch (error) {
-      console.error("Create user error:", error);
-      res.status(500).json({ message: "Failed to create user" });
-    }
-  });
-
-  app.patch("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updated = await storage.updateUser(id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Update user error:", error);
-      res.status(500).json({ message: "Failed to update user" });
-    }
-  });
-
-  app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      // Prevent deleting self
-      if (id === req.user!.id) {
-        return res.status(400).json({ message: "Cannot delete your own account" });
-      }
-      await storage.deleteUser(id);
-      res.json({ message: "User deleted successfully" });
-    } catch (error) {
-      console.error("Delete user error:", error);
-      res.status(500).json({ message: "Failed to delete user" });
-    }
-  });
-
-  // Admin routes - Notifications CRUD
-  app.get("/api/admin/notifications/all", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const allNotifications = await db.select().from(notifications).orderBy(desc(notifications.createdAt));
-      res.json(allNotifications);
-    } catch (error) {
-      console.error("Get all notifications error:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
-    }
-  });
-
-  app.post("/api/admin/notifications", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const notification = await storage.createNotification(req.body);
-      res.status(201).json(notification);
-    } catch (error) {
-      console.error("Create notification error:", error);
-      res.status(500).json({ message: "Failed to create notification" });
-    }
-  });
-
-  app.post("/api/admin/notifications/broadcast", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { title, message, type } = req.body;
-      const allUsers = await db.select({ id: users.id }).from(users);
-      
-      const notifications = await Promise.all(
-        allUsers.map((user: any) => 
-          storage.createNotification({
-            userId: user.id,
-            type: type || 'system',
-            title,
-            message,
-          })
-        )
-      );
-      
-      res.json({ message: `Notification sent to ${notifications.length} users`, count: notifications.length });
-    } catch (error) {
-      console.error("Broadcast notification error:", error);
-      res.status(500).json({ message: "Failed to broadcast notification" });
-    }
-  });
-
-  app.delete("/api/admin/notifications/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteNotification(id);
-      res.json({ message: "Notification deleted successfully" });
-    } catch (error) {
-      console.error("Delete notification error:", error);
-      res.status(500).json({ message: "Failed to delete notification" });
-    }
-  });
-
-  // Get pending jobs for admin approval
-  app.get("/api/jobs/pending", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const pendingJobs = await db.select().from(jobs)
-        .where(eq(jobs.status, 'pending_approval'))
-        .orderBy(desc(jobs.createdAt));
-      res.json(pendingJobs);
-    } catch (error) {
-      console.error("Get pending jobs error:", error);
-      res.status(500).json({ message: "Failed to fetch pending jobs" });
-    }
-  });
-
-  // Seed database with sample jobs (for production setup)
-  app.post("/api/admin/seed-jobs", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      console.log('[Seed Jobs] Starting job seeding process...');
-      
-      // Check if jobs already exist
-      const existingJobs = await db.select().from(jobs);
-      if (existingJobs.length > 0) {
-        console.log('[Seed Jobs] Jobs already exist, skipping seed');
-        return res.json({ 
-          message: `Database already has ${existingJobs.length} jobs. Seed skipped.`,
-          existingCount: existingJobs.length 
-        });
-      }
-
-      // Ensure company exists first
-      const [magenxCompany] = await db.select()
-        .from(companies)
-        .where(eq(companies.id, 'company-magenx-001'))
-        .limit(1);
-
-      if (!magenxCompany) {
-        console.log('[Seed Jobs] Creating MaGenX company...');
-        await db.insert(companies).values({
-          id: 'company-magenx-001',
-          userId: req.user!.id, // Associate with current admin
-          name: 'MaGenX',
-          description: 'Plataforma que conecta empresas globais com profissionais de tecnologia latino-americanos',
-          industry: 'Technology',
-          size: '1-10',
-          location: 'São Paulo, Brazil',
-          website: 'https://magenx.tech'
-        });
-      }
-
-      // Sample jobs to seed
-      const sampleJobs = [
-        {
-          id: 'job-gen-ai-specialist-001',
-          companyId: 'company-magenx-001',
-          title: 'Especialista em Generative AI',
-          description: `Buscamos uma pessoa especialista em Inteligência Artificial Generativa, que curta desafio e tenha visão estratégica, mas também goste de colocar a mão na massa. 
-
-Esta pessoa vai atuar num projeto de alto impacto dentro do cliente, liderando iniciativas de IA generativa voltadas para automação, eficiência e criação de novas soluções com foco real em negócio. É uma baita oportunidade para quem quer aplicar IA generativa no mundo real, com liberdade criativa e espaço para inovação de verdade.
-
-Responsabilidades:
-• Liderar tecnicamente o desenvolvimento de soluções com IA generativa dentro do cliente
-• Co-criar com times de produto, dados e tecnologia soluções práticas e inovadoras
-• Traduzir desafios de negócio em soluções viáveis com IA
-• Testar, prototipar e evoluir produtos com autonomia e espírito de dono
-• Trazer tendências, boas práticas e novas ideias para a mesa`,
-          requirements: 'Experiência com Python, AI, Machine Learning e LLMs. Conhecimento em OpenAI APIs, LangChain e Vector Databases.',
-          type: 'full-time' as const,
-          budget: '150000.00',
-          duration: '12 months',
-          skills: ["Python", "AI", "Machine Learning", "OpenAI", "GPT", "LLM", "NLP", "Prompt Engineering", "LangChain", "Vector Databases"] as string[],
-          status: 'active' as const
-        },
-        {
-          id: 'job-talent-pool-001',
-          companyId: 'company-magenx-001',
-          title: 'Cadastro no Banco de Talentos MaGenX',
-          description: `🌎 Faça parte do nosso Banco de Talentos!
-
-Conecte-se com empresas globais de tecnologia que estão em busca de profissionais talentosos da América Latina. Ao se cadastrar em nosso banco de talentos, você:
-
-✅ Fica visível para empresas de primeira linha
-✅ Recebe notificações sobre vagas compatíveis com seu perfil
-✅ Participa de processos seletivos exclusivos
-✅ Acessa oportunidades remotas e híbridas
-
-📋 Como funciona:
-1. Complete seu perfil profissional
-2. Faça upload do seu currículo
-3. Adicione suas skills e experiências
-4. Aguarde o match com empresas interessadas
-
-💼 Todas as áreas de TI são bem-vindas:
-• Desenvolvimento (Backend, Frontend, Full Stack, Mobile)
-• Dados (Data Engineer, Data Scientist, Data Analyst)
-• DevOps e Cloud
-• QA e Testes
-• Product e Design
-• E muito mais!`,
-          requirements: 'Profissionais de tecnologia de todas as áreas e níveis de experiência. Complete seu perfil e faça upload do currículo.',
-          type: 'project' as const,
-          budget: null,
-          duration: 'ongoing',
-          skills: ["JavaScript", "Python", "Java", "React", "Node.js", "AWS", "DevOps", "SQL", "Git"] as string[],
-          status: 'active' as const
-        },
-        {
-          id: 'job-golang-aws-001',
-          companyId: 'company-magenx-001',
-          title: 'Desenvolvedor(a) Golang | Cloud AWS',
-          description: `Estamos em busca de um(a) Desenvolvedor(a) Golang para atuar em sistemas de pagamentos eletrônicos em ambiente Cloud (AWS), com participação em projetos inovadores e de grande impacto.
-
-⚠️ Importante: Experiência em Golang e AWS (API Gateway, Load Balancer, S3, EKS, ECS, CloudWatch) é obrigatória (mínimo 4 anos).
-
-O profissional deve dominar integração via API Rest, testes unitários e de integração, monitoramento com AWS CloudWatch, além de traduzir demandas em soluções funcionais e não funcionais de forma eficaz.`,
-          requirements: 'Mínimo 4 anos de experiência com Golang e AWS. Domínio de API Gateway, S3, EKS, ECS, CloudWatch, Docker e APIs REST.',
-          type: 'full-time' as const,
-          budget: '95000.00',
-          duration: '12 months',
-          skills: ["Golang", "AWS", "API Gateway", "S3", "EKS", "ECS", "CloudWatch", "Docker", "Git", "REST", "PL/SQL"] as string[],
-          status: 'active' as const
-        },
-        {
-          id: 'job-dotnet-junior-001',
-          companyId: 'company-magenx-001',
-          title: 'Desenvolvedor(a) .NET Júnior',
-          description: `Oportunidade remota para desenvolvedor júnior com experiência prática em .NET (C#) e conhecimento em APIs RESTful. O profissional atuará no desenvolvimento de soluções corporativas com integração a banco de dados Oracle.
-
-🏠 Modelo: 100% Remoto`,
-          requirements: 'Experiência com .NET (C#), APIs RESTful e banco de dados Oracle. Conhecimento em Git e Azure é diferencial.',
-          type: 'full-time' as const,
-          budget: '45000.00',
-          duration: '12 months',
-          skills: ["C#", ".NET", "REST", "API", "Oracle", "Git", "Azure"] as string[],
-          status: 'active' as const
-        },
-        {
-          id: 'job-fullstack-java-001',
-          companyId: 'company-magenx-001',
-          title: 'Full Stack Java Engineer',
-          description: 'Buscamos um profissional experiente para atuar no desenvolvimento de sistemas corporativos utilizando stack Java/Spring no backend e React/Angular no frontend. O profissional participará de projetos de grande escala com foco em arquitetura de microserviços e integração de sistemas.',
-          requirements: 'Experiência sólida com Java, Spring Boot, React/Angular. Conhecimento em microserviços, Docker, Kubernetes e CI/CD.',
-          type: 'full-time' as const,
-          budget: '120000.00',
-          duration: '12 months',
-          skills: ["Java", "Spring", "Spring Boot", "JPA", "Hibernate", "JavaScript", "React", "Node.js", "Angular", "PostgreSQL", "MySQL", "Oracle", "Docker", "Kubernetes", "Jenkins", "GitLab", "Terraform", "Ansible", "REST", "Git"] as string[],
-          status: 'active' as const
-        },
-        {
-          id: 'job-data-engineer-001',
-          companyId: 'company-magenx-001',
-          title: 'Engenheiro de Dados | Analista PL/SR ou Tech Lead',
-          description: `Oportunidade para atuar em projetos de migração para cloud e otimização de pipelines de dados em ambiente híbrido (2-3x por semana na Vila Olímpia, São Paulo-SP). Desenvolvimento de workflows de ingestão, qualidade e transformação de dados, contribuindo para arquitetura medalhão do Data Lake.
-
-📍 Localização: Híbrido – 2 a 3x por semana na Vila Olímpia (São Paulo - SP)
-💡 Contratação: PJ ou CLT`,
-          requirements: 'Experiência com Python, Spark/PySpark, AWS e Databricks. Conhecimento em arquitetura de Data Lake e pipelines ETL.',
-          type: 'full-time' as const,
-          budget: '100000.00',
-          duration: '12 months',
-          skills: ["Python", "Spark", "PySpark", "AWS", "Databricks", "Jenkins", "Git", "ETL", "Data Lake", "SQL"] as string[],
-          status: 'active' as const
-        }
-      ];
-
-      console.log('[Seed Jobs] Inserting', sampleJobs.length, 'sample jobs...');
-      await db.insert(jobs).values(sampleJobs);
-
-      console.log('[Seed Jobs] Successfully seeded', sampleJobs.length, 'jobs');
-      res.json({ 
-        message: `Successfully seeded ${sampleJobs.length} sample jobs`,
-        count: sampleJobs.length 
-      });
-    } catch (error) {
-      console.error('[Seed Jobs] Error:', error);
-      console.error('[Seed Jobs] Error stack:', error instanceof Error ? error.stack : 'No stack');
-      res.status(500).json({ 
-        message: "Failed to seed jobs",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      res
+        .status(500)
+        .json({ message: "Erro ao enviar mensagem. Tente novamente." });
     }
   });
 
