@@ -495,6 +495,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/companies/me", requireAuth, async (req, res) => {
     try {
       const company = await storage.getCompanyByUserId(req.user.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company profile not found" });
+      }
       res.json(company);
     } catch (error) {
       console.error("Get company error:", error);
@@ -521,6 +524,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/professionals/me", requireAuth, async (req, res) => {
     try {
       const professional = await storage.getProfessionalByUserId(req.user.id);
+      if (!professional) {
+        return res.status(404).json({ message: "Professional profile not found" });
+      }
       res.json(professional);
     } catch (error) {
       console.error("Get professional error:", error);
