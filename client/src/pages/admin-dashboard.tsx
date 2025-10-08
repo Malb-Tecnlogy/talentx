@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Building, Briefcase, FileText, TrendingUp, Server, Database, ShieldCheck } from "lucide-react";
-import AdminLayout from "@/components/admin-layout";
-import { Link } from "wouter";
+import { Shield, Users, Building, DollarSign, TrendingUp, Server, Database, ShieldCheck } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -66,87 +64,113 @@ export default function AdminDashboard() {
   }
 
   return (
-    <AdminLayout>
-      <div data-testid="admin-dashboard">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground" data-testid="title-dashboard">Dashboard</h1>
-          <p className="text-muted-foreground">Platform overview and statistics</p>
+    <div className="min-h-screen bg-background" data-testid="admin-dashboard">
+      {/* Header */}
+      <div className="bg-card border-b border-border sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-destructive rounded-lg flex items-center justify-center">
+                <Shield className="text-destructive-foreground" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-card-foreground">MaGenX Admin</h3>
+                <p className="text-sm text-muted-foreground">Platform Management</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="destructive" data-testid="button-add-user">
+                <Users className="mr-2" size={16} />
+                Add User
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/logout', { method: 'POST' });
+                    if (response.ok) {
+                      window.location.href = "/login";
+                    }
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                    window.location.href = "/login";
+                  }
+                }}
+                data-testid="button-logout"
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Platform Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Link href="/admin/users">
-            <Card className="hover:bg-accent/50 cursor-pointer transition">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Users</p>
-                    <p className="text-2xl font-bold text-card-foreground" data-testid="text-total-users">
-                      {(stats as any)?.users?.total || 0}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Users className="text-primary" size={20} />
-                  </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Connected Users</p>
+                  <p className="text-2xl font-bold text-card-foreground" data-testid="text-connected-users">
+                    {(stats as any)?.connectedClients || 0}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Users className="text-primary" size={20} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Link href="/admin/companies">
-            <Card className="hover:bg-accent/50 cursor-pointer transition">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Companies</p>
-                    <p className="text-2xl font-bold text-card-foreground" data-testid="text-total-companies">
-                      {(stats as any)?.users?.companies || 0}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Building className="text-accent" size={20} />
-                  </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending Jobs</p>
+                  <p className="text-2xl font-bold text-card-foreground" data-testid="text-pending-jobs">
+                    {(pendingJobs as any[]).length}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <Building className="text-accent" size={20} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Link href="/admin/jobs">
-            <Card className="hover:bg-accent/50 cursor-pointer transition">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Jobs</p>
-                    <p className="text-2xl font-bold text-card-foreground" data-testid="text-total-jobs">
-                      {(stats as any)?.jobs?.total || 0}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <Briefcase className="text-green-500" size={20} />
-                  </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+                  <p className="text-2xl font-bold text-card-foreground" data-testid="text-monthly-revenue">
+                    $125K
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+                <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <DollarSign className="text-green-500" size={20} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Link href="/admin/applications">
-            <Card className="hover:bg-accent/50 cursor-pointer transition">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Applications</p>
-                    <p className="text-2xl font-bold text-card-foreground" data-testid="text-total-applications">
-                      {(stats as any)?.applications?.total || 0}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                    <FileText className="text-orange-500" size={20} />
-                  </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Success Rate</p>
+                  <p className="text-2xl font-bold text-card-foreground" data-testid="text-success-rate">
+                    96.2%
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+                <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="text-orange-500" size={20} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Admin Tools */}
@@ -158,24 +182,29 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               {(pendingJobs as any[]).slice(0, 5).map((job: any) => (
-                <Link key={job.id} href="/admin/jobs">
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer transition" data-testid={`card-pending-job-${job.id}`}>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
-                        <Briefcase className="text-accent" size={16} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-card-foreground" data-testid={`text-job-title-${job.id}`}>
-                          {job.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {job.type} • Budget: ${job.budget || 'Not specified'}
-                        </p>
-                      </div>
+                <div key={job.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg" data-testid={`card-pending-job-${job.id}`}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Building className="text-accent" size={16} />
                     </div>
-                    <Badge variant="outline">Pending</Badge>
+                    <div>
+                      <p className="font-medium text-card-foreground" data-testid={`text-job-title-${job.id}`}>
+                        {job.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {job.type} • Budget: ${job.budget || 'Not specified'}
+                      </p>
+                    </div>
                   </div>
-                </Link>
+                  <div className="flex space-x-2">
+                    <Button size="sm" data-testid={`button-approve-${job.id}`}>
+                      Approve
+                    </Button>
+                    <Button variant="outline" size="sm" data-testid={`button-review-${job.id}`}>
+                      Review
+                    </Button>
+                  </div>
+                </div>
               ))}
               {(pendingJobs as any[]).length === 0 && (
                 <div className="text-center py-8 text-muted-foreground" data-testid="text-no-pending-jobs">
@@ -245,6 +274,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
