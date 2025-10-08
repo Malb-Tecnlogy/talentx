@@ -144,6 +144,7 @@ export const professionals = pgTable("professionals", {
   state: varchar("state"),
   city: varchar("city"),
   linkedinUrl: varchar("linkedin_url"),
+  resumeUrl: varchar("resume_url"), // URL do currículo armazenado no Object Storage
   // Diversity data
   originState: varchar("origin_state"),
   originCity: varchar("origin_city"),
@@ -163,6 +164,10 @@ export const jobs = pgTable("jobs", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   requirements: text("requirements").notNull(),
+  // Multilingual support - JSONB fields for PT-BR/EN/ES
+  titleTranslations: jsonb("title_translations").$type<{ pt: string; en: string; es: string }>(),
+  descriptionTranslations: jsonb("description_translations").$type<{ pt: string; en: string; es: string }>(),
+  requirementsTranslations: jsonb("requirements_translations").$type<{ pt: string; en: string; es: string }>(),
   skills: jsonb("skills").$type<string[]>().notNull(),
   budget: decimal("budget", { precision: 10, scale: 2 }),
   duration: varchar("duration"), // weeks, months
@@ -409,3 +414,11 @@ export const contactFormSchema = z.object({
 });
 
 export type ContactForm = z.infer<typeof contactFormSchema>;
+
+// Public job type with company information
+export type PublicJob = Job & {
+  company?: {
+    id: string;
+    name: string;
+  } | null;
+};

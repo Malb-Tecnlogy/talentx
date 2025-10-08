@@ -131,44 +131,44 @@ export default function HomePage() {
               <div className="space-y-3">
                 {user?.role === "professional" && (
                   <>
-                    <Link href="/jobs">
-                      <Button className="w-full" variant="default" data-testid="button-find-jobs">
+                    <Button className="w-full" variant="default" asChild data-testid="button-find-jobs">
+                      <Link href="/jobs">
                         Find Jobs
-                      </Button>
-                    </Link>
-                    <Link href="/professional">
-                      <Button className="w-full" variant="outline" data-testid="button-update-profile">
+                      </Link>
+                    </Button>
+                    <Button className="w-full" variant="outline" asChild data-testid="button-update-profile">
+                      <Link href="/professional">
                         Update Profile
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </>
                 )}
                 {user?.role === "company" && (
                   <>
-                    <Link href="/company">
-                      <Button className="w-full" variant="default" data-testid="button-post-job">
+                    <Button className="w-full" variant="default" asChild data-testid="button-post-job">
+                      <Link href="/company">
                         Post a Job
-                      </Button>
-                    </Link>
-                    <Link href="/jobs">
-                      <Button className="w-full" variant="outline" data-testid="button-find-talent">
+                      </Link>
+                    </Button>
+                    <Button className="w-full" variant="outline" asChild data-testid="button-find-talent">
+                      <Link href="/jobs">
                         Find Talent
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </>
                 )}
                 {user?.role === "admin" && (
                   <>
-                    <Link href="/admin">
-                      <Button className="w-full" variant="default" data-testid="button-manage-users">
+                    <Button className="w-full" variant="default" asChild data-testid="button-manage-users">
+                      <Link href="/admin">
                         Manage Users
-                      </Button>
-                    </Link>
-                    <Link href="/admin">
-                      <Button className="w-full" variant="outline" data-testid="button-view-analytics">
+                      </Link>
+                    </Button>
+                    <Button className="w-full" variant="outline" asChild data-testid="button-view-analytics">
+                      <Link href="/admin">
                         View Analytics
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </>
                 )}
               </div>

@@ -34,6 +34,20 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   
+  // Get redirect parameter from URL and validate it to prevent open redirects
+  const getValidRedirect = () => {
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    
+    // Only allow same-origin paths (must start with / and not //)
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return redirect;
+    }
+    
+    return '/';
+  };
+  
+  const redirectTo = getValidRedirect();
+  
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
@@ -54,7 +68,7 @@ export default function AuthPage() {
 
   // Redirect if user is already logged in
   if (user) {
-    setLocation("/");
+    setLocation(redirectTo);
     return null;
   }
 
@@ -65,7 +79,7 @@ export default function AuthPage() {
     try {
       const validatedData = loginSchema.parse(loginData);
       await loginMutation.mutateAsync(validatedData);
-      setLocation("/");
+      setLocation(redirectTo);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: Record<string, string> = {};
@@ -87,7 +101,7 @@ export default function AuthPage() {
       const validatedData = registerSchema.parse(registerData);
       const { confirmPassword, ...userData } = validatedData;
       await registerMutation.mutateAsync(userData);
-      setLocation("/");
+      setLocation(redirectTo);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: Record<string, string> = {};
@@ -215,7 +229,11 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => window.location.href = '/api/auth/google'}
+                        onClick={() => {
+                          const redirect = new URLSearchParams(window.location.search).get('redirect');
+                          const url = redirect ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}` : '/api/auth/google';
+                          window.location.href = url;
+                        }}
                         data-testid="button-google-login"
                       >
                         <FcGoogle className="mr-2 h-4 w-4" />
@@ -225,7 +243,11 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => window.location.href = '/api/auth/apple'}
+                        onClick={() => {
+                          const redirect = new URLSearchParams(window.location.search).get('redirect');
+                          const url = redirect ? `/api/auth/apple?redirect=${encodeURIComponent(redirect)}` : '/api/auth/apple';
+                          window.location.href = url;
+                        }}
                         data-testid="button-apple-login"
                       >
                         <SiApple className="mr-2 h-4 w-4" />
