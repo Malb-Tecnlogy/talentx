@@ -34,9 +34,6 @@ import {
   Plus,
   Trash2,
   Edit,
-  Briefcase,
-  Calendar,
-  Clock,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Professional } from "@shared/schema";
@@ -549,64 +546,6 @@ export default function ProfessionalDashboard() {
     enabled: !!professional,
   });
 
-  // Check for jobApplied parameter on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const jobApplied = params.get("jobApplied");
-    if (jobApplied) {
-      toast({
-        title: "Success!",
-        description: "You have successfully applied to the job.",
-      });
-      // Clean up URL
-      window.history.replaceState({}, "", "/professional");
-    }
-  }, [toast]);
-
-  // Mutation for applying to jobs
-  const queryClient = useQueryClient();
-  const applyMutation = useMutation({
-    mutationFn: async (jobId: string) => {
-      const response = await apiRequest("POST", `/api/jobs/${jobId}/apply`);
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/applications/my"] });
-      toast({
-        title: "Application submitted!",
-        description: "Your application has been successfully submitted.",
-      });
-    },
-    onError: (error: any) => {
-      // Check if authentication is required
-      if (error.requiresAuth) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to apply for this job. Redirecting...",
-        });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 1500);
-      } else if (error.alreadyApplied) {
-        toast({
-          title: "Already applied",
-          description: "You have already applied to this job.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Application failed",
-          description: error.message || "Failed to submit application",
-          variant: "destructive",
-        });
-      }
-    },
-  });
-
-  const handleApply = (jobId: string) => {
-    applyMutation.mutate(jobId);
-  };
-
   if (isLoading) {
     return (
       <div
@@ -879,113 +818,6 @@ export default function ProfessionalDashboard() {
               </Card>
             </div>
 
-            {/* Applied Jobs Section */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="w-5 h-5" />
-                  Vagas Aplicadas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {(applications as any[]).length === 0 ? (
-                  <div
-                    className="text-center py-8 text-muted-foreground"
-                    data-testid="text-no-applications"
-                  >
-                    Você ainda não se candidatou a nenhuma vaga. Navegue pelas
-                    vagas recomendadas abaixo e candidate-se!
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(applications as any[]).map((app: any) => (
-                      <div
-                        key={app.id}
-                        className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                        data-testid={`card-application-${app.id}`}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h4
-                              className="font-semibold text-card-foreground mb-1"
-                              data-testid={`text-job-title-${app.id}`}
-                            >
-                              {app.job?.title || "Vaga não encontrada"}
-                            </h4>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {app.job?.company?.name ||
-                                "Empresa não disponível"}
-                            </p>
-                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Briefcase className="w-3 h-3" />
-                                {app.job?.type || "N/A"}
-                              </span>
-                              {app.job?.budget && (
-                                <span className="flex items-center gap-1">
-                                  <DollarSign className="w-3 h-3" />$
-                                  {app.job.budget}
-                                </span>
-                              )}
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(app.createdAt).toLocaleDateString(
-                                  "pt-BR",
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                          <Badge
-                            variant={
-                              app.status === "selected"
-                                ? "default"
-                                : app.status === "rejected"
-                                  ? "destructive"
-                                  : "secondary"
-                            }
-                            data-testid={`badge-status-${app.id}`}
-                          >
-                            {app.status === "pending" && "Pendente"}
-                            {app.status === "reviewing" && "Em Análise"}
-                            {app.status === "selected" && "Selecionado"}
-                            {app.status === "rejected" && "Rejeitado"}
-                          </Badge>
-                        </div>
-
-                        {app.matchScore && (
-                          <div className="mb-2">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-muted-foreground">
-                                Compatibilidade
-                              </span>
-                              <span className="font-medium">
-                                {app.matchScore}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div
-                                className="bg-primary rounded-full h-2 transition-all"
-                                style={{ width: `${app.matchScore}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {app.proposedRate && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Taxa proposta:{" "}
-                            <span className="font-medium text-card-foreground">
-                              ${app.proposedRate}/hora
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Job Recommendations & Skills Portfolio */}
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Recommended Projects */}
@@ -1022,11 +854,9 @@ export default function ProfessionalDashboard() {
                       </p>
                       <Button
                         size="sm"
-                        onClick={() => handleApply(rec.jobId)}
-                        disabled={applyMutation.isPending}
                         data-testid={`button-apply-${rec.jobId}`}
                       >
-                        {applyMutation.isPending ? "Applying..." : "Apply"}
+                        Apply
                       </Button>
                     </div>
                   ))}
