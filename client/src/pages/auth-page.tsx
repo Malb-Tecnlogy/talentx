@@ -34,10 +34,6 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   
-  // Get job ID from URL if present (for OAuth flow)
-  const urlParams = new URLSearchParams(window.location.search);
-  const jobId = urlParams.get('jobId');
-  
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
@@ -219,12 +215,7 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => {
-                          const oauthUrl = jobId 
-                            ? `/api/auth/google?jobId=${jobId}&returnUrl=/professional`
-                            : '/api/auth/google';
-                          window.location.href = oauthUrl;
-                        }}
+                        onClick={() => window.location.href = '/api/auth/google'}
                         data-testid="button-google-login"
                       >
                         <FcGoogle className="mr-2 h-4 w-4" />
@@ -234,12 +225,7 @@ export default function AuthPage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => {
-                          const oauthUrl = jobId 
-                            ? `/api/auth/apple?jobId=${jobId}&returnUrl=/professional`
-                            : '/api/auth/apple';
-                          window.location.href = oauthUrl;
-                        }}
+                        onClick={() => window.location.href = '/api/auth/apple'}
                         data-testid="button-apple-login"
                       >
                         <SiApple className="mr-2 h-4 w-4" />
