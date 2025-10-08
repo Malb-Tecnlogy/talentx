@@ -604,6 +604,71 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Apply for a job - handles both authenticated and unauthenticated users
+  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated() || !req.user) {
+        // Store job ID in session and redirect to OAuth
+        console.log('[Apply Job] User not authenticated, storing job ID and redirecting to auth');
+        req.session.pendingJobId = jobId;
+        req.session.returnUrl = '/professional';
+        
+        // Save session before responding
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Apply Job] Session save error:', err);
+            return res.status(500).json({ 
+              message: "Session error",
+              requiresAuth: true,
+              redirectUrl: '/auth'
+            });
+          }
+          
+          return res.status(401).json({ 
+            message: "Authentication required",
+            requiresAuth: true,
+            redirectUrl: '/auth'
+          });
+        });
+        return;
+      }
+
+      // User is authenticated, check for professional profile
+      const professional = await storage.getProfessionalByUserId(req.user.id);
+      if (!professional) {
+        return res.status(400).json({ 
+          message: "Professional profile required to apply for jobs",
+          requiresProfile: true
+        });
+      }
+
+      // Check if already applied
+      const existingApp = await storage.getApplicationByJobAndProfessional(jobId, professional.id);
+      if (existingApp) {
+        return res.status(400).json({ 
+          message: "You have already applied to this job",
+          alreadyApplied: true
+        });
+      }
+
+      // Create application
+      const application = await storage.createApplication({
+        jobId,
+        professionalId: professional.id,
+        status: 'pending'
+      });
+
+      console.log('[Apply Job] Application created successfully:', application.id);
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("[Apply Job] Error:", error);
+      res.status(500).json({ message: "Failed to create application" });
+    }
+  });
+
   // Notification routes
   app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
