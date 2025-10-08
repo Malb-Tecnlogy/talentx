@@ -14,6 +14,8 @@ declare module 'express-session' {
     user?: any;
     oauthState?: string;
     oauthNonce?: string;
+    pendingJobId?: string;
+    returnUrl?: string;
   }
 }
 
@@ -306,6 +308,55 @@ export function validateOAuthNonce(session: any, expectedNonce: string): boolean
   // Clear stored nonce after validation
   delete session.oauthNonce;
   return true;
+}
+
+// Process pending job application after OAuth login
+export async function processPendingJobApplication(session: any, userId: string): Promise<{ jobId?: string, returnUrl?: string }> {
+  const pendingJobId = session.pendingJobId;
+  const returnUrl = session.returnUrl;
+  
+  if (pendingJobId) {
+    console.log('[OAuth] Processing pending job application:', { userId, jobId: pendingJobId });
+    
+    try {
+      // Import storage here to avoid circular dependencies
+      const { storage } = await import('./storage.js');
+      
+      // Check if professional profile exists
+      const professional = await storage.getProfessionalByUserId(userId);
+      
+      if (professional) {
+        // Check if application already exists
+        const existingApp = await storage.getApplicationByJobAndProfessional(pendingJobId, professional.id);
+        
+        if (!existingApp) {
+          // Create the job application
+          await storage.createApplication({
+            jobId: pendingJobId,
+            professionalId: professional.id,
+            status: 'pending'
+          });
+          console.log('[OAuth] Job application created successfully:', { jobId: pendingJobId, professionalId: professional.id });
+        } else {
+          console.log('[OAuth] Job application already exists');
+        }
+      } else {
+        console.log('[OAuth] No professional profile found, cannot create application');
+      }
+    } catch (error) {
+      console.error('[OAuth] Error processing pending job application:', error);
+    }
+    
+    // Clear the pending job from session
+    delete session.pendingJobId;
+  }
+  
+  // Clear return URL from session and return it
+  if (returnUrl) {
+    delete session.returnUrl;
+  }
+  
+  return { jobId: pendingJobId, returnUrl };
 }
 
 // Regenerate session to prevent fixation attacks
