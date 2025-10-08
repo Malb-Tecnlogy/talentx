@@ -16,7 +16,8 @@ import {
   storeOAuthState, 
   validateOAuthState, 
   validateOAuthNonce, 
-  getDashboardRedirect 
+  getDashboardRedirect,
+  processPendingJobApplication
 } from "./replitAuth";
 import { storage } from "./storage";
 import { db } from "./db";
@@ -51,6 +52,18 @@ export function registerRoutes(app: Express): Server {
       
       const state = generateSecureState();
       storeOAuthState(req.session, state);
+      
+      // Store pending job ID and return URL if provided
+      const jobId = req.query.jobId as string;
+      const returnUrl = req.query.returnUrl as string;
+      if (jobId) {
+        req.session.pendingJobId = jobId;
+        console.log('[OAuth] Storing pending job ID:', jobId);
+      }
+      if (returnUrl) {
+        req.session.returnUrl = returnUrl;
+        console.log('[OAuth] Storing return URL:', returnUrl);
+      }
       
       // Save session explicitly before redirect (critical for OAuth flow)
       req.session.save(async (err) => {
@@ -102,15 +115,38 @@ export function registerRoutes(app: Express): Server {
       });
       
       // Login user with Passport
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) {
           console.error('Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(user, isNewUser);
-        res.redirect(redirectUrl);
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(req.session, user.id);
+        
+        // Save session after processing
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Google OAuth] Session save error:', saveErr);
+          }
+          
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+            console.log('[Google OAuth] Using stored return URL:', redirectUrl);
+          } else {
+            redirectUrl = getDashboardRedirect(user, isNewUser);
+          }
+          
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes('?') ? '&' : '?';
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+          
+          res.redirect(redirectUrl);
+        });
       });
     } catch (error) {
       console.error('Google OAuth callback error:', error);
@@ -124,6 +160,18 @@ export function registerRoutes(app: Express): Server {
       const state = generateSecureState();
       const nonce = generateSecureNonce();
       storeOAuthState(req.session, state, nonce);
+      
+      // Store pending job ID and return URL if provided
+      const jobId = req.query.jobId as string;
+      const returnUrl = req.query.returnUrl as string;
+      if (jobId) {
+        req.session.pendingJobId = jobId;
+        console.log('[Apple OAuth Init] Storing pending job ID:', jobId);
+      }
+      if (returnUrl) {
+        req.session.returnUrl = returnUrl;
+        console.log('[Apple OAuth Init] Storing return URL:', returnUrl);
+      }
       
       console.log('[Apple OAuth Init] Storing state and nonce in session:', {
         sessionID: req.sessionID,
@@ -189,13 +237,17 @@ export function registerRoutes(app: Express): Server {
       console.log('[Apple OAuth] User created/linked, role:', dbUser.role);
       
       // Login user with Passport
-      req.login(dbUser, (err) => {
+      req.login(dbUser, async (err) => {
         if (err) {
           console.error('[Apple OAuth] Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
         console.log('[Apple OAuth] User logged in successfully');
+        
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(req.session, dbUser.id);
+        
         // Save session explicitly before redirect (important for mobile OAuth)
         req.session.save((saveErr) => {
           if (saveErr) {
@@ -203,8 +255,21 @@ export function registerRoutes(app: Express): Server {
             return res.redirect('/auth?error=session_failed');
           }
           
-          // Redirect to appropriate dashboard
-          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+            console.log('[Apple OAuth] Using stored return URL:', redirectUrl);
+          } else {
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+          
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes('?') ? '&' : '?';
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+          
           console.log('[Apple OAuth] Redirecting to:', redirectUrl);
           res.redirect(redirectUrl);
         });
@@ -248,15 +313,37 @@ export function registerRoutes(app: Express): Server {
       });
       
       // Login user with Passport
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) {
           console.error('Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
-        // Redirect to appropriate dashboard
-        const redirectUrl = getDashboardRedirect(user, isNewUser);
-        res.redirect(redirectUrl);
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(req.session, user.id);
+        
+        // Save session after processing
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Google OAuth ALT] Session save error:', saveErr);
+          }
+          
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+          } else {
+            redirectUrl = getDashboardRedirect(user, isNewUser);
+          }
+          
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes('?') ? '&' : '?';
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+          
+          res.redirect(redirectUrl);
+        });
       });
     } catch (error) {
       console.error('Google OAuth callback error:', error);
@@ -301,13 +388,17 @@ export function registerRoutes(app: Express): Server {
       console.log('[Apple OAuth ALT] User created/linked, role:', dbUser.role);
       
       // Login user with Passport
-      req.login(dbUser, (err) => {
+      req.login(dbUser, async (err) => {
         if (err) {
           console.error('[Apple OAuth ALT] Passport login error:', err);
           return res.redirect('/auth?error=login_failed');
         }
         
         console.log('[Apple OAuth ALT] User logged in successfully');
+        
+        // Process any pending job application
+        const { jobId, returnUrl } = await processPendingJobApplication(req.session, dbUser.id);
+        
         // Save session explicitly before redirect (important for mobile OAuth)
         req.session.save((saveErr) => {
           if (saveErr) {
@@ -316,8 +407,21 @@ export function registerRoutes(app: Express): Server {
           }
           
           console.log('[Apple OAuth ALT] Session saved, redirecting...');
-          // Redirect to appropriate dashboard
-          const redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          
+          // Determine redirect URL
+          let redirectUrl: string;
+          if (returnUrl) {
+            redirectUrl = returnUrl;
+          } else {
+            redirectUrl = getDashboardRedirect(dbUser, isNewUser);
+          }
+          
+          // If job was applied, add success parameter
+          if (jobId) {
+            const separator = redirectUrl.includes('?') ? '&' : '?';
+            redirectUrl = `${redirectUrl}${separator}jobApplied=${jobId}`;
+          }
+          
           console.log('[Apple OAuth ALT] Redirecting to:', redirectUrl);
           res.redirect(redirectUrl);
         });
@@ -496,6 +600,71 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(application);
     } catch (error) {
       console.error("Create application error:", error);
+      res.status(500).json({ message: "Failed to create application" });
+    }
+  });
+
+  // Apply for a job - handles both authenticated and unauthenticated users
+  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated() || !req.user) {
+        // Store job ID in session and redirect to OAuth
+        console.log('[Apply Job] User not authenticated, storing job ID and redirecting to auth');
+        req.session.pendingJobId = jobId;
+        req.session.returnUrl = '/professional';
+        
+        // Save session before responding
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Apply Job] Session save error:', err);
+            return res.status(500).json({ 
+              message: "Session error",
+              requiresAuth: true,
+              redirectUrl: '/auth'
+            });
+          }
+          
+          return res.status(401).json({ 
+            message: "Authentication required",
+            requiresAuth: true,
+            redirectUrl: '/auth'
+          });
+        });
+        return;
+      }
+
+      // User is authenticated, check for professional profile
+      const professional = await storage.getProfessionalByUserId(req.user.id);
+      if (!professional) {
+        return res.status(400).json({ 
+          message: "Professional profile required to apply for jobs",
+          requiresProfile: true
+        });
+      }
+
+      // Check if already applied
+      const existingApp = await storage.getApplicationByJobAndProfessional(jobId, professional.id);
+      if (existingApp) {
+        return res.status(400).json({ 
+          message: "You have already applied to this job",
+          alreadyApplied: true
+        });
+      }
+
+      // Create application
+      const application = await storage.createApplication({
+        jobId,
+        professionalId: professional.id,
+        status: 'pending'
+      });
+
+      console.log('[Apply Job] Application created successfully:', application.id);
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("[Apply Job] Error:", error);
       res.status(500).json({ message: "Failed to create application" });
     }
   });

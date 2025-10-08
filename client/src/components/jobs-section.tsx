@@ -226,7 +226,7 @@ export default function JobsSection() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Link href="/auth">
+                          <Link href={`/auth?jobId=${job.id}`}>
                             <Button size="sm" className="w-full" data-testid={`button-apply-${job.id}`}>
                               Apply
                               <ArrowRight className="w-4 h-4 ml-1" />

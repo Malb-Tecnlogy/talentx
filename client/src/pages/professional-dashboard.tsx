@@ -434,6 +434,64 @@ export default function ProfessionalDashboard() {
     enabled: !!professional,
   });
 
+  // Check for jobApplied parameter on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jobApplied = params.get('jobApplied');
+    if (jobApplied) {
+      toast({
+        title: "Success!",
+        description: "You have successfully applied to the job.",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/professional');
+    }
+  }, [toast]);
+
+  // Mutation for applying to jobs
+  const queryClient = useQueryClient();
+  const applyMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const response = await apiRequest("POST", `/api/jobs/${jobId}/apply`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/my"] });
+      toast({
+        title: "Application submitted!",
+        description: "Your application has been successfully submitted.",
+      });
+    },
+    onError: (error: any) => {
+      // Check if authentication is required
+      if (error.requiresAuth) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to apply for this job. Redirecting...",
+        });
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1500);
+      } else if (error.alreadyApplied) {
+        toast({
+          title: "Already applied",
+          description: "You have already applied to this job.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Application failed",
+          description: error.message || "Failed to submit application",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const handleApply = (jobId: string) => {
+    applyMutation.mutate(jobId);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="loading-spinner">
@@ -750,8 +808,13 @@ export default function ProfessionalDashboard() {
                   <p className="text-sm text-muted-foreground mb-3" data-testid={`text-reasoning-${rec.jobId}`}>
                     {rec.reasoning}
                   </p>
-                  <Button size="sm" data-testid={`button-apply-${rec.jobId}`}>
-                    Apply
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleApply(rec.jobId)} 
+                    disabled={applyMutation.isPending}
+                    data-testid={`button-apply-${rec.jobId}`}
+                  >
+                    {applyMutation.isPending ? "Applying..." : "Apply"}
                   </Button>
                 </div>
               ))}
